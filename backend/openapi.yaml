@@ -62,6 +62,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusResponse'
+        '500':
+          description: 切断失敗
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   # 基本飛行制御
   /drone/takeoff:
@@ -93,6 +99,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusResponse'
+        '400':
+          description: 着陸失敗
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: ドローンが飛行中でない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /drone/emergency:
     post:
@@ -105,6 +123,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusResponse'
+        '500':
+          description: 緊急停止失敗
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /drone/stop:
     post:
@@ -117,6 +141,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusResponse'
+        '400':
+          description: ホバリング失敗
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: ドローンが飛行中でない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   # 基本移動
   /drone/move:
@@ -147,6 +183,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusResponse'
+        '400':
+          description: 無効なパラメータ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: ドローンが飛行中でない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /drone/rotate:
     post:
@@ -256,21 +304,33 @@ paths:
               properties:
                 x1:
                   type: integer
+                  minimum: -500
+                  maximum: 500
                   description: 中間点X座標(cm)
                 y1:
                   type: integer
+                  minimum: -500
+                  maximum: 500
                   description: 中間点Y座標(cm)
                 z1:
                   type: integer
+                  minimum: -500
+                  maximum: 500
                   description: 中間点Z座標(cm)
                 x2:
                   type: integer
+                  minimum: -500
+                  maximum: 500
                   description: 終点X座標(cm)
                 y2:
                   type: integer
+                  minimum: -500
+                  maximum: 500
                   description: 終点Y座標(cm)
                 z2:
                   type: integer
+                  minimum: -500
+                  maximum: 500
                   description: 終点Z座標(cm)
                 speed:
                   type: integer
@@ -337,6 +397,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusResponse'
+        '409':
+          description: ストリーミング既に開始済み
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: ドローン未接続
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /camera/stream/stop:
     post:
@@ -362,6 +434,18 @@ paths:
               schema:
                 type: string
                 format: binary
+        '404':
+          description: ストリーミング未開始
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: ドローン未接続
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /camera/photo:
     post:
@@ -443,6 +527,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DroneStatus'
+        '503':
+          description: ドローン未接続
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /drone/battery:
     get:
@@ -512,7 +602,246 @@ paths:
                 properties:
                   flight_time:
                     type: integer
+                    minimum: 0
                     description: 累積飛行時間(秒)
+        '503':
+          description: ドローン未接続
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /drone/barometer:
+    get:
+      summary: 気圧センサー取得
+      tags: [Sensors]
+      responses:
+        '200':
+          description: 気圧値
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  barometer:
+                    type: number
+                    minimum: 0
+                    description: 気圧(hPa)
+        '503':
+          description: ドローン未接続
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /drone/distance_tof:
+    get:
+      summary: ToFセンサー距離取得
+      tags: [Sensors]
+      responses:
+        '200':
+          description: ToFセンサー距離
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  distance_tof:
+                    type: integer
+                    minimum: 0
+                    description: 距離(mm)
+        '503':
+          description: ドローン未接続
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /drone/acceleration:
+    get:
+      summary: 加速度取得
+      tags: [Sensors]
+      responses:
+        '200':
+          description: 加速度情報
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  acceleration:
+                    type: object
+                    properties:
+                      x:
+                        type: number
+                        description: X軸加速度(g)
+                      y:
+                        type: number
+                        description: Y軸加速度(g)
+                      z:
+                        type: number
+                        description: Z軸加速度(g)
+        '503':
+          description: ドローン未接続
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /drone/velocity:
+    get:
+      summary: 速度取得
+      tags: [Sensors]
+      responses:
+        '200':
+          description: 速度情報
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  velocity:
+                    type: object
+                    properties:
+                      x:
+                        type: integer
+                        description: X軸速度(cm/s)
+                      y:
+                        type: integer
+                        description: Y軸速度(cm/s)
+                      z:
+                        type: integer
+                        description: Z軸速度(cm/s)
+        '503':
+          description: ドローン未接続
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /drone/attitude:
+    get:
+      summary: 姿勢角取得
+      tags: [Sensors]
+      responses:
+        '200':
+          description: 姿勢角情報
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attitude:
+                    type: object
+                    properties:
+                      pitch:
+                        type: integer
+                        minimum: -180
+                        maximum: 180
+                        description: ピッチ角(度)
+                      roll:
+                        type: integer
+                        minimum: -180
+                        maximum: 180
+                        description: ロール角(度)
+                      yaw:
+                        type: integer
+                        minimum: -180
+                        maximum: 180
+                        description: ヨー角(度)
+        '503':
+          description: ドローン未接続
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # WiFi設定
+  /drone/wifi:
+    put:
+      summary: WiFi接続設定
+      tags: [Settings]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ssid, password]
+              properties:
+                ssid:
+                  type: string
+                  maxLength: 32
+                  description: WiFi SSID
+                password:
+                  type: string
+                  maxLength: 64
+                  description: WiFiパスワード
+      responses:
+        '200':
+          description: WiFi設定成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+        '400':
+          description: 無効なWiFiパラメータ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # 任意コマンド送信
+  /drone/command:
+    post:
+      summary: 任意コマンド送信
+      tags: [Settings]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [command]
+              properties:
+                command:
+                  type: string
+                  description: Tello SDKコマンド
+                timeout:
+                  type: integer
+                  minimum: 1
+                  maximum: 30
+                  default: 7
+                  description: タイムアウト(秒)
+                expect_response:
+                  type: boolean
+                  default: true
+                  description: レスポンスを期待するか
+      responses:
+        '200':
+          description: コマンド送信成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  response:
+                    type: string
+                    description: ドローンからのレスポンス
+        '400':
+          description: 無効なコマンド
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '408':
+          description: コマンドタイムアウト
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   # 飛行設定
   /drone/speed:
@@ -539,6 +868,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusResponse'
+        '400':
+          description: 無効な速度値
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: ドローンが飛行中
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   # ミッションパッド関連（Tello EDU専用）
   /mission_pad/enable:
@@ -552,6 +893,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusResponse'
+        '503':
+          description: ドローン未接続
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /mission_pad/disable:
     post:
@@ -603,12 +950,18 @@ paths:
               properties:
                 x:
                   type: integer
+                  minimum: -500
+                  maximum: 500
                   description: X座標(cm)
                 y:
                   type: integer
+                  minimum: -500
+                  maximum: 500
                   description: Y座標(cm)
                 z:
                   type: integer
+                  minimum: -500
+                  maximum: 500
                   description: Z座標(cm)
                 speed:
                   type: integer
@@ -764,6 +1117,18 @@ paths:
                   task_id:
                     type: string
                     description: 訓練タスクID
+        '400':
+          description: 無効なパラメータ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: ファイルサイズが大きすぎる
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /model/list:
     get:
@@ -816,9 +1181,29 @@ components:
           description: エラーメッセージ
         code:
           type: string
+          enum: [
+            "DRONE_NOT_CONNECTED",
+            "DRONE_CONNECTION_FAILED", 
+            "INVALID_PARAMETER",
+            "COMMAND_FAILED",
+            "COMMAND_TIMEOUT",
+            "NOT_FLYING",
+            "ALREADY_FLYING",
+            "STREAMING_NOT_STARTED",
+            "STREAMING_ALREADY_STARTED",
+            "MODEL_NOT_FOUND",
+            "TRAINING_IN_PROGRESS",
+            "FILE_TOO_LARGE",
+            "UNSUPPORTED_FORMAT",
+            "INTERNAL_ERROR"
+          ]
           description: エラーコード
+        details:
+          type: object
+          description: エラー詳細情報
       required:
         - error
+        - code
 
     DroneStatus:
       type: object
