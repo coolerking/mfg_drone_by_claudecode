@@ -1,0 +1,915 @@
+openapi: 3.0.3
+info:
+  title: MFG Drone Backend API
+  description: Tello EDUドローン自動追従撮影システム バックエンドAPI
+  version: 1.0.0
+  contact:
+    name: MFG Drone Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8000
+    description: 開発環境
+  - url: http://192.168.1.100:8000
+    description: Raspberry Pi 5本番環境
+
+paths:
+  # ヘルスチェック
+  /health:
+    get:
+      summary: ヘルスチェック
+      tags: [System]
+      responses:
+        '200':
+          description: システム正常
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+
+  # ドローン接続管理
+  /drone/connect:
+    post:
+      summary: ドローン接続
+      tags: [Connection]
+      responses:
+        '200':
+          description: 接続成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+        '500':
+          description: 接続失敗
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /drone/disconnect:
+    post:
+      summary: ドローン切断
+      tags: [Connection]
+      responses:
+        '200':
+          description: 切断成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  # 基本飛行制御
+  /drone/takeoff:
+    post:
+      summary: 離陸
+      tags: [Flight Control]
+      responses:
+        '200':
+          description: 離陸成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+        '400':
+          description: 離陸失敗
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /drone/land:
+    post:
+      summary: 着陸
+      tags: [Flight Control]
+      responses:
+        '200':
+          description: 着陸成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /drone/emergency:
+    post:
+      summary: 緊急停止
+      tags: [Flight Control]
+      responses:
+        '200':
+          description: 緊急停止成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /drone/stop:
+    post:
+      summary: ホバリング
+      tags: [Flight Control]
+      responses:
+        '200':
+          description: ホバリング成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  # 基本移動
+  /drone/move:
+    post:
+      summary: 基本移動
+      tags: [Movement]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [direction, distance]
+              properties:
+                direction:
+                  type: string
+                  enum: [up, down, left, right, forward, back]
+                  description: 移動方向
+                distance:
+                  type: integer
+                  minimum: 20
+                  maximum: 500
+                  description: 移動距離(cm)
+      responses:
+        '200':
+          description: 移動成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /drone/rotate:
+    post:
+      summary: 回転
+      tags: [Movement]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [direction, angle]
+              properties:
+                direction:
+                  type: string
+                  enum: [clockwise, counter_clockwise]
+                  description: 回転方向
+                angle:
+                  type: integer
+                  minimum: 1
+                  maximum: 360
+                  description: 回転角度(度)
+      responses:
+        '200':
+          description: 回転成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /drone/flip:
+    post:
+      summary: 宙返り
+      tags: [Movement]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [direction]
+              properties:
+                direction:
+                  type: string
+                  enum: [left, right, forward, back]
+                  description: 宙返り方向
+      responses:
+        '200':
+          description: 宙返り成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  # 高度な移動制御
+  /drone/go_xyz:
+    post:
+      summary: 座標移動
+      tags: [Advanced Movement]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [x, y, z, speed]
+              properties:
+                x:
+                  type: integer
+                  minimum: -500
+                  maximum: 500
+                  description: X座標(cm)
+                y:
+                  type: integer
+                  minimum: -500
+                  maximum: 500
+                  description: Y座標(cm)
+                z:
+                  type: integer
+                  minimum: -500
+                  maximum: 500
+                  description: Z座標(cm)
+                speed:
+                  type: integer
+                  minimum: 10
+                  maximum: 100
+                  description: 速度(cm/s)
+      responses:
+        '200':
+          description: 移動成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /drone/curve_xyz:
+    post:
+      summary: 曲線飛行
+      tags: [Advanced Movement]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [x1, y1, z1, x2, y2, z2, speed]
+              properties:
+                x1:
+                  type: integer
+                  description: 中間点X座標(cm)
+                y1:
+                  type: integer
+                  description: 中間点Y座標(cm)
+                z1:
+                  type: integer
+                  description: 中間点Z座標(cm)
+                x2:
+                  type: integer
+                  description: 終点X座標(cm)
+                y2:
+                  type: integer
+                  description: 終点Y座標(cm)
+                z2:
+                  type: integer
+                  description: 終点Z座標(cm)
+                speed:
+                  type: integer
+                  minimum: 10
+                  maximum: 60
+                  description: 速度(cm/s)
+      responses:
+        '200':
+          description: 曲線飛行成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /drone/rc_control:
+    post:
+      summary: リアルタイム制御
+      tags: [Advanced Movement]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [left_right_velocity, forward_backward_velocity, up_down_velocity, yaw_velocity]
+              properties:
+                left_right_velocity:
+                  type: integer
+                  minimum: -100
+                  maximum: 100
+                  description: 左右速度(%)
+                forward_backward_velocity:
+                  type: integer
+                  minimum: -100
+                  maximum: 100
+                  description: 前後速度(%)
+                up_down_velocity:
+                  type: integer
+                  minimum: -100
+                  maximum: 100
+                  description: 上下速度(%)
+                yaw_velocity:
+                  type: integer
+                  minimum: -100
+                  maximum: 100
+                  description: 回転速度(%)
+      responses:
+        '200':
+          description: 制御コマンド送信成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  # カメラ操作
+  /camera/stream/start:
+    post:
+      summary: ビデオストリーミング開始
+      tags: [Camera]
+      responses:
+        '200':
+          description: ストリーミング開始成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /camera/stream/stop:
+    post:
+      summary: ビデオストリーミング停止
+      tags: [Camera]
+      responses:
+        '200':
+          description: ストリーミング停止成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /camera/stream:
+    get:
+      summary: ビデオストリーム取得
+      tags: [Camera]
+      responses:
+        '200':
+          description: ビデオストリーム
+          content:
+            multipart/x-mixed-replace:
+              schema:
+                type: string
+                format: binary
+
+  /camera/photo:
+    post:
+      summary: 写真撮影
+      tags: [Camera]
+      responses:
+        '200':
+          description: 撮影成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /camera/video/start:
+    post:
+      summary: 動画録画開始
+      tags: [Camera]
+      responses:
+        '200':
+          description: 録画開始成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /camera/video/stop:
+    post:
+      summary: 動画録画停止
+      tags: [Camera]
+      responses:
+        '200':
+          description: 録画停止成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /camera/settings:
+    put:
+      summary: カメラ設定変更
+      tags: [Camera]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resolution:
+                  type: string
+                  enum: [high, low]
+                  description: 解像度設定
+                fps:
+                  type: string
+                  enum: [high, middle, low]
+                  description: フレームレート設定
+                bitrate:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  description: ビットレート設定
+      responses:
+        '200':
+          description: 設定変更成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  # センサー情報取得
+  /drone/status:
+    get:
+      summary: ドローン状態取得
+      tags: [Sensors]
+      responses:
+        '200':
+          description: 状態取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DroneStatus'
+
+  /drone/battery:
+    get:
+      summary: バッテリー残量取得
+      tags: [Sensors]
+      responses:
+        '200':
+          description: バッテリー残量
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  battery:
+                    type: integer
+                    minimum: 0
+                    maximum: 100
+                    description: バッテリー残量(%)
+
+  /drone/height:
+    get:
+      summary: 飛行高度取得
+      tags: [Sensors]
+      responses:
+        '200':
+          description: 飛行高度
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  height:
+                    type: integer
+                    minimum: 0
+                    maximum: 3000
+                    description: 飛行高度(cm)
+
+  /drone/temperature:
+    get:
+      summary: ドローン温度取得
+      tags: [Sensors]
+      responses:
+        '200':
+          description: ドローン温度
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  temperature:
+                    type: integer
+                    minimum: 0
+                    maximum: 90
+                    description: 温度(℃)
+
+  /drone/flight_time:
+    get:
+      summary: 累積飛行時間取得
+      tags: [Sensors]
+      responses:
+        '200':
+          description: 累積飛行時間
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  flight_time:
+                    type: integer
+                    description: 累積飛行時間(秒)
+
+  # 飛行設定
+  /drone/speed:
+    put:
+      summary: 飛行速度設定
+      tags: [Settings]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [speed]
+              properties:
+                speed:
+                  type: number
+                  minimum: 1.0
+                  maximum: 15.0
+                  description: 飛行速度(m/s)
+      responses:
+        '200':
+          description: 速度設定成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  # ミッションパッド関連（Tello EDU専用）
+  /mission_pad/enable:
+    post:
+      summary: ミッションパッド検出有効化
+      tags: [Mission Pad]
+      responses:
+        '200':
+          description: 有効化成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /mission_pad/disable:
+    post:
+      summary: ミッションパッド検出無効化
+      tags: [Mission Pad]
+      responses:
+        '200':
+          description: 無効化成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /mission_pad/detection_direction:
+    put:
+      summary: ミッションパッド検出方向設定
+      tags: [Mission Pad]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [direction]
+              properties:
+                direction:
+                  type: integer
+                  enum: [0, 1, 2]
+                  description: 検出方向(0:下向き, 1:前向き, 2:両方)
+      responses:
+        '200':
+          description: 設定成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /mission_pad/go_xyz:
+    post:
+      summary: ミッションパッド基準移動
+      tags: [Mission Pad]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [x, y, z, speed, mission_pad_id]
+              properties:
+                x:
+                  type: integer
+                  description: X座標(cm)
+                y:
+                  type: integer
+                  description: Y座標(cm)
+                z:
+                  type: integer
+                  description: Z座標(cm)
+                speed:
+                  type: integer
+                  minimum: 10
+                  maximum: 100
+                  description: 速度(cm/s)
+                mission_pad_id:
+                  type: integer
+                  minimum: 1
+                  maximum: 8
+                  description: ミッションパッドID
+      responses:
+        '200':
+          description: 移動成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /mission_pad/status:
+    get:
+      summary: ミッションパッド状態取得
+      tags: [Mission Pad]
+      responses:
+        '200':
+          description: ミッションパッド状態
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mission_pad_id:
+                    type: integer
+                    description: 検出中のミッションパッドID(-1は検出なし)
+                  distance_x:
+                    type: integer
+                    description: X方向距離(cm)
+                  distance_y:
+                    type: integer
+                    description: Y方向距離(cm)
+                  distance_z:
+                    type: integer
+                    description: Z方向距離(cm)
+
+  # 物体認識・追跡（独自実装）
+  /tracking/start:
+    post:
+      summary: 物体追跡開始
+      tags: [Object Tracking]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [target_object]
+              properties:
+                target_object:
+                  type: string
+                  description: 追跡対象オブジェクト名
+                tracking_mode:
+                  type: string
+                  enum: [center, follow]
+                  default: center
+                  description: 追跡モード
+      responses:
+        '200':
+          description: 追跡開始成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /tracking/stop:
+    post:
+      summary: 物体追跡停止
+      tags: [Object Tracking]
+      responses:
+        '200':
+          description: 追跡停止成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /tracking/status:
+    get:
+      summary: 追跡状態取得
+      tags: [Object Tracking]
+      responses:
+        '200':
+          description: 追跡状態
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_tracking:
+                    type: boolean
+                    description: 追跡中かどうか
+                  target_object:
+                    type: string
+                    description: 追跡対象オブジェクト名
+                  target_detected:
+                    type: boolean
+                    description: 対象物検出中かどうか
+                  target_position:
+                    type: object
+                    properties:
+                      x:
+                        type: integer
+                        description: 画面内X座標
+                      y:
+                        type: integer
+                        description: 画面内Y座標
+                      width:
+                        type: integer
+                        description: 検出領域幅
+                      height:
+                        type: integer
+                        description: 検出領域高さ
+
+  # モデル管理
+  /model/train:
+    post:
+      summary: 物体認識モデル訓練
+      tags: [Model Management]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [object_name, images]
+              properties:
+                object_name:
+                  type: string
+                  description: 学習対象オブジェクト名
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: 学習用画像ファイル
+      responses:
+        '200':
+          description: 訓練開始成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task_id:
+                    type: string
+                    description: 訓練タスクID
+
+  /model/list:
+    get:
+      summary: 利用可能モデル一覧取得
+      tags: [Model Management]
+      responses:
+        '200':
+          description: モデル一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  models:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: モデル名
+                        created_at:
+                          type: string
+                          format: date-time
+                          description: 作成日時
+                        accuracy:
+                          type: number
+                          description: 精度
+
+components:
+  schemas:
+    StatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: 操作成功フラグ
+        message:
+          type: string
+          description: 結果メッセージ
+      required:
+        - success
+        - message
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: エラーメッセージ
+        code:
+          type: string
+          description: エラーコード
+      required:
+        - error
+
+    DroneStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+          description: 接続状態
+        battery:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: バッテリー残量(%)
+        height:
+          type: integer
+          minimum: 0
+          maximum: 3000
+          description: 飛行高度(cm)
+        temperature:
+          type: integer
+          minimum: 0
+          maximum: 90
+          description: 温度(℃)
+        flight_time:
+          type: integer
+          description: 累積飛行時間(秒)
+        speed:
+          type: number
+          description: 現在速度(cm/s)
+        barometer:
+          type: number
+          description: 気圧(hPa)
+        distance_tof:
+          type: integer
+          description: ToFセンサー距離(mm)
+        acceleration:
+          type: object
+          properties:
+            x:
+              type: number
+              description: X軸加速度(g)
+            y:
+              type: number
+              description: Y軸加速度(g)
+            z:
+              type: number
+              description: Z軸加速度(g)
+        velocity:
+          type: object
+          properties:
+            x:
+              type: integer
+              description: X軸速度(cm/s)
+            y:
+              type: integer
+              description: Y軸速度(cm/s)
+            z:
+              type: integer
+              description: Z軸速度(cm/s)
+        attitude:
+          type: object
+          properties:
+            pitch:
+              type: integer
+              description: ピッチ角(度)
+            roll:
+              type: integer
+              description: ロール角(度)
+            yaw:
+              type: integer
+              description: ヨー角(度)
+
+tags:
+  - name: System
+    description: システム関連API
+  - name: Connection
+    description: ドローン接続管理
+  - name: Flight Control
+    description: 基本飛行制御
+  - name: Movement
+    description: 基本移動制御
+  - name: Advanced Movement
+    description: 高度な移動制御
+  - name: Camera
+    description: カメラ操作
+  - name: Sensors
+    description: センサー情報取得
+  - name: Settings
+    description: 設定変更
+  - name: Mission Pad
+    description: ミッションパッド関連（Tello EDU専用）
+  - name: Object Tracking
+    description: 物体認識・追跡
+  - name: Model Management
+    description: AIモデル管理
