@@ -1,15 +1,67 @@
 """
-ドローン接続関連APIのテスト
+ドローン接続関連APIのテストケース
+/drone/connect, /drone/disconnect エンドポイントのテスト
 """
 
 import pytest
+from fastapi.testclient import TestClient
+from unittest.mock import patch, MagicMock
+import sys
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+from main import app
+from config.test_config import TestConfig
+from tests.fixtures.drone_factory import create_test_drone, DroneTestHelper
 from tests.stubs.drone_stub import TelloStub
 
 
-class TestConnection:
-    """ドローン接続テストクラス"""
+class TestDroneConnectionAPI:
+    """ドローン接続関連APIのテスト"""
     
-    def test_connect_success(self, drone):
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """各テスト前のセットアップ"""
+        TestConfig.setup_logging()
+        self.client = TestClient(app)
+    
+    @patch('services.drone_service.create_drone_instance')
+    def test_connect_success(self, mock_create_drone):
+        """正常なドローン接続テスト"""
+        # モックドローンの設定
+        mock_drone = create_test_drone()
+        mock_create_drone.return_value = mock_drone
+        
+        response = self.client.post("/drone/connect")
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert "message" in data
+        assert "接続" in data["message"]
+    
+    @patch('services.drone_service.create_drone_instance')
+    def test_connect_failure(self, mock_create_drone):
+        """ドローン接続失敗テスト"""
+        # 接続エラーをシミュレート
+        mock_drone = create_test_drone()
+        DroneTestHelper.setup_connection_error(mock_drone)
+        mock_create_drone.return_value = mock_drone
+        
+        response = self.client.post("/drone/connect")
+        
+        assert response.status_code == 500
+        data = response.json()
+        assert "error" in data
+        assert "code" in data
+        assert data["code"] == "DRONE_CONNECTION_FAILED"
+
+
+class TestConnectionStub:
+    """ドローン接続スタブのテスト"""
+    
+    def test_stub_connect_success(self, drone):
         """正常な接続テスト"""
         result = drone.connect()
         assert result is True

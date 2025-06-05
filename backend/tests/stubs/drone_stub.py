@@ -35,6 +35,11 @@ class TelloStub:
         self._mission_pad_id = -1
         self._mission_pad_distance = {"x": 0, "y": 0, "z": 0}
         
+        # 追跡関連の状態
+        self._tracking = False
+        self._target_object = None
+        self._tracking_mode = None
+        
         # エラーシミュレーション用フラグ
         self._simulate_connection_error = False
         self._simulate_command_error = False
@@ -237,6 +242,8 @@ class TelloStub:
             return False
         if resolution not in ["high", "low"]:
             return False
+        if self._simulate_command_error:
+            return False
         return True
     
     def set_video_fps(self, fps: str) -> bool:
@@ -244,6 +251,8 @@ class TelloStub:
         if not self._connected:
             return False
         if fps not in ["high", "middle", "low"]:
+            return False
+        if self._simulate_command_error:
             return False
         return True
     
@@ -253,6 +262,24 @@ class TelloStub:
             return False
         if not (1 <= bitrate <= 5):
             return False
+        if self._simulate_command_error:
+            return False
+        return True
+    
+    def set_camera_settings(self, resolution: str = None, fps: str = None, bitrate: int = None) -> bool:
+        """カメラ設定統合メソッド"""
+        if not self._connected:
+            return False
+        if self._simulate_command_error:
+            return False
+        
+        if resolution and resolution not in ["high", "low"]:
+            return False
+        if fps and fps not in ["high", "middle", "low"]:
+            return False
+        if bitrate and not (1 <= bitrate <= 5):
+            return False
+        
         return True
     
     def set_speed(self, speed: float) -> bool:
@@ -480,6 +507,81 @@ class TelloStub:
         """タイムアウトシミュレーションを設定"""
         self._simulate_timeout = simulate
     
+    # 物体追跡関連メソッド
+    def start_tracking(self, target_object: str, tracking_mode: str = "center") -> bool:
+        """物体追跡開始をシミュレート"""
+        if not self._connected:
+            return False
+        if tracking_mode not in ["center", "follow"]:
+            return False
+        if self._simulate_command_error:
+            return False
+        
+        self._tracking = True
+        self._target_object = target_object
+        self._tracking_mode = tracking_mode
+        return True
+    
+    def stop_tracking(self) -> bool:
+        """物体追跡停止をシミュレート"""
+        if not self._connected:
+            return False
+        if self._simulate_command_error:
+            return False
+        
+        self._tracking = False
+        self._target_object = None
+        self._tracking_mode = None
+        return True
+    
+    def get_tracking_status(self) -> dict:
+        """追跡状態取得をシミュレート"""
+        if not self._connected:
+            raise Exception("Not connected")
+        
+        return {
+            "is_tracking": getattr(self, '_tracking', False),
+            "target_object": getattr(self, '_target_object', None),
+            "target_detected": random.choice([True, False]),
+            "target_position": {
+                "x": random.randint(0, 960),
+                "y": random.randint(0, 720),
+                "width": random.randint(50, 200),
+                "height": random.randint(50, 200)
+            } if getattr(self, '_tracking', False) else None
+        }
+    
+    # AIモデル管理関連メソッド
+    def train_model(self, object_name: str, images: list) -> dict:
+        """モデル訓練をシミュレート"""
+        if not images or len(images) == 0:
+            return {"error": "No images provided"}
+        if len(images) > 100:
+            return {"error": "Too many images"}
+        if self._simulate_command_error:
+            return {"error": "Training failed"}
+        
+        # ランダムなタスクIDを生成
+        task_id = f"task_{random.randint(1000, 9999)}"
+        return {"task_id": task_id}
+    
+    def get_model_list(self) -> dict:
+        """モデル一覧取得をシミュレート"""
+        return {
+            "models": [
+                {
+                    "name": "person_model",
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "accuracy": 0.95
+                },
+                {
+                    "name": "car_model",
+                    "created_at": "2024-01-02T00:00:00Z",
+                    "accuracy": 0.87
+                }
+            ]
+        }
+    
     def reset_state(self):
         """状態をリセット"""
         self._connected = False
@@ -492,3 +594,7 @@ class TelloStub:
         self._simulate_connection_error = False
         self._simulate_command_error = False
         self._simulate_timeout = False
+        # 追跡関連の状態もリセット
+        self._tracking = False
+        self._target_object = None
+        self._tracking_mode = None
