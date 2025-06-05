@@ -75,3 +75,26 @@ class DroneTestHelper:
         """接続状態にセットアップ"""
         if hasattr(drone, '_connected'):
             drone._connected = True
+    
+    @staticmethod
+    def setup_disconnected_state(drone: TelloStub):
+        """未接続状態にセットアップ"""
+        if hasattr(drone, '_connected'):
+            drone._connected = False
+            drone._flying = False
+    
+    @staticmethod
+    def setup_streaming_state(drone: TelloStub):
+        """ストリーミング状態にセットアップ"""
+        if hasattr(drone, '_streaming'):
+            drone._streaming = True
+        if hasattr(drone, '_connected'):
+            drone._connected = True
+    
+    @staticmethod
+    def setup_recording_state(drone: TelloStub):
+        """録画状態にセットアップ"""
+        if hasattr(drone, '_recording'):
+            drone._recording = True
+        if hasattr(drone, '_connected'):
+            drone._connected = True
