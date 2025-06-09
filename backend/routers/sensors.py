@@ -1,0 +1,1 @@
+# Router for sensor data endpoints

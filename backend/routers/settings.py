@@ -1,0 +1,1 @@
+# Router for settings management endpoints
