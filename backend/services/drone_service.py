@@ -335,6 +335,190 @@ class DroneService:
         except Exception as e:
             return {"error": f"姿勢角取得エラー: {str(e)}"}
 
+    def go_xyz(self, x: int, y: int, z: int, speed: int) -> Dict[str, Any]:
+        """座標移動"""
+        if not self._is_connected:
+            return {"success": False, "message": "ドローンが接続されていません"}
+        if not self._is_flying:
+            return {"success": False, "message": "ドローンが飛行していません"}
+        
+        try:
+            result = self.drone.go_xyz_speed(x, y, z, speed)
+            if result:
+                return {"success": True, "message": f"座標({x}, {y}, {z})に移動しました"}
+            else:
+                return {"success": False, "message": "座標移動に失敗しました"}
+        except Exception as e:
+            return {"success": False, "message": f"座標移動エラー: {str(e)}"}
+
+    def curve_xyz(self, x1: int, y1: int, z1: int, x2: int, y2: int, z2: int, speed: int) -> Dict[str, Any]:
+        """曲線飛行"""
+        if not self._is_connected:
+            return {"success": False, "message": "ドローンが接続されていません"}
+        if not self._is_flying:
+            return {"success": False, "message": "ドローンが飛行していません"}
+        
+        try:
+            result = self.drone.curve_xyz_speed(x1, y1, z1, x2, y2, z2, speed)
+            if result:
+                return {"success": True, "message": f"曲線飛行を実行しました"}
+            else:
+                return {"success": False, "message": "曲線飛行に失敗しました"}
+        except Exception as e:
+            return {"success": False, "message": f"曲線飛行エラー: {str(e)}"}
+
+    def rc_control(self, left_right: int, forward_backward: int, up_down: int, yaw: int) -> Dict[str, Any]:
+        """リアルタイム制御"""
+        if not self._is_connected:
+            return {"success": False, "message": "ドローンが接続されていません"}
+        
+        try:
+            self.drone.send_rc_control(left_right, forward_backward, up_down, yaw)
+            return {"success": True, "message": "RC制御コマンドを送信しました"}
+        except Exception as e:
+            return {"success": False, "message": f"RC制御エラー: {str(e)}"}
+
+    def start_stream(self) -> Dict[str, Any]:
+        """ビデオストリーミング開始"""
+        if not self._is_connected:
+            return {"success": False, "message": "ドローンが接続されていません"}
+        if self._is_streaming:
+            return {"success": False, "message": "ストリーミングが既に開始済みです"}
+        
+        try:
+            result = self.drone.streamon()
+            if result:
+                self._is_streaming = True
+                return {"success": True, "message": "ストリーミングを開始しました"}
+            else:
+                return {"success": False, "message": "ストリーミング開始に失敗しました"}
+        except Exception as e:
+            return {"success": False, "message": f"ストリーミング開始エラー: {str(e)}"}
+
+    def stop_stream(self) -> Dict[str, Any]:
+        """ビデオストリーミング停止"""
+        if not self._is_connected:
+            return {"success": False, "message": "ドローンが接続されていません"}
+        if not self._is_streaming:
+            return {"success": False, "message": "ストリーミングが未開始です"}
+        
+        try:
+            result = self.drone.streamoff()
+            if result:
+                self._is_streaming = False
+                return {"success": True, "message": "ストリーミングを停止しました"}
+            else:
+                return {"success": False, "message": "ストリーミング停止に失敗しました"}
+        except Exception as e:
+            return {"success": False, "message": f"ストリーミング停止エラー: {str(e)}"}
+
+    def take_photo(self) -> Dict[str, Any]:
+        """写真撮影"""
+        if not self._is_connected:
+            return {"success": False, "message": "ドローンが接続されていません"}
+        
+        try:
+            result = self.drone.take_picture()
+            if result:
+                return {"success": True, "message": "写真を撮影しました"}
+            else:
+                return {"success": False, "message": "写真撮影に失敗しました"}
+        except Exception as e:
+            return {"success": False, "message": f"写真撮影エラー: {str(e)}"}
+
+    def start_video(self) -> Dict[str, Any]:
+        """動画録画開始"""
+        if not self._is_connected:
+            return {"success": False, "message": "ドローンが接続されていません"}
+        
+        try:
+            result = self.drone.start_video_capture()
+            if result:
+                return {"success": True, "message": "動画録画を開始しました"}
+            else:
+                return {"success": False, "message": "動画録画開始に失敗しました"}
+        except Exception as e:
+            return {"success": False, "message": f"動画録画開始エラー: {str(e)}"}
+
+    def stop_video(self) -> Dict[str, Any]:
+        """動画録画停止"""
+        if not self._is_connected:
+            return {"success": False, "message": "ドローンが接続されていません"}
+        
+        try:
+            result = self.drone.stop_video_capture()
+            if result:
+                return {"success": True, "message": "動画録画を停止しました"}
+            else:
+                return {"success": False, "message": "動画録画停止に失敗しました"}
+        except Exception as e:
+            return {"success": False, "message": f"動画録画停止エラー: {str(e)}"}
+
+    def set_camera_settings(self, resolution: str = None, fps: str = None, bitrate: int = None) -> Dict[str, Any]:
+        """カメラ設定変更"""
+        if not self._is_connected:
+            return {"success": False, "message": "ドローンが接続されていません"}
+        
+        try:
+            result = self.drone.set_camera_settings(resolution=resolution, fps=fps, bitrate=bitrate)
+            if result:
+                return {"success": True, "message": "カメラ設定を変更しました"}
+            else:
+                return {"success": False, "message": "カメラ設定変更に失敗しました"}
+        except Exception as e:
+            return {"success": False, "message": f"カメラ設定エラー: {str(e)}"}
+
+    def set_wifi(self, ssid: str, password: str) -> Dict[str, Any]:
+        """WiFi設定"""
+        if not self._is_connected:
+            return {"success": False, "message": "ドローンが接続されていません"}
+        
+        try:
+            result = self.drone.set_wifi_credentials(ssid, password)
+            if result:
+                return {"success": True, "message": "WiFi設定を変更しました"}
+            else:
+                return {"success": False, "message": "WiFi設定変更に失敗しました"}
+        except Exception as e:
+            return {"success": False, "message": f"WiFi設定エラー: {str(e)}"}
+
+    def send_command(self, command: str, timeout: int = 7, expect_response: bool = True) -> Dict[str, Any]:
+        """任意コマンド送信"""
+        if not self._is_connected:
+            return {"success": False, "message": "ドローンが接続されていません"}
+        
+        try:
+            if expect_response:
+                response = self.drone.send_command_with_return(command, timeout)
+                if response == "ok":
+                    return {"success": True, "message": "コマンドが正常に実行されました", "response": response}
+                else:
+                    return {"success": False, "message": f"コマンド実行に失敗しました: {response}", "response": response}
+            else:
+                self.drone.send_command_without_return(command)
+                return {"success": True, "message": "コマンドを送信しました", "response": ""}
+        except Exception as e:
+            if "Timeout" in str(e):
+                return {"success": False, "message": "コマンドタイムアウト"}
+            else:
+                return {"success": False, "message": f"コマンド送信エラー: {str(e)}"}
+
+    def set_speed(self, speed: float) -> Dict[str, Any]:
+        """飛行速度設定"""
+        if not self._is_connected:
+            return {"success": False, "message": "ドローンが接続されていません"}
+        if self._is_flying:
+            return {"success": False, "message": "ドローンが飛行中です"}
+        
+        try:
+            result = self.drone.set_speed(speed)
+            if result:
+                return {"success": True, "message": f"飛行速度を{speed}m/sに設定しました"}
+            else:
+                return {"success": False, "message": "飛行速度設定に失敗しました"}
+        except Exception as e:
+            return {"success": False, "message": f"飛行速度設定エラー: {str(e)}"}
+
 
 # グローバルインスタンス
 drone_service = DroneService()

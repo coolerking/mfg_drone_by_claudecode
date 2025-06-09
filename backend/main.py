@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 # Import routers
-from routers import system, connection, flight_control, movement, sensors
+from routers import system, connection, flight_control, movement, advanced_movement, sensors, camera, settings
 
 app = FastAPI(
     title="MFG Drone Backend API",
@@ -32,7 +32,10 @@ app.include_router(system.router)
 app.include_router(connection.router)
 app.include_router(flight_control.router)
 app.include_router(movement.router)
+app.include_router(advanced_movement.router)
 app.include_router(sensors.router)
+app.include_router(camera.router)
+app.include_router(settings.router)
 
 @app.get("/")
 async def root():
