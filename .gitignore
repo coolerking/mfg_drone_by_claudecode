@@ -140,3 +140,6 @@ models/*.model
 !frontend/*/static/**/*.png
 !frontend/*/static/**/*.gif
 !frontend/*/static/**/*.bmp
+
+# Temporary development directory
+backend/tmp/
