@@ -140,3 +140,7 @@ models/*.model
 !frontend/*/static/**/*.png
 !frontend/*/static/**/*.gif
 !frontend/*/static/**/*.bmp
+
+# Backend temporary files
+backend/tmp/*
+!backend/tmp/.gitkeep
