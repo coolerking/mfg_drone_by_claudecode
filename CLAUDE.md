@@ -62,6 +62,54 @@ The system implements a distributed architecture where:
 - Real-time video streaming integration
 - Object recognition model integration
 
+## Testing Strategy - 4 Phase Approach
+
+The project follows a comprehensive 4-phase testing strategy:
+
+### Phase 1: Unit Tests (Development Environment)
+- **Environment**: Windows/Mac/Linux development environment  
+- **Drone**: TelloStub (mock only)
+- **Focus**: Function-level boundary values, error handling, return value assertions
+- **Execution**: `python -m pytest backend/tests/test_*_units.py -v`
+
+### Phase 2: Integration Test A (Raspberry Pi + Mock Drone)
+- **Environment**: Raspberry Pi 5 (Raspberry Pi OS Lite 64bit)
+- **Drone**: TelloStub with Pi optimization
+- **Focus**: All OpenAPI endpoints, Pi resource constraints, network conditions
+- **Execution**: `python -m pytest backend/tests/test_*_integration.py -v --pi-environment`
+
+### Phase 3: Integration Test B (Raspberry Pi + Real Drone)
+- **Environment**: Raspberry Pi 5 + Tello EDU real drone
+- **Drone**: Actual Tello EDU hardware
+- **Focus**: Physical constraints, real-world accuracy, safety validation
+- **Execution**: `python -m pytest backend/tests/test_real_drone_*.py -v --safety-enabled`
+- **Safety**: Always use safety bounds, emergency stop procedures, battery monitoring
+
+### Phase 4: Integration Test C (Comprehensive Testing)
+- **Environment**: Same as Phase 3
+- **Scope**: End-to-end workflows, long-term operation, production readiness
+- **Focus**: Complete system validation, performance, security, reliability
+- **Execution**: `python -m pytest --all-phases --comprehensive-report`
+
+### Testing Guidelines
+
+**Phase Progression Rules:**
+- Each phase must achieve 100% success before proceeding to next phase
+- Phase 3 (real drone) requires strict safety protocols
+- Phase 4 includes all previous phases plus comprehensive system testing
+
+**Boundary Value Testing:**
+- Test minimum values, maximum values, and middle values
+- Test invalid values just outside valid ranges
+- Verify appropriate error handling for boundary violations
+
+**Safety Requirements for Real Drone Testing:**
+- Minimum 50% battery before starting tests
+- Indoor environment with safety boundaries
+- Emergency stop procedures always available
+- Propeller guards mandatory
+- Maximum flight height: 150cm, distance: 300cm
+
 ## Development Notes
 
 When implementing:
@@ -69,4 +117,8 @@ When implementing:
 - Consider the hardware constraints of Raspberry Pi 5 for AI processing
 - Ensure real-time performance requirements for drone control and video streaming
 - Implement proper network communication protocols between the three system components
-- Run tests with: `python -m pytest backend/tests/`
+- **Testing**: Follow the 4-phase testing strategy above
+- Run tests with appropriate phase selection:
+  - Development: `python -m pytest backend/tests/test_*_units.py`
+  - Pi Integration: `python -m pytest backend/tests/test_*_integration.py --pi-environment`
+  - Real Drone: `python -m pytest backend/tests/test_real_drone_*.py --safety-enabled`
