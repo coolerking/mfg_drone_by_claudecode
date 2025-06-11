@@ -178,13 +178,16 @@ class TelloStub:
         self._battery = max(0, self._battery - 5)
         return True
     
-    def send_rc_control(self, left_right: int, forward_backward: int, up_down: int, yaw: int):
+    def send_rc_control(self, left_right: int, forward_backward: int, up_down: int, yaw: int) -> bool:
         """リアルタイム制御をシミュレート"""
         if not self._connected:
-            return
+            return False
+        if self._simulate_command_error:
+            return False
         # バッテリー消費をシミュレート
         if any([left_right, forward_backward, up_down, yaw]):
             self._battery = max(0, self._battery - 1)
+        return True
     
     def streamon(self) -> bool:
         """ビデオストリーミング開始をシミュレート"""
@@ -282,15 +285,16 @@ class TelloStub:
         
         return True
     
-    def set_speed(self, speed: float) -> bool:
-        """飛行速度設定をシミュレート"""
+    def set_speed(self, speed: int) -> bool:
+        """飛行速度設定をシミュレート（cm/s単位）"""
         if not self._connected:
             return False
-        if not (1.0 <= speed <= 15.0):
+        # DroneServiceはm/sをcm/sに変換して渡すので、100-1500の範囲をチェック
+        if not (100 <= speed <= 1500):
             return False
         if self._flying:
             return False
-        self._speed = speed
+        self._speed = speed / 100.0  # 内部ではm/s単位で保存
         return True
     
     def set_wifi_credentials(self, ssid: str, password: str) -> bool:
@@ -598,3 +602,47 @@ class TelloStub:
         self._tracking = False
         self._target_object = None
         self._tracking_mode = None
+    
+    # Generic wrapper methods for DroneService compatibility
+    def move(self, direction: str, distance: int) -> bool:
+        """Generic move method for DroneService compatibility"""
+        direction_map = {
+            "up": self.move_up,
+            "down": self.move_down,
+            "left": self.move_left,
+            "right": self.move_right,
+            "forward": self.move_forward,
+            "back": self.move_back
+        }
+        if direction not in direction_map:
+            return False
+        return direction_map[direction](distance)
+    
+    def rotate(self, direction: str, angle: int) -> bool:
+        """Generic rotate method for DroneService compatibility"""
+        if direction == "clockwise":
+            return self.rotate_clockwise(angle)
+        elif direction == "counter_clockwise":
+            return self.rotate_counter_clockwise(angle)
+        else:
+            return False
+    
+    def flip(self, direction: str) -> bool:
+        """Generic flip method for DroneService compatibility"""
+        direction_map = {
+            "left": self.flip_left,
+            "right": self.flip_right,
+            "forward": self.flip_forward,
+            "back": self.flip_back
+        }
+        if direction not in direction_map:
+            return False
+        return direction_map[direction]()
+    
+    def start_video(self) -> bool:
+        """Alias for start_video_capture for DroneService compatibility"""
+        return self.start_video_capture()
+    
+    def stop_video(self) -> bool:
+        """Alias for stop_video_capture for DroneService compatibility"""
+        return self.stop_video_capture()
