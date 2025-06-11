@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFG Drone - 管理者ダッシュボード</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-connected { background-color: #28a745; }
+        .status-disconnected { background-color: #dc3545; }
+        .status-flying { background-color: #007bff; }
+        .status-tracking { background-color: #ffc107; }
+        
+        .battery-level {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .battery-low { color: #dc3545; }
+        .battery-normal { color: #28a745; }
+        
+        .sensor-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .control-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .emergency-btn {
+            background-color: #dc3545 !important;
+            border-color: #dc3545 !important;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .emergency-btn:hover {
+            background-color: #c82333 !important;
+            border-color: #bd2130 !important;
+        }
+        
+        .video-stream {
+            width: 100%;
+            height: 300px;
+            background-color: #000;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2em;
+        }
+        
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+    <!-- ナビゲーションバー -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-helicopter"></i> MFG Drone 管理画面
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">
+                            <i class="fas fa-tachometer-alt"></i> ダッシュボード
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/drone-control">
+                            <i class="fas fa-gamepad"></i> ドローン制御
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/model-training">
+                            <i class="fas fa-brain"></i> モデル訓練
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/tracking">
+                            <i class="fas fa-crosshairs"></i> 追跡制御
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/settings">
+                            <i class="fas fa-cog"></i> 設定
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <span class="navbar-text">
+                            <span class="status-indicator" id="connection-indicator"></span>
+                            <span id="connection-status-text">切断</span>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <div class="container mt-4">
+        <div class="row">
+            <!-- システム状態パネル -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-info-circle"></i> システム状態</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- ドローン接続状態 -->
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-wifi fa-2x text-primary me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">ドローン接続</h6>
+                                        <p class="mb-0" id="drone-connection-status">
+                                            <span class="status-indicator status-disconnected"></span>切断
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 飛行状態 -->
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-plane fa-2x text-success me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">飛行状態</h6>
+                                        <p class="mb-0" id="flight-status">
+                                            <span class="status-indicator status-disconnected"></span>着陸
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 追跡状態 -->
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-crosshairs fa-2x text-warning me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">追跡状態</h6>
+                                        <p class="mb-0" id="tracking-status">
+                                            <span class="status-indicator status-disconnected"></span>停止中
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- バッテリー残量 -->
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-battery-half fa-2x text-info me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">バッテリー残量</h6>
+                                        <p class="mb-0 battery-level battery-normal" id="battery-level">--</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- クイックコントロール -->
+                <div class="control-panel mt-4">
+                    <h5><i class="fas fa-bolt"></i> クイックコントロール</h5>
+                    <div class="row g-2 mt-2">
+                        <div class="col-md-2">
+                            <button class="btn btn-success w-100" id="btn-connect" onclick="toggleConnection()">
+                                <i class="fas fa-plug"></i> 接続
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-primary w-100" id="btn-takeoff" onclick="takeoff()" disabled>
+                                <i class="fas fa-plane-departure"></i> 離陸
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-secondary w-100" id="btn-land" onclick="land()" disabled>
+                                <i class="fas fa-plane-arrival"></i> 着陸
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-warning w-100" id="btn-start-tracking" onclick="startTracking()" disabled>
+                                <i class="fas fa-crosshairs"></i> 追跡開始
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-outline-warning w-100" id="btn-stop-tracking" onclick="stopTracking()" disabled>
+                                <i class="fas fa-stop"></i> 追跡停止
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn emergency-btn w-100" id="btn-emergency" onclick="emergencyStop()">
+                                <i class="fas fa-exclamation-triangle"></i> 緊急停止
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- カメラストリーム -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-camera"></i> ライブカメラ</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="video-stream" id="video-stream">
+                            <div class="text-center">
+                                <i class="fas fa-camera-slash fa-3x mb-3"></i>
+                                <p>カメラストリーム未開始</p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-outline-primary" onclick="startCameraStream()">
+                                <i class="fas fa-play"></i> ストリーム開始
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="stopCameraStream()">
+                                <i class="fas fa-stop"></i> ストリーム停止
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- サイドバー -->
+            <div class="col-lg-4">
+                <!-- センサー情報 -->
+                <div class="sensor-card">
+                    <h6><i class="fas fa-thermometer-half"></i> センサー情報</h6>
+                    <div class="row mt-3">
+                        <div class="col-6">
+                            <small>高度</small>
+                            <div id="height-display" class="h5">-- cm</div>
+                        </div>
+                        <div class="col-6">
+                            <small>温度</small>
+                            <div id="temperature-display" class="h5">-- °C</div>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-6">
+                            <small>飛行時間</small>
+                            <div id="flight-time-display" class="h5">-- 秒</div>
+                        </div>
+                        <div class="col-6">
+                            <small>気圧</small>
+                            <div id="barometer-display" class="h5">-- hPa</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 追跡情報 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-crosshairs"></i> 追跡情報</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <small>対象オブジェクト</small>
+                            <div id="target-object" class="fw-bold">--</div>
+                        </div>
+                        <div class="mb-2">
+                            <small>検出状況</small>
+                            <div id="target-detected" class="fw-bold">--</div>
+                        </div>
+                        <div class="mb-2">
+                            <small>対象位置</small>
+                            <div id="target-position" class="fw-bold">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 利用可能モデル -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6><i class="fas fa-brain"></i> 利用可能モデル</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="model-list">
+                            <p class="text-muted">モデル読み込み中...</p>
+                        </div>
+                        <a href="/model-training" class="btn btn-outline-primary btn-sm w-100">
+                            <i class="fas fa-plus"></i> 新しいモデルを訓練
+                        </a>
+                    </div>
+                </div>
+
+                <!-- システムログ -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6><i class="fas fa-list"></i> システムログ</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="system-log" style="height: 200px; overflow-y: auto; font-size: 0.9em;">
+                            <div class="text-muted">ログ待機中...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast通知用コンテナ -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- モーダル: 追跡開始設定 -->
+    <div class="modal fade" id="trackingModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">追跡設定</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="target-select" class="form-label">対象オブジェクト</label>
+                        <select class="form-select" id="target-select">
+                            <option value="">選択してください</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tracking-mode" class="form-label">追跡モード</label>
+                        <select class="form-select" id="tracking-mode">
+                            <option value="center">画面中央維持</option>
+                            <option value="follow">対象追従</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmStartTracking()">追跡開始</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+    <script>
+        // WebSocket接続
+        const socket = io();
+        
+        // アプリケーション状態
+        let appState = {
+            connected: false,
+            flying: false,
+            tracking: false,
+            models: []
+        };
+
+        // Socket.IOイベントリスナー
+        socket.on('connect', function() {
+            console.log('Connected to server');
+            updateConnectionIndicator(true);
+            socket.emit('start_monitoring');
+        });
+
+        socket.on('disconnect', function() {
+            console.log('Disconnected from server');
+            updateConnectionIndicator(false);
+        });
+
+        socket.on('status', function(data) {
+            updateSystemStatus(data);
+        });
+
+        socket.on('battery_update', function(data) {
+            updateBatteryDisplay(data.battery);
+        });
+
+        socket.on('status_update', function(data) {
+            updateSensorDisplay(data);
+        });
+
+        socket.on('tracking_update', function(data) {
+            updateTrackingDisplay(data);
+        });
+
+        socket.on('error', function(data) {
+            showToast('エラー', data.message, 'error');
+        });
+
+        // UI更新関数
+        function updateConnectionIndicator(connected) {
+            const indicator = document.getElementById('connection-indicator');
+            const statusText = document.getElementById('connection-status-text');
+            
+            indicator.className = connected ? 'status-indicator status-connected' : 'status-indicator status-disconnected';
+            statusText.textContent = connected ? '接続' : '切断';
+        }
+
+        function updateSystemStatus(data) {
+            appState = {...appState, ...data};
+            
+            // ドローン接続状態
+            const droneStatus = document.getElementById('drone-connection-status');
+            droneStatus.innerHTML = data.connected ? 
+                '<span class="status-indicator status-connected"></span>接続' : 
+                '<span class="status-indicator status-disconnected"></span>切断';
+            
+            // 飛行状態
+            const flightStatus = document.getElementById('flight-status');
+            flightStatus.innerHTML = data.flying ? 
+                '<span class="status-indicator status-flying"></span>飛行中' : 
+                '<span class="status-indicator status-disconnected"></span>着陸';
+            
+            // 追跡状態
+            const trackingStatus = document.getElementById('tracking-status');
+            trackingStatus.innerHTML = data.tracking ? 
+                '<span class="status-indicator status-tracking"></span>追跡中' : 
+                '<span class="status-indicator status-disconnected"></span>停止中';
+            
+            updateControlButtons();
+        }
+
+        function updateControlButtons() {
+            const connectBtn = document.getElementById('btn-connect');
+            const takeoffBtn = document.getElementById('btn-takeoff');
+            const landBtn = document.getElementById('btn-land');
+            const startTrackingBtn = document.getElementById('btn-start-tracking');
+            const stopTrackingBtn = document.getElementById('btn-stop-tracking');
+            
+            // 接続ボタン
+            connectBtn.textContent = appState.connected ? '切断' : '接続';
+            connectBtn.className = appState.connected ? 'btn btn-danger w-100' : 'btn btn-success w-100';
+            
+            // 制御ボタンの有効/無効
+            takeoffBtn.disabled = !appState.connected || appState.flying;
+            landBtn.disabled = !appState.connected || !appState.flying;
+            startTrackingBtn.disabled = !appState.connected || appState.tracking;
+            stopTrackingBtn.disabled = !appState.connected || !appState.tracking;
+        }
+
+        function updateBatteryDisplay(battery) {
+            const batteryElement = document.getElementById('battery-level');
+            batteryElement.textContent = `${battery}%`;
+            batteryElement.className = battery < 20 ? 'battery-level battery-low' : 'battery-level battery-normal';
+        }
+
+        function updateSensorDisplay(data) {
+            if (data.height !== undefined) {
+                document.getElementById('height-display').textContent = `${data.height} cm`;
+            }
+            if (data.temperature !== undefined) {
+                document.getElementById('temperature-display').textContent = `${data.temperature} °C`;
+            }
+            if (data.flight_time !== undefined) {
+                document.getElementById('flight-time-display').textContent = `${data.flight_time} 秒`;
+            }
+            if (data.barometer !== undefined) {
+                document.getElementById('barometer-display').textContent = `${data.barometer.toFixed(1)} hPa`;
+            }
+        }
+
+        function updateTrackingDisplay(data) {
+            document.getElementById('target-object').textContent = data.target_object || '--';
+            document.getElementById('target-detected').textContent = data.target_detected ? '検出中' : '未検出';
+            
+            if (data.target_position) {
+                document.getElementById('target-position').textContent = 
+                    `X:${data.target_position.x}, Y:${data.target_position.y}`;
+            } else {
+                document.getElementById('target-position').textContent = '--';
+            }
+        }
+
+        // API呼び出し関数
+        async function toggleConnection() {
+            const endpoint = appState.connected ? '/api/drone/disconnect' : '/api/drone/connect';
+            try {
+                const response = await fetch(endpoint, { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    const message = appState.connected ? 'ドローンから切断しました' : 'ドローンに接続しました';
+                    showToast('成功', message, 'success');
+                } else {
+                    showToast('エラー', data.message, 'error');
+                }
+            } catch (error) {
+                showToast('エラー', `通信エラー: ${error.message}`, 'error');
+            }
+        }
+
+        async function takeoff() {
+            try {
+                const response = await fetch('/api/drone/takeoff', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('成功', '離陸しました', 'success');
+                } else {
+                    showToast('エラー', data.message, 'error');
+                }
+            } catch (error) {
+                showToast('エラー', `通信エラー: ${error.message}`, 'error');
+            }
+        }
+
+        async function land() {
+            try {
+                const response = await fetch('/api/drone/land', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('成功', '着陸しました', 'success');
+                } else {
+                    showToast('エラー', data.message, 'error');
+                }
+            } catch (error) {
+                showToast('エラー', `通信エラー: ${error.message}`, 'error');
+            }
+        }
+
+        async function emergencyStop() {
+            if (confirm('緊急停止を実行しますか？')) {
+                try {
+                    const response = await fetch('/api/drone/emergency', { method: 'POST' });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showToast('警告', '緊急停止しました', 'warning');
+                    } else {
+                        showToast('エラー', data.message, 'error');
+                    }
+                } catch (error) {
+                    showToast('エラー', `通信エラー: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        function startTracking() {
+            // モデル一覧を取得してモーダルを表示
+            loadModelsForTracking();
+            new bootstrap.Modal(document.getElementById('trackingModal')).show();
+        }
+
+        async function loadModelsForTracking() {
+            try {
+                const response = await fetch('/api/models/list');
+                const data = await response.json();
+                
+                const select = document.getElementById('target-select');
+                select.innerHTML = '<option value="">選択してください</option>';
+                
+                if (data.models) {
+                    data.models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.name;
+                        option.textContent = model.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                showToast('エラー', `モデル読み込みエラー: ${error.message}`, 'error');
+            }
+        }
+
+        async function confirmStartTracking() {
+            const targetObject = document.getElementById('target-select').value;
+            const trackingMode = document.getElementById('tracking-mode').value;
+            
+            if (!targetObject) {
+                showToast('エラー', '対象オブジェクトを選択してください', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/tracking/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_object: targetObject, tracking_mode: trackingMode })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('成功', '追跡を開始しました', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('trackingModal')).hide();
+                } else {
+                    showToast('エラー', data.message, 'error');
+                }
+            } catch (error) {
+                showToast('エラー', `通信エラー: ${error.message}`, 'error');
+            }
+        }
+
+        async function stopTracking() {
+            try {
+                const response = await fetch('/api/tracking/stop', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('成功', '追跡を停止しました', 'success');
+                } else {
+                    showToast('エラー', data.message, 'error');
+                }
+            } catch (error) {
+                showToast('エラー', `通信エラー: ${error.message}`, 'error');
+            }
+        }
+
+        function startCameraStream() {
+            // カメラストリーム開始処理
+            const videoElement = document.getElementById('video-stream');
+            videoElement.innerHTML = '<img src="/api/camera/stream" style="width: 100%; height: 100%; object-fit: cover;" alt="ドローンカメラ">';
+        }
+
+        function stopCameraStream() {
+            // カメラストリーム停止処理
+            const videoElement = document.getElementById('video-stream');
+            videoElement.innerHTML = `
+                <div class="text-center">
+                    <i class="fas fa-camera-slash fa-3x mb-3"></i>
+                    <p>カメラストリーム停止</p>
+                </div>
+            `;
+        }
+
+        // Toast通知表示
+        function showToast(title, message, type) {
+            const toastContainer = document.getElementById('toast-container');
+            const bgClass = type === 'success' ? 'bg-success' : 
+                           type === 'error' ? 'bg-danger' : 
+                           type === 'warning' ? 'bg-warning' : 'bg-info';
+            
+            const toastHtml = `
+                <div class="toast ${bgClass} text-white" role="alert">
+                    <div class="toast-header">
+                        <strong class="me-auto">${title}</strong>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                    </div>
+                    <div class="toast-body">${message}</div>
+                </div>
+            `;
+            
+            const toastElement = document.createElement('div');
+            toastElement.innerHTML = toastHtml;
+            toastContainer.appendChild(toastElement.firstElementChild);
+            
+            const toast = new bootstrap.Toast(toastContainer.lastElementChild);
+            toast.show();
+            
+            // 5秒後に自動削除
+            setTimeout(() => {
+                toastElement.remove();
+            }, 5000);
+        }
+
+        // ページ読み込み時の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初期状態の設定
+            updateControlButtons();
+            
+            // モデル一覧読み込み
+            loadModelsForTracking();
+        });
+    </script>
+</body>
+</html>
