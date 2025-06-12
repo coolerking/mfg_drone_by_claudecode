@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ドローン制御ダッシュボード - MFG Drone Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-connected { background-color: #28a745; }
+        .status-disconnected { background-color: #dc3545; }
+        .status-unknown { background-color: #6c757d; }
+        
+        .control-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .sensor-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .battery-low { color: #dc3545 !important; }
+        .battery-medium { color: #fd7e14 !important; }
+        .battery-high { color: #28a745 !important; }
+        
+        .btn-drone {
+            margin: 5px;
+            min-width: 100px;
+        }
+        
+        .movement-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+        
+        .movement-controls .btn {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .movement-controls .btn:nth-child(1) { grid-column: 2; }
+        .movement-controls .btn:nth-child(2) { grid-column: 1; grid-row: 2; }
+        .movement-controls .btn:nth-child(3) { grid-column: 3; grid-row: 2; }
+        .movement-controls .btn:nth-child(4) { grid-column: 2; grid-row: 3; }
+        
+        .alert-fixed {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            min-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-controller"></i> MFG Drone Admin
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text">
+                    <span class="status-indicator" id="connection-status"></span>
+                    <span id="connection-text">接続中...</span>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- アラート表示エリア -->
+        <div id="alert-container"></div>
+
+        <div class="row">
+            <!-- ドローン状態表示 -->
+            <div class="col-lg-4">
+                <div class="control-card">
+                    <h5><i class="bi bi-info-circle"></i> ドローン状態</h5>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="sensor-value" id="battery-value">--</div>
+                            <small class="text-muted">バッテリー (%)</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="sensor-value" id="height-value">--</div>
+                            <small class="text-muted">高度 (cm)</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="sensor-value" id="temperature-value">--</div>
+                            <small class="text-muted">温度 (℃)</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="text-center">
+                        <small class="text-muted">最終更新: <span id="last-update">--</span></small>
+                    </div>
+                </div>
+
+                <!-- 接続制御 -->
+                <div class="control-card">
+                    <h5><i class="bi bi-wifi"></i> 接続制御</h5>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success btn-drone" id="connect-btn">
+                            <i class="bi bi-wifi"></i> 接続
+                        </button>
+                        <button class="btn btn-danger btn-drone" id="disconnect-btn">
+                            <i class="bi bi-wifi-off"></i> 切断
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 飛行制御 -->
+            <div class="col-lg-4">
+                <div class="control-card">
+                    <h5><i class="bi bi-airplane"></i> 飛行制御</h5>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary btn-drone" id="takeoff-btn">
+                            <i class="bi bi-arrow-up-circle"></i> 離陸
+                        </button>
+                        <button class="btn btn-secondary btn-drone" id="hover-btn">
+                            <i class="bi bi-pause-circle"></i> ホバリング
+                        </button>
+                        <button class="btn btn-warning btn-drone" id="land-btn">
+                            <i class="bi bi-arrow-down-circle"></i> 着陸
+                        </button>
+                        <button class="btn btn-danger btn-drone" id="emergency-btn">
+                            <i class="bi bi-exclamation-triangle"></i> 緊急停止
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 移動制御 -->
+            <div class="col-lg-4">
+                <div class="control-card">
+                    <h5><i class="bi bi-arrows-move"></i> 移動制御</h5>
+                    <div class="mb-3">
+                        <label for="move-distance" class="form-label">移動距離 (cm)</label>
+                        <input type="range" class="form-range" id="move-distance" min="20" max="200" value="50">
+                        <div class="text-center">
+                            <span id="distance-value">50</span> cm
+                        </div>
+                    </div>
+                    <div class="movement-controls">
+                        <button class="btn btn-outline-primary" data-direction="forward">
+                            <i class="bi bi-arrow-up"></i>
+                        </button>
+                        <button class="btn btn-outline-primary" data-direction="left">
+                            <i class="bi bi-arrow-left"></i>
+                        </button>
+                        <button class="btn btn-outline-primary" data-direction="right">
+                            <i class="bi bi-arrow-right"></i>
+                        </button>
+                        <button class="btn btn-outline-primary" data-direction="back">
+                            <i class="bi bi-arrow-down"></i>
+                        </button>
+                    </div>
+                    <div class="text-center mt-3">
+                        <button class="btn btn-info btn-sm" data-direction="up">
+                            <i class="bi bi-arrow-up"></i> 上昇
+                        </button>
+                        <button class="btn btn-info btn-sm" data-direction="down">
+                            <i class="bi bi-arrow-down"></i> 下降
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 回転制御 -->
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="control-card">
+                    <h5><i class="bi bi-arrow-clockwise"></i> 回転制御</h5>
+                    <div class="row">
+                        <div class="col-6">
+                            <label for="rotate-angle" class="form-label">回転角度 (度)</label>
+                            <input type="range" class="form-range" id="rotate-angle" min="15" max="180" value="90">
+                            <div class="text-center">
+                                <span id="angle-value">90</span> 度
+                            </div>
+                        </div>
+                        <div class="col-6 text-center">
+                            <button class="btn btn-outline-success btn-drone" id="rotate-left">
+                                <i class="bi bi-arrow-counterclockwise"></i> 左回転
+                            </button>
+                            <button class="btn btn-outline-success btn-drone" id="rotate-right">
+                                <i class="bi bi-arrow-clockwise"></i> 右回転
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ログ表示 -->
+            <div class="col-lg-6">
+                <div class="control-card">
+                    <h5><i class="bi bi-journal-text"></i> 操作ログ</h5>
+                    <div id="command-log" style="height: 200px; overflow-y: auto; background-color: #f8f9fa; padding: 10px; border-radius: 4px;">
+                        <div class="text-muted">ログがここに表示されます...</div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-secondary mt-2" id="clear-log">
+                        <i class="bi bi-trash"></i> ログクリア
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        // Socket.IO接続
+        const socket = io();
+        
+        // DOM要素
+        const elements = {
+            connectionStatus: document.getElementById('connection-status'),
+            connectionText: document.getElementById('connection-text'),
+            batteryValue: document.getElementById('battery-value'),
+            heightValue: document.getElementById('height-value'),
+            temperatureValue: document.getElementById('temperature-value'),
+            lastUpdate: document.getElementById('last-update'),
+            moveDistance: document.getElementById('move-distance'),
+            distanceValue: document.getElementById('distance-value'),
+            rotateAngle: document.getElementById('rotate-angle'),
+            angleValue: document.getElementById('angle-value'),
+            commandLog: document.getElementById('command-log'),
+            alertContainer: document.getElementById('alert-container')
+        };
+
+        // スライダー値の更新
+        elements.moveDistance.addEventListener('input', function() {
+            elements.distanceValue.textContent = this.value;
+        });
+
+        elements.rotateAngle.addEventListener('input', function() {
+            elements.angleValue.textContent = this.value;
+        });
+
+        // Socket.IOイベントハンドラー
+        socket.on('connect', function() {
+            updateConnectionStatus(true);
+            addLog('WebSocket接続が確立されました', 'success');
+        });
+
+        socket.on('disconnect', function() {
+            updateConnectionStatus(false);
+            addLog('WebSocket接続が切断されました', 'warning');
+        });
+
+        socket.on('status_update', function(data) {
+            updateDroneStatus(data);
+        });
+
+        socket.on('command_result', function(data) {
+            handleCommandResult(data);
+        });
+
+        // 接続状態の更新
+        function updateConnectionStatus(connected) {
+            if (connected) {
+                elements.connectionStatus.className = 'status-indicator status-connected';
+                elements.connectionText.textContent = '接続済み';
+            } else {
+                elements.connectionStatus.className = 'status-indicator status-disconnected';
+                elements.connectionText.textContent = '切断';
+            }
+        }
+
+        // ドローン状態の更新
+        function updateDroneStatus(data) {
+            elements.batteryValue.textContent = data.battery || '--';
+            elements.heightValue.textContent = data.height || '--';
+            elements.temperatureValue.textContent = data.temperature || '--';
+            
+            // バッテリー残量による色分け
+            const battery = data.battery || 0;
+            elements.batteryValue.className = 'sensor-value ' + 
+                (battery < 20 ? 'battery-low' : 
+                 battery < 50 ? 'battery-medium' : 'battery-high');
+
+            elements.lastUpdate.textContent = new Date().toLocaleTimeString();
+        }
+
+        // コマンド結果の処理
+        function handleCommandResult(data) {
+            const { command, result } = data;
+            const success = result.success;
+            const message = result.data?.message || (success ? '成功' : result.data?.error || '失敗');
+            
+            addLog(`${command}: ${message}`, success ? 'success' : 'danger');
+            
+            if (!success) {
+                showAlert(`コマンド実行エラー: ${message}`, 'danger');
+            }
+        }
+
+        // ログ追加
+        function addLog(message, type = 'info') {
+            const now = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `text-${type}`;
+            logEntry.innerHTML = `<small>[${now}]</small> ${message}`;
+            
+            elements.commandLog.appendChild(logEntry);
+            elements.commandLog.scrollTop = elements.commandLog.scrollHeight;
+        }
+
+        // アラート表示
+        function showAlert(message, type = 'info') {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-dismissible fade show alert-fixed`;
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            elements.alertContainer.appendChild(alert);
+            
+            // 5秒後に自動で消去
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+
+        // ドローンコマンド送信
+        function sendDroneCommand(command, params = {}) {
+            socket.emit('drone_command', { command, params });
+            addLog(`コマンド送信: ${command}`, 'info');
+        }
+
+        // ボタンイベントリスナー
+        document.getElementById('connect-btn').addEventListener('click', () => {
+            sendDroneCommand('connect');
+        });
+
+        document.getElementById('disconnect-btn').addEventListener('click', () => {
+            sendDroneCommand('disconnect');
+        });
+
+        document.getElementById('takeoff-btn').addEventListener('click', () => {
+            sendDroneCommand('takeoff');
+        });
+
+        document.getElementById('land-btn').addEventListener('click', () => {
+            sendDroneCommand('land');
+        });
+
+        document.getElementById('emergency-btn').addEventListener('click', () => {
+            if (confirm('緊急停止を実行しますか？')) {
+                sendDroneCommand('emergency');
+            }
+        });
+
+        document.getElementById('hover-btn').addEventListener('click', () => {
+            sendDroneCommand('hover');
+        });
+
+        // 移動制御
+        document.querySelectorAll('.movement-controls .btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const direction = btn.dataset.direction;
+                const distance = elements.moveDistance.value;
+                sendDroneCommand('move', { direction, distance: parseInt(distance) });
+            });
+        });
+
+        // 回転制御
+        document.getElementById('rotate-left').addEventListener('click', () => {
+            const angle = elements.rotateAngle.value;
+            sendDroneCommand('rotate', { direction: 'counter_clockwise', angle: parseInt(angle) });
+        });
+
+        document.getElementById('rotate-right').addEventListener('click', () => {
+            const angle = elements.rotateAngle.value;
+            sendDroneCommand('rotate', { direction: 'clockwise', angle: parseInt(angle) });
+        });
+
+        // ログクリア
+        document.getElementById('clear-log').addEventListener('click', () => {
+            elements.commandLog.innerHTML = '<div class="text-muted">ログがクリアされました</div>';
+        });
+
+        // 初期化
+        socket.emit('request_status');
+    </script>
+</body>
+</html>
