@@ -5,11 +5,142 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MFG Drone - 管理者画面</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <h1>MFG Drone - 管理者画面</h1>
-        <p>物体認識モデルのトレーニング、ドローン制御、追跡開始/停止</p>
+    <!-- Header -->
+    <div class="header">
+        <div class="container">
+            <h1><i class="bi bi-gear"></i> MFG Drone 管理者画面</h1>
+        </div>
     </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <p class="lead">物体認識モデルのトレーニング、ドローン制御、追跡開始/停止を行います</p>
+            </div>
+        </div>
+
+        <!-- Function Cards -->
+        <div class="row g-4">
+            <!-- Camera Control -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-camera-video text-primary" style="font-size: 3rem;"></i>
+                        <h5 class="card-title mt-3">カメラ制御</h5>
+                        <p class="card-text">
+                            ライブストリーミング、写真撮影、動画録画の制御を行います
+                        </p>
+                        <a href="/camera" class="btn btn-primary">
+                            <i class="bi bi-arrow-right"></i> カメラダッシュボード
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drone Control -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-aircraft text-success" style="font-size: 3rem;"></i>
+                        <h5 class="card-title mt-3">ドローン制御</h5>
+                        <p class="card-text">
+                            ドローンの接続、離陸、着陸、移動制御を行います
+                        </p>
+                        <a href="#" class="btn btn-success disabled">
+                            <i class="bi bi-arrow-right"></i> 制御ダッシュボード
+                        </a>
+                        <small class="d-block text-muted mt-1">次のフェーズで実装予定</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Object Recognition -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-eye text-info" style="font-size: 3rem;"></i>
+                        <h5 class="card-title mt-3">物体認識</h5>
+                        <p class="card-text">
+                            AIモデルの訓練、物体学習、認識精度の管理を行います
+                        </p>
+                        <a href="#" class="btn btn-info disabled">
+                            <i class="bi bi-arrow-right"></i> 認識ダッシュボード
+                        </a>
+                        <small class="d-block text-muted mt-1">次のフェーズで実装予定</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tracking Control -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-crosshair text-warning" style="font-size: 3rem;"></i>
+                        <h5 class="card-title mt-3">追跡制御</h5>
+                        <p class="card-text">
+                            対象物の追跡開始・停止、追跡状態の監視を行います
+                        </p>
+                        <a href="#" class="btn btn-warning disabled">
+                            <i class="bi bi-arrow-right"></i> 追跡ダッシュボード
+                        </a>
+                        <small class="d-block text-muted mt-1">次のフェーズで実装予定</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Status -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-activity text-secondary" style="font-size: 3rem;"></i>
+                        <h5 class="card-title mt-3">システム状態</h5>
+                        <p class="card-text">
+                            システム全体の状態監視、ログ確認を行います
+                        </p>
+                        <a href="/health" class="btn btn-secondary">
+                            <i class="bi bi-arrow-right"></i> ヘルスチェック
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-gear-fill text-dark" style="font-size: 3rem;"></i>
+                        <h5 class="card-title mt-3">設定</h5>
+                        <p class="card-text">
+                            システム設定、接続設定、各種パラメータの管理を行います
+                        </p>
+                        <a href="#" class="btn btn-dark disabled">
+                            <i class="bi bi-arrow-right"></i> 設定画面
+                        </a>
+                        <small class="d-block text-muted mt-1">次のフェーズで実装予定</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 3 Implementation Status -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <h5><i class="bi bi-info-circle"></i> 実装状況 - フェーズ3</h5>
+                    <p class="mb-0">
+                        <strong>カメラ・ストリーミング機能</strong>が実装されました。
+                        カメラダッシュボードからライブストリーミング、写真撮影、動画録画機能をご利用いただけます。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

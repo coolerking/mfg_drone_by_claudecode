@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFG Drone - カメラ制御</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="container">
+            <h1><i class="bi bi-camera-video"></i> MFG Drone カメラ制御</h1>
+        </div>
+    </div>
+
+    <!-- Alert Container -->
+    <div class="container">
+        <div id="alertContainer"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Video Display -->
+        <div class="camera-container">
+            <h3><i class="bi bi-display"></i> ライブビデオストリーム</h3>
+            <div class="video-container">
+                <img id="videoStream" class="video-stream" style="display: none;" alt="Video Stream">
+                <div id="videoPlaceholder" class="video-placeholder">
+                    <div class="text-center">
+                        <i class="bi bi-camera-video-off" style="font-size: 3rem; margin-bottom: 20px;"></i>
+                        <br>
+                        ストリーミングが開始されていません
+                        <br>
+                        <small>「ストリーミング開始」ボタンをクリックしてください</small>
+                    </div>
+                </div>
+                <div id="recordingIndicator" class="recording-indicator" style="display: none;">
+                    REC 0:00
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Panel -->
+        <div class="controls-panel">
+            <!-- Stream Controls -->
+            <div class="control-group">
+                <h3><i class="bi bi-play-circle"></i> ストリーミング制御</h3>
+                <div class="mb-3">
+                    <div id="streamStatus" class="d-flex align-items-center mb-2">
+                        <span class="status-indicator status-disconnected"></span>
+                        <span class="status-text">ストリーミング停止</span>
+                    </div>
+                    <button id="startStreamBtn" class="btn btn-success me-2">
+                        <i class="bi bi-play-fill"></i> ストリーミング開始
+                    </button>
+                    <button id="stopStreamBtn" class="btn btn-danger" disabled>
+                        <i class="bi bi-stop-fill"></i> ストリーミング停止
+                    </button>
+                </div>
+            </div>
+
+            <!-- Capture Controls -->
+            <div class="control-group">
+                <h3><i class="bi bi-camera"></i> 撮影制御</h3>
+                <div class="mb-3">
+                    <button id="capturePhotoBtn" class="btn btn-primary mb-2 w-100" disabled>
+                        <i class="bi bi-camera-fill"></i> 写真撮影
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recording Controls -->
+            <div class="control-group">
+                <h3><i class="bi bi-record-circle"></i> 録画制御</h3>
+                <div class="mb-3">
+                    <div id="recordStatus" class="d-flex align-items-center mb-2">
+                        <span class="status-indicator status-disconnected"></span>
+                        <span class="status-text">録画停止</span>
+                    </div>
+                    <button id="startRecordBtn" class="btn btn-warning me-2">
+                        <i class="bi bi-record-fill"></i> 録画開始
+                    </button>
+                    <button id="stopRecordBtn" class="btn btn-secondary" disabled>
+                        <i class="bi bi-stop-fill"></i> 録画停止
+                    </button>
+                </div>
+            </div>
+
+            <!-- Camera Settings -->
+            <div class="control-group">
+                <h3><i class="bi bi-gear"></i> カメラ設定</h3>
+                
+                <div class="setting-control">
+                    <label for="resolutionSelect">解像度</label>
+                    <select id="resolutionSelect" class="form-select">
+                        <option value="high">高画質 (High)</option>
+                        <option value="low" selected>標準 (Low)</option>
+                    </select>
+                </div>
+
+                <div class="setting-control">
+                    <label for="fpsSelect">フレームレート</label>
+                    <select id="fpsSelect" class="form-select">
+                        <option value="high">高 (High)</option>
+                        <option value="middle" selected>中 (Middle)</option>
+                        <option value="low">低 (Low)</option>
+                    </select>
+                </div>
+
+                <div class="setting-control">
+                    <label for="bitrateRange">ビットレート: <span id="bitrateValue">3</span></label>
+                    <input type="range" id="bitrateRange" class="form-range" min="1" max="5" value="3">
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="control-group">
+                <h3><i class="bi bi-house"></i> ナビゲーション</h3>
+                <a href="/" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-arrow-left"></i> メインダッシュボードに戻る
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='js/camera.js') }}"></script>
+</body>
+</html>
