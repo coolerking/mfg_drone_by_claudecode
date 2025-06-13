@@ -5,11 +5,148 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MFG Drone - 管理者画面</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tracking.css') }}">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>MFG Drone - 管理者画面</h1>
-        <p>物体認識モデルのトレーニング、ドローン制御、追跡開始/停止</p>
+    <!-- ヘッダー -->
+    <div class="header">
+        <div class="container">
+            <h1>MFG Drone - 管理者画面</h1>
+            <p>物体認識モデルのトレーニング、ドローン制御、追跡開始/停止</p>
+        </div>
     </div>
+
+    <div class="container">
+        <!-- ナビゲーション -->
+        <nav class="nav">
+            <ul class="nav-links">
+                <li><a href="/" class="active">ダッシュボード</a></li>
+                <li><a href="/tracking/control">追跡制御</a></li>
+                <li><a href="/tracking/monitor">状態監視</a></li>
+                <li><a href="/tracking/visualization">追跡可視化</a></li>
+            </ul>
+        </nav>
+
+        <!-- アラート表示エリア -->
+        <div class="alert-container"></div>
+
+        <!-- 機能カード -->
+        <div class="card">
+            <h2>🎯 物体追跡制御</h2>
+            <p>ドローンによる自動物体追跡の制御とリアルタイム監視を行います。</p>
+            <div style="margin-top: 1rem;">
+                <a href="/tracking/control" class="btn btn-primary">追跡制御パネル</a>
+                <a href="/tracking/monitor" class="btn btn-success">状態監視</a>
+                <a href="/tracking/visualization" class="btn btn-warning">追跡可視化</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🧠 物体認識モデル</h2>
+            <p>物体認識モデルの訓練と管理を行います。</p>
+            <div style="margin-top: 1rem;">
+                <button class="btn btn-primary" disabled>モデル訓練 (未実装)</button>
+                <button class="btn btn-success" disabled>モデル管理 (未実装)</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🚁 ドローン制御</h2>
+            <p>ドローンの基本制御操作を行います。</p>
+            <div style="margin-top: 1rem;">
+                <button class="btn btn-primary" disabled>ドローン制御 (未実装)</button>
+                <button class="btn btn-success" disabled>ライブストリーム (未実装)</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📊 システム状態</h2>
+            <p>システム全体の状態とヘルスチェックを確認します。</p>
+            <div style="margin-top: 1rem;">
+                <button class="btn btn-primary" onclick="checkSystemHealth()">ヘルスチェック</button>
+                <span id="healthStatus" class="status-indicator status-offline">
+                    <span class="status-dot"></span>
+                    未確認
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // WebSocket接続
+        const socket = io();
+        
+        socket.on('connect', function() {
+            console.log('WebSocket connected');
+            showAlert('システムに接続しました', 'success');
+        });
+        
+        socket.on('disconnect', function() {
+            console.log('WebSocket disconnected');
+            showAlert('システムから切断されました', 'warning');
+        });
+        
+        socket.on('status', function(data) {
+            console.log('Status:', data);
+        });
+        
+        // ヘルスチェック機能
+        async function checkSystemHealth() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                
+                const statusElement = document.getElementById('healthStatus');
+                if (data.status === 'healthy') {
+                    statusElement.className = 'status-indicator status-online';
+                    statusElement.innerHTML = '<span class="status-dot"></span>正常';
+                    showAlert('システムは正常に動作しています', 'success');
+                } else {
+                    statusElement.className = 'status-indicator status-warning';
+                    statusElement.innerHTML = '<span class="status-dot"></span>警告';
+                    showAlert('システムに警告があります', 'warning');
+                }
+            } catch (error) {
+                console.error('Health check error:', error);
+                const statusElement = document.getElementById('healthStatus');
+                statusElement.className = 'status-indicator status-offline';
+                statusElement.innerHTML = '<span class="status-dot"></span>エラー';
+                showAlert('ヘルスチェックに失敗しました', 'danger');
+            }
+        }
+        
+        // アラート表示機能
+        function showAlert(message, type = 'info') {
+            // 既存のアラートを削除
+            const existingAlert = document.querySelector('.temp-alert');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+            
+            // 新しいアラートを作成
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} temp-alert fade-in`;
+            alert.textContent = message;
+            
+            // アラートコンテナに追加
+            const container = document.querySelector('.alert-container');
+            if (container) {
+                container.appendChild(alert);
+                
+                // 3秒後に自動削除
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.remove();
+                    }
+                }, 3000);
+            }
+        }
+        
+        // ページ読み込み時にヘルスチェック実行
+        document.addEventListener('DOMContentLoaded', function() {
+            checkSystemHealth();
+        });
+    </script>
 </body>
 </html>

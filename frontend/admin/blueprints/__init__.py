@@ -1,0 +1,1 @@
+# Blueprints module for MFG Drone Admin Frontend

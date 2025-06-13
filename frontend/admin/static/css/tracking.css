@@ -1,0 +1,382 @@
+/* MFG Drone Admin Frontend - Tracking Styles */
+
+/* 追跡制御パネル */
+.tracking-control-panel {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.tracking-control-panel h3 {
+    color: #667eea;
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* 追跡状態表示 */
+.tracking-status {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.tracking-status-active {
+    background: linear-gradient(135deg, #d1edcc 0%, #a8e6cf 100%);
+    color: #0f5132;
+}
+
+.tracking-status-inactive {
+    background: #f8d7da;
+    color: #842029;
+}
+
+.status-icon {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.status-icon.active {
+    background: #28a745;
+    animation: pulse 2s infinite;
+}
+
+.status-icon.inactive {
+    background: #dc3545;
+}
+
+/* 対象選択フォーム */
+.target-selection {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .target-selection {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 追跡制御ボタン */
+.tracking-controls {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.tracking-controls .btn {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* 位置情報表示 */
+.position-display {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.position-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.position-item {
+    text-align: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.position-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #667eea;
+}
+
+.position-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+/* 検出領域可視化 */
+.detection-area {
+    position: relative;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.detection-stream {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.detection-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.bounding-box {
+    position: absolute;
+    border: 3px solid #ff416c;
+    border-radius: 4px;
+    background: rgba(255, 65, 108, 0.1);
+    transition: all 0.3s ease;
+}
+
+.bounding-box.detected {
+    border-color: #28a745;
+    background: rgba(40, 167, 69, 0.1);
+}
+
+.target-label {
+    position: absolute;
+    top: -30px;
+    left: 0;
+    background: #ff416c;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.target-label.detected {
+    background: #28a745;
+}
+
+/* 追跡統計 */
+.tracking-stats {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #667eea;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+/* 追跡ログ */
+.tracking-log {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.log-entry {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-message {
+    flex: 1;
+}
+
+.log-timestamp {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-left: 1rem;
+}
+
+.log-level-info {
+    border-left: 3px solid #17a2b8;
+}
+
+.log-level-success {
+    border-left: 3px solid #28a745;
+}
+
+.log-level-warning {
+    border-left: 3px solid #ffc107;
+}
+
+.log-level-error {
+    border-left: 3px solid #dc3545;
+}
+
+/* 軌跡表示 */
+.trajectory-display {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.trajectory-canvas {
+    width: 100%;
+    height: 300px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+}
+
+/* 偏差アラート */
+.deviation-alert {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.deviation-alert.low {
+    background: #d1edcc;
+    color: #0f5132;
+    border-left: 4px solid #28a745;
+}
+
+.deviation-alert.medium {
+    background: #fff3cd;
+    color: #664d03;
+    border-left: 4px solid #ffc107;
+}
+
+.deviation-alert.high {
+    background: #f8d7da;
+    color: #842029;
+    border-left: 4px solid #dc3545;
+    animation: pulse 2s infinite;
+}
+
+/* エラー表示 */
+.tracking-error {
+    background: #f8d7da;
+    color: #842029;
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid #dc3545;
+    margin-bottom: 1rem;
+}
+
+.tracking-error h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+}
+
+/* ローディング */
+.tracking-loading {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 追跡中インジケーター */
+.tracking-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 0.75rem 1rem;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    font-weight: 500;
+    z-index: 1000;
+    animation: pulse 2s infinite;
+}
+
+.tracking-indicator.hidden {
+    display: none;
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+    .tracking-control-panel {
+        padding: 1.5rem;
+    }
+    
+    .tracking-controls {
+        flex-direction: column;
+    }
+    
+    .tracking-controls .btn {
+        flex: none;
+        width: 100%;
+    }
+    
+    .position-grid,
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .tracking-indicator {
+        top: 10px;
+        right: 10px;
+        font-size: 0.875rem;
+        padding: 0.5rem 0.75rem;
+    }
+}

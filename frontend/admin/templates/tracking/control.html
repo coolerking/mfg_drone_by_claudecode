@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物体追跡制御 - MFG Drone 管理者画面</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tracking.css') }}">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+    <!-- ヘッダー -->
+    <div class="header">
+        <div class="container">
+            <h1>🎯 物体追跡制御</h1>
+            <p>ドローンによる自動物体追跡の制御とリアルタイム監視</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- ナビゲーション -->
+        <nav class="nav">
+            <ul class="nav-links">
+                <li><a href="/">ダッシュボード</a></li>
+                <li><a href="/tracking/control" class="active">追跡制御</a></li>
+                <li><a href="/tracking/monitor">状態監視</a></li>
+                <li><a href="/tracking/visualization">追跡可視化</a></li>
+            </ul>
+        </nav>
+
+        <!-- アラート表示エリア -->
+        <div class="alert-container"></div>
+
+        {% if error %}
+        <div class="alert alert-danger">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <!-- 追跡状態表示 -->
+        <div id="trackingStatus" class="tracking-status {{ 'tracking-status-active' if tracking_status.is_tracking else 'tracking-status-inactive' }}">
+            <div class="status-icon {{ 'active' if tracking_status.is_tracking else 'inactive' }}"></div>
+            <span>{{ '追跡中' if tracking_status.is_tracking else '停止中' }}</span>
+            {% if tracking_status.target_object %}
+            <span>対象: {{ tracking_status.target_object }}</span>
+            {% endif %}
+        </div>
+
+        <!-- 追跡制御パネル -->
+        <div class="tracking-control-panel">
+            <h3>🎮 追跡制御</h3>
+            
+            <!-- 対象選択フォーム -->
+            <div class="target-selection">
+                <div class="form-group">
+                    <label for="targetObjectSelect" class="form-label">追跡対象オブジェクト</label>
+                    <select id="targetObjectSelect" class="form-control form-select">
+                        <option value="">対象を選択してください</option>
+                        {% for model in available_models %}
+                        <option value="{{ model.name }}" {{ 'selected' if tracking_status.target_object == model.name else '' }}>
+                            {{ model.name }} (精度: {{ model.accuracy if model.accuracy else 'N/A' }}%)
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="trackingModeSelect" class="form-label">追跡モード</label>
+                    <select id="trackingModeSelect" class="form-control form-select">
+                        <option value="center">中央維持 (Center)</option>
+                        <option value="follow">追従 (Follow)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 制御ボタン -->
+            <div class="tracking-controls">
+                <button id="startTrackingBtn" class="btn btn-success" {{ 'disabled' if tracking_status.is_tracking else '' }}>
+                    追跡開始
+                </button>
+                <button id="stopTrackingBtn" class="btn btn-warning" {{ 'disabled' if not tracking_status.is_tracking else '' }}>
+                    追跡停止
+                </button>
+                <button id="emergencyStopBtn" class="btn btn-danger">
+                    緊急停止
+                </button>
+                <button id="refreshStatusBtn" class="btn btn-primary">
+                    状態更新
+                </button>
+            </div>
+        </div>
+
+        <!-- 位置情報表示 -->
+        <div class="position-display">
+            <h3>📍 位置情報</h3>
+            <div class="position-grid">
+                <div class="position-item">
+                    <div id="positionX" class="position-value">
+                        {{ tracking_status.target_position.x if tracking_status.target_position else '---' }}
+                    </div>
+                    <div class="position-label">X座標</div>
+                </div>
+                <div class="position-item">
+                    <div id="positionY" class="position-value">
+                        {{ tracking_status.target_position.y if tracking_status.target_position else '---' }}
+                    </div>
+                    <div class="position-label">Y座標</div>
+                </div>
+                <div class="position-item">
+                    <div id="detectionWidth" class="position-value">
+                        {{ tracking_status.target_position.width if tracking_status.target_position else '---' }}
+                    </div>
+                    <div class="position-label">検出幅</div>
+                </div>
+                <div class="position-item">
+                    <div id="detectionHeight" class="position-value">
+                        {{ tracking_status.target_position.height if tracking_status.target_position else '---' }}
+                    </div>
+                    <div class="position-label">検出高さ</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 検出状態表示 -->
+        <div id="detectionStatus" class="alert {{ 'alert-success' if tracking_status.target_detected else 'alert-warning' }}">
+            {{ '検出中' if tracking_status.target_detected else '未検出' }}
+        </div>
+
+        <!-- ライブストリーム表示エリア -->
+        <div class="detection-area">
+            <img id="streamVideo" class="detection-stream" src="/camera/stream" alt="ライブストリーム" 
+                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQwIiBoZWlnaHQ9IjQ4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuOCueODiOODquODvOODoOOBjOWIqeeUqOOBp+OBjQ==</text></svg>'" />
+            <div class="detection-overlay" id="detectionOverlay">
+                <!-- バウンディングボックスがここに動的に追加される -->
+            </div>
+        </div>
+
+        <!-- 追跡パラメータ調整（将来拡張用） -->
+        <div class="card">
+            <h3>⚙️ 追跡パラメータ（将来実装予定）</h3>
+            <p>追跡精度や動作パラメータの調整機能を将来実装予定です。</p>
+        </div>
+    </div>
+
+    <!-- 追跡制御JavaScript -->
+    <script src="{{ url_for('static', filename='js/tracking_control.js') }}"></script>
+    
+    <script>
+        // ページ固有の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初期値設定
+            const targetSelect = document.getElementById('targetObjectSelect');
+            const modeSelect = document.getElementById('trackingModeSelect');
+            
+            // サーバーから取得した初期状態を反映
+            const trackingStatus = {{ tracking_status | tojson }};
+            if (trackingStatus && trackingStatus.target_object) {
+                if (targetSelect) {
+                    targetSelect.value = trackingStatus.target_object;
+                }
+            }
+            
+            console.log('Tracking control page initialized');
+        });
+
+        // バウンディングボックス表示更新
+        function updateBoundingBox(position, detected = false) {
+            const overlay = document.getElementById('detectionOverlay');
+            const stream = document.getElementById('streamVideo');
+            
+            if (!overlay || !stream || !position) return;
+            
+            // 既存のバウンディングボックスを削除
+            overlay.innerHTML = '';
+            
+            if (position.x !== undefined && position.y !== undefined && position.width && position.height) {
+                // ストリーム画像のサイズを取得
+                const streamRect = stream.getBoundingClientRect();
+                const scaleX = streamRect.width / stream.naturalWidth;
+                const scaleY = streamRect.height / stream.naturalHeight;
+                
+                // バウンディングボックス作成
+                const box = document.createElement('div');
+                box.className = `bounding-box ${detected ? 'detected' : ''}`;
+                box.style.left = (position.x * scaleX) + 'px';
+                box.style.top = (position.y * scaleY) + 'px';
+                box.style.width = (position.width * scaleX) + 'px';
+                box.style.height = (position.height * scaleY) + 'px';
+                
+                // ラベル作成
+                const label = document.createElement('div');
+                label.className = `target-label ${detected ? 'detected' : ''}`;
+                label.textContent = targetSelect.value || '対象';
+                box.appendChild(label);
+                
+                overlay.appendChild(box);
+            }
+        }
+        
+        // WebSocketでの状態更新時にバウンディングボックスも更新
+        if (window.trackingController) {
+            const originalUpdateTrackingStatus = window.trackingController.updateTrackingStatus;
+            window.trackingController.updateTrackingStatus = function(status) {
+                originalUpdateTrackingStatus.call(this, status);
+                if (status.target_position) {
+                    updateBoundingBox(status.target_position, status.target_detected);
+                }
+            };
+        }
+    </script>
+</body>
+</html>

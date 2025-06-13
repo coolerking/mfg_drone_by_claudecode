@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>追跡状態監視 - MFG Drone 管理者画面</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tracking.css') }}">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- ヘッダー -->
+    <div class="header">
+        <div class="container">
+            <h1>📊 追跡状態監視</h1>
+            <p>リアルタイム追跡状態の監視とパフォーマンス分析</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- ナビゲーション -->
+        <nav class="nav">
+            <ul class="nav-links">
+                <li><a href="/">ダッシュボード</a></li>
+                <li><a href="/tracking/control">追跡制御</a></li>
+                <li><a href="/tracking/monitor" class="active">状態監視</a></li>
+                <li><a href="/tracking/visualization">追跡可視化</a></li>
+            </ul>
+        </nav>
+
+        <!-- アラート表示エリア -->
+        <div class="alert-container"></div>
+
+        {% if error %}
+        <div class="alert alert-danger">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <!-- 追跡状態サマリー -->
+        <div class="tracking-status {{ 'tracking-status-active' if tracking_status.is_tracking else 'tracking-status-inactive' }}">
+            <div class="status-icon {{ 'active' if tracking_status.is_tracking else 'inactive' }}"></div>
+            <span id="currentTrackingStatus">{{ '追跡中' if tracking_status.is_tracking else '停止中' }}</span>
+            <span id="currentTargetObject">
+                {% if tracking_status.target_object %}対象: {{ tracking_status.target_object }}{% endif %}
+            </span>
+            <span id="lastUpdateTime" style="margin-left: auto; font-size: 0.875rem;">
+                更新時刻: <span id="updateTimestamp">--:--:--</span>
+            </span>
+        </div>
+
+        <!-- 追跡統計情報 -->
+        <div class="tracking-stats">
+            <h3>📈 追跡統計</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div id="trackingDuration" class="stat-value">00:00:00</div>
+                    <div class="stat-label">追跡時間</div>
+                </div>
+                <div class="stat-item">
+                    <div id="detectionRate" class="stat-value">0%</div>
+                    <div class="stat-label">検出率</div>
+                </div>
+                <div class="stat-item">
+                    <div id="averageDistance" class="stat-value">0px</div>
+                    <div class="stat-label">平均偏差</div>
+                </div>
+                <div class="stat-item">
+                    <div id="trackingStability" class="stat-value">--</div>
+                    <div class="stat-label">安定度</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 偏差アラート -->
+        <div id="deviationAlerts"></div>
+
+        <!-- 位置情報監視 -->
+        <div class="position-display">
+            <h3>📍 リアルタイム位置情報</h3>
+            <div class="position-grid">
+                <div class="position-item">
+                    <div id="currentX" class="position-value">
+                        {{ tracking_status.target_position.x if tracking_status.target_position else '---' }}
+                    </div>
+                    <div class="position-label">X座標</div>
+                </div>
+                <div class="position-item">
+                    <div id="currentY" class="position-value">
+                        {{ tracking_status.target_position.y if tracking_status.target_position else '---' }}
+                    </div>
+                    <div class="position-label">Y座標</div>
+                </div>
+                <div class="position-item">
+                    <div id="centerDistance" class="position-value">---</div>
+                    <div class="position-label">中央からの距離</div>
+                </div>
+                <div class="position-item">
+                    <div id="detectionConfidence" class="position-value">---</div>
+                    <div class="position-label">検出信頼度</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 位置履歴グラフ -->
+        <div class="trajectory-display">
+            <h3>📈 位置履歴グラフ</h3>
+            <canvas id="positionChart" class="trajectory-canvas"></canvas>
+        </div>
+
+        <!-- 検出状態タイムライン -->
+        <div class="card">
+            <h3>⏱️ 検出状態タイムライン</h3>
+            <canvas id="detectionTimeline" style="width: 100%; height: 200px;"></canvas>
+        </div>
+
+        <!-- 追跡ログ -->
+        <div class="tracking-log">
+            <h3>📝 追跡ログ</h3>
+            <div id="logEntries">
+                <div class="log-entry log-level-info">
+                    <div class="log-message">監視システムが開始されました</div>
+                    <div class="log-timestamp" id="initTimestamp"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 手動制御ボタン -->
+        <div class="card">
+            <h3>🎮 クイック制御</h3>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button id="quickStopBtn" class="btn btn-danger">追跡停止</button>
+                <button id="refreshBtn" class="btn btn-primary">データ更新</button>
+                <button id="clearLogBtn" class="btn btn-warning">ログクリア</button>
+                <button id="exportDataBtn" class="btn btn-success">データエクスポート</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 監視システムクラス
+        class TrackingMonitor {
+            constructor() {
+                this.socket = null;
+                this.positionChart = null;
+                this.detectionChart = null;
+                this.startTime = null;
+                this.positionHistory = [];
+                this.detectionHistory = [];
+                this.maxHistoryLength = 100;
+                this.detectionCount = 0;
+                this.totalChecks = 0;
+                
+                this.init();
+            }
+            
+            init() {
+                this.initializeSocket();
+                this.initializeCharts();
+                this.bindEvents();
+                this.startMonitoring();
+                this.updateTimestamp();
+                console.log('Tracking Monitor initialized');
+            }
+            
+            initializeSocket() {
+                this.socket = io();
+                
+                this.socket.on('connect', () => {
+                    console.log('Monitor WebSocket connected');
+                    this.addLogEntry('WebSocket接続が確立されました', 'success');
+                });
+                
+                this.socket.on('disconnect', () => {
+                    console.log('Monitor WebSocket disconnected');
+                    this.addLogEntry('WebSocket接続が切断されました', 'error');
+                });
+                
+                this.socket.on('tracking_status', (data) => {
+                    this.updateTrackingData(data);
+                });
+                
+                this.socket.on('tracking_error', (data) => {
+                    this.addLogEntry(`追跡エラー: ${data.message}`, 'error');
+                });
+            }
+            
+            initializeCharts() {
+                // 位置履歴グラフ
+                const positionCtx = document.getElementById('positionChart').getContext('2d');
+                this.positionChart = new Chart(positionCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'X座標',
+                            data: [],
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            tension: 0.1
+                        }, {
+                            label: 'Y座標',
+                            data: [],
+                            borderColor: '#ff416c',
+                            backgroundColor: 'rgba(255, 65, 108, 0.1)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'ピクセル座標'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: '時間'
+                                }
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: '対象物位置の時間変化'
+                            }
+                        }
+                    }
+                });
+                
+                // 検出状態タイムライン
+                const detectionCtx = document.getElementById('detectionTimeline').getContext('2d');
+                this.detectionChart = new Chart(detectionCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: '検出状態',
+                            data: [],
+                            backgroundColor: [],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 1,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value === 1 ? '検出' : '未検出';
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: '検出状態の時間変化'
+                            },
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+            
+            bindEvents() {
+                // クイック停止
+                document.getElementById('quickStopBtn')?.addEventListener('click', () => {
+                    this.quickStop();
+                });
+                
+                // データ更新
+                document.getElementById('refreshBtn')?.addEventListener('click', () => {
+                    this.refreshData();
+                });
+                
+                // ログクリア
+                document.getElementById('clearLogBtn')?.addEventListener('click', () => {
+                    this.clearLog();
+                });
+                
+                // データエクスポート
+                document.getElementById('exportDataBtn')?.addEventListener('click', () => {
+                    this.exportData();
+                });
+            }
+            
+            async quickStop() {
+                try {
+                    const response = await fetch('/tracking/api/stop', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    const result = await response.json();
+                    
+                    if (response.ok && result.success) {
+                        this.addLogEntry('追跡を停止しました', 'success');
+                    } else {
+                        throw new Error(result.error || '停止に失敗しました');
+                    }
+                } catch (error) {
+                    this.addLogEntry(`停止エラー: ${error.message}`, 'error');
+                }
+            }
+            
+            async refreshData() {
+                try {
+                    const response = await fetch('/tracking/api/status');
+                    const status = await response.json();
+                    
+                    if (response.ok) {
+                        this.updateTrackingData(status);
+                        this.addLogEntry('データを手動更新しました', 'info');
+                    } else {
+                        throw new Error(status.error || 'データ取得に失敗しました');
+                    }
+                } catch (error) {
+                    this.addLogEntry(`更新エラー: ${error.message}`, 'error');
+                }
+            }
+            
+            updateTrackingData(data) {
+                // 基本状態更新
+                this.updateBasicStatus(data);
+                
+                // 統計更新
+                this.updateStatistics(data);
+                
+                // 位置データ更新
+                if (data.target_position) {
+                    this.updatePositionData(data.target_position);
+                }
+                
+                // 検出状態更新
+                this.updateDetectionData(data.target_detected);
+                
+                // 偏差アラート更新
+                this.updateDeviationAlerts(data.target_position);
+                
+                // 更新時刻表示
+                this.updateTimestamp();
+            }
+            
+            updateBasicStatus(data) {
+                // 追跡状態表示
+                const statusElement = document.querySelector('.tracking-status');
+                if (statusElement) {
+                    statusElement.className = `tracking-status ${data.is_tracking ? 'tracking-status-active' : 'tracking-status-inactive'}`;
+                }
+                
+                const statusText = document.getElementById('currentTrackingStatus');
+                if (statusText) {
+                    statusText.textContent = data.is_tracking ? '追跡中' : '停止中';
+                }
+                
+                const targetText = document.getElementById('currentTargetObject');
+                if (targetText) {
+                    targetText.textContent = data.target_object ? `対象: ${data.target_object}` : '';
+                }
+                
+                // 追跡開始時刻記録
+                if (data.is_tracking && !this.startTime) {
+                    this.startTime = new Date();
+                    this.addLogEntry(`追跡開始: ${data.target_object}`, 'success');
+                } else if (!data.is_tracking && this.startTime) {
+                    this.addLogEntry('追跡停止', 'info');
+                    this.startTime = null;
+                }
+            }
+            
+            updateStatistics(data) {
+                // 追跡時間
+                const durationElement = document.getElementById('trackingDuration');
+                if (durationElement && this.startTime) {
+                    const duration = new Date() - this.startTime;
+                    const hours = Math.floor(duration / 3600000);
+                    const minutes = Math.floor((duration % 3600000) / 60000);
+                    const seconds = Math.floor((duration % 60000) / 1000);
+                    durationElement.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+                
+                // 検出率
+                this.totalChecks++;
+                if (data.target_detected) {
+                    this.detectionCount++;
+                }
+                const detectionRate = this.totalChecks > 0 ? Math.round((this.detectionCount / this.totalChecks) * 100) : 0;
+                const rateElement = document.getElementById('detectionRate');
+                if (rateElement) {
+                    rateElement.textContent = `${detectionRate}%`;
+                }
+                
+                // 平均偏差（簡易計算）
+                if (data.target_position) {
+                    const centerX = 320; // 仮の中央座標
+                    const centerY = 240;
+                    const distance = Math.sqrt(
+                        Math.pow(data.target_position.x - centerX, 2) + 
+                        Math.pow(data.target_position.y - centerY, 2)
+                    );
+                    
+                    const distanceElement = document.getElementById('centerDistance');
+                    if (distanceElement) {
+                        distanceElement.textContent = `${Math.round(distance)}px`;
+                    }
+                }
+            }
+            
+            updatePositionData(position) {
+                const now = new Date().toLocaleTimeString();
+                
+                // 位置表示更新
+                document.getElementById('currentX').textContent = position.x || '---';
+                document.getElementById('currentY').textContent = position.y || '---';
+                
+                // 履歴に追加
+                this.positionHistory.push({
+                    time: now,
+                    x: position.x,
+                    y: position.y
+                });
+                
+                // 履歴の長さ制限
+                if (this.positionHistory.length > this.maxHistoryLength) {
+                    this.positionHistory.shift();
+                }
+                
+                // グラフ更新
+                this.updatePositionChart();
+            }
+            
+            updateDetectionData(detected) {
+                const now = new Date().toLocaleTimeString();
+                
+                // 検出履歴に追加
+                this.detectionHistory.push({
+                    time: now,
+                    detected: detected
+                });
+                
+                // 履歴の長さ制限
+                if (this.detectionHistory.length > this.maxHistoryLength) {
+                    this.detectionHistory.shift();
+                }
+                
+                // グラフ更新
+                this.updateDetectionChart();
+            }
+            
+            updatePositionChart() {
+                if (!this.positionChart) return;
+                
+                const labels = this.positionHistory.map(h => h.time);
+                const xData = this.positionHistory.map(h => h.x);
+                const yData = this.positionHistory.map(h => h.y);
+                
+                this.positionChart.data.labels = labels;
+                this.positionChart.data.datasets[0].data = xData;
+                this.positionChart.data.datasets[1].data = yData;
+                this.positionChart.update('none');
+            }
+            
+            updateDetectionChart() {
+                if (!this.detectionChart) return;
+                
+                const labels = this.detectionHistory.map(h => h.time);
+                const data = this.detectionHistory.map(h => h.detected ? 1 : 0);
+                const colors = this.detectionHistory.map(h => h.detected ? '#28a745' : '#dc3545');
+                
+                this.detectionChart.data.labels = labels;
+                this.detectionChart.data.datasets[0].data = data;
+                this.detectionChart.data.datasets[0].backgroundColor = colors;
+                this.detectionChart.update('none');
+            }
+            
+            updateDeviationAlerts(position) {
+                const alertsContainer = document.getElementById('deviationAlerts');
+                if (!alertsContainer || !position) return;
+                
+                const centerX = 320;
+                const centerY = 240;
+                const distance = Math.sqrt(
+                    Math.pow(position.x - centerX, 2) + 
+                    Math.pow(position.y - centerY, 2)
+                );
+                
+                // 既存のアラートをクリア
+                alertsContainer.innerHTML = '';
+                
+                let alertClass, alertMessage;
+                if (distance < 50) {
+                    alertClass = 'low';
+                    alertMessage = '✅ 対象は中央に近い位置にあります';
+                } else if (distance < 100) {
+                    alertClass = 'medium';
+                    alertMessage = '⚠️ 対象が中央から少し離れています';
+                } else {
+                    alertClass = 'high';
+                    alertMessage = '🚨 対象が中央から大きく離れています';
+                }
+                
+                const alert = document.createElement('div');
+                alert.className = `deviation-alert ${alertClass}`;
+                alert.textContent = alertMessage;
+                alertsContainer.appendChild(alert);
+            }
+            
+            updateTimestamp() {
+                const timestampElement = document.getElementById('updateTimestamp');
+                if (timestampElement) {
+                    timestampElement.textContent = new Date().toLocaleTimeString();
+                }
+            }
+            
+            addLogEntry(message, level = 'info') {
+                const logContainer = document.getElementById('logEntries');
+                if (!logContainer) return;
+                
+                const entry = document.createElement('div');
+                entry.className = `log-entry log-level-${level}`;
+                entry.innerHTML = `
+                    <div class="log-message">${message}</div>
+                    <div class="log-timestamp">${new Date().toLocaleTimeString()}</div>
+                `;
+                
+                // 最新のログを先頭に追加
+                logContainer.insertBefore(entry, logContainer.firstChild);
+                
+                // ログの数を制限（最大50件）
+                const entries = logContainer.querySelectorAll('.log-entry');
+                if (entries.length > 50) {
+                    entries[entries.length - 1].remove();
+                }
+            }
+            
+            clearLog() {
+                const logContainer = document.getElementById('logEntries');
+                if (logContainer) {
+                    logContainer.innerHTML = `
+                        <div class="log-entry log-level-info">
+                            <div class="log-message">ログがクリアされました</div>
+                            <div class="log-timestamp">${new Date().toLocaleTimeString()}</div>
+                        </div>
+                    `;
+                }
+            }
+            
+            exportData() {
+                const data = {
+                    timestamp: new Date().toISOString(),
+                    positionHistory: this.positionHistory,
+                    detectionHistory: this.detectionHistory,
+                    statistics: {
+                        detectionRate: this.totalChecks > 0 ? (this.detectionCount / this.totalChecks) * 100 : 0,
+                        totalChecks: this.totalChecks,
+                        detectionCount: this.detectionCount
+                    }
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `tracking_data_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                this.addLogEntry('追跡データをエクスポートしました', 'success');
+            }
+            
+            startMonitoring() {
+                // 初期データ取得
+                this.refreshData();
+                
+                // 定期的な状態監視（1秒間隔）
+                setInterval(() => {
+                    this.socket.emit('request_tracking_status');
+                }, 1000);
+            }
+        }
+        
+        // ページ読み込み時に初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初期タイムスタンプ設定
+            document.getElementById('initTimestamp').textContent = new Date().toLocaleTimeString();
+            
+            // 監視システム開始
+            window.trackingMonitor = new TrackingMonitor();
+        });
+    </script>
+</body>
+</html>
