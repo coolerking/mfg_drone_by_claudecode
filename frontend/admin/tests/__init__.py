@@ -1,0 +1,3 @@
+"""
+Admin Frontend Test Suite
+"""

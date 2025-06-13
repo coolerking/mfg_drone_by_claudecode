@@ -143,3 +143,10 @@ models/*.model
 
 # Temporary development directory
 backend/tmp/
+
+# Frontend test data (generated during testing)
+frontend/admin/test_data/
+frontend/admin/uploads/
+frontend/admin/tests/reports/
+frontend/user/test_data/
+frontend/user/uploads/
