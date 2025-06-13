@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>モデル管理 - MFG Drone Admin</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- ナビゲーションバー -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-drone"></i> MFG Drone Admin
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-home"></i> ダッシュボード
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('model.training') }}">
+                            <i class="fas fa-brain"></i> モデル訓練
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('model.management') }}">
+                            <i class="fas fa-cog"></i> モデル管理
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <div class="container main-container">
+        <!-- ヘッダー -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="display-4">
+                    <i class="fas fa-cog text-primary"></i>
+                    モデル管理
+                </h1>
+                <p class="lead text-muted">
+                    訓練済みモデルの管理と監視
+                </p>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- アラート表示エリア -->
+        <div id="alertContainer" class="mb-4"></div>
+
+        <!-- アクションボタン -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('model.training') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> 新しいモデルを訓練
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary" onclick="refreshModels()">
+                        <i class="fas fa-sync-alt"></i> 更新
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- モデル一覧テーブル -->
+        <div class="row">
+            <div class="col-12">
+                {% if models %}
+                <div class="card model-table">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list"></i> 
+                            訓練済みモデル一覧 ({{ models|length }}個)
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th><i class="fas fa-tag"></i> モデル名</th>
+                                        <th><i class="fas fa-chart-line"></i> 精度</th>
+                                        <th><i class="fas fa-calendar"></i> 作成日時</th>
+                                        <th><i class="fas fa-signal"></i> ステータス</th>
+                                        <th><i class="fas fa-tools"></i> アクション</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for model in models %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ model.name }}</strong>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress flex-grow-1 me-2" style="height: 20px;">
+                                                    <div class="progress-bar
+                                                        {% if model.accuracy >= 0.9 %}bg-success
+                                                        {% elif model.accuracy >= 0.7 %}bg-warning
+                                                        {% else %}bg-danger{% endif %}"
+                                                         role="progressbar" 
+                                                         style="width: {{ (model.accuracy * 100)|round(1) }}%">
+                                                    </div>
+                                                </div>
+                                                <span class="fw-bold">{{ (model.accuracy * 100)|round(1) }}%</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <small>{{ model.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if model.accuracy >= 0.9 %}bg-success
+                                                {% elif model.accuracy >= 0.7 %}bg-warning
+                                                {% else %}bg-danger{% endif %}">
+                                                {% if model.accuracy >= 0.9 %}優秀
+                                                {% elif model.accuracy >= 0.7 %}良好
+                                                {% else %}要改善{% endif %}
+                                            </span>
+                                        </td>
+                                        <td class="model-actions">
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                                        onclick="showModelDetails('{{ model.name }}', {{ model.accuracy }}, '{{ model.created_at.isoformat() }}')">
+                                                    <i class="fas fa-info-circle"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-success" 
+                                                        onclick="selectModel('{{ model.name }}')">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        onclick="deleteModel('{{ model.name }}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <!-- モデルが存在しない場合 -->
+                <div class="card feature-card text-center">
+                    <div class="card-body py-5">
+                        <i class="fas fa-brain fa-4x text-muted mb-4"></i>
+                        <h4 class="text-muted">訓練済みモデルがありません</h4>
+                        <p class="text-muted mb-4">
+                            まだモデルが訓練されていません。<br>
+                            新しいモデルを訓練して物体認識を開始しましょう。
+                        </p>
+                        <a href="{{ url_for('model.training') }}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-play"></i> 最初のモデルを訓練
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- モデル性能統計 -->
+        {% if models %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card feature-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-bar"></i> 性能統計
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="p-3">
+                                    <h4 class="text-primary">{{ models|length }}</h4>
+                                    <p class="text-muted mb-0">総モデル数</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="p-3">
+                                    <h4 class="text-success">
+                                        {{ (models|selectattr('accuracy', '>=', 0.9)|list|length) }}
+                                    </h4>
+                                    <p class="text-muted mb-0">優秀モデル<br><small>(90%以上)</small></p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="p-3">
+                                    <h4 class="text-info">
+                                        {{ ((models|map(attribute='accuracy')|sum / models|length * 100)|round(1)) }}%
+                                    </h4>
+                                    <p class="text-muted mb-0">平均精度</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="p-3">
+                                    <h4 class="text-warning">
+                                        {{ (models|map(attribute='accuracy')|max * 100)|round(1) }}%
+                                    </h4>
+                                    <p class="text-muted mb-0">最高精度</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- モデル詳細モーダル -->
+    <div class="modal fade" id="modelDetailsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-info-circle"></i> モデル詳細
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">モデル名:</dt>
+                        <dd class="col-sm-9" id="modal-model-name"></dd>
+                        
+                        <dt class="col-sm-3">精度:</dt>
+                        <dd class="col-sm-9" id="modal-model-accuracy"></dd>
+                        
+                        <dt class="col-sm-3">作成日時:</dt>
+                        <dd class="col-sm-9" id="modal-model-created"></dd>
+                        
+                        <dt class="col-sm-3">ステータス:</dt>
+                        <dd class="col-sm-9" id="modal-model-status"></dd>
+                    </dl>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    
+    <script>
+        // モデル管理JavaScript
+        function refreshModels() {
+            location.reload();
+        }
+
+        function showModelDetails(name, accuracy, createdAt) {
+            document.getElementById('modal-model-name').textContent = name;
+            document.getElementById('modal-model-accuracy').innerHTML = 
+                `<strong>${(accuracy * 100).toFixed(1)}%</strong>`;
+            
+            const date = new Date(createdAt);
+            document.getElementById('modal-model-created').textContent = 
+                date.toLocaleString('ja-JP');
+            
+            let status = '';
+            if (accuracy >= 0.9) {
+                status = '<span class="badge bg-success">優秀</span>';
+            } else if (accuracy >= 0.7) {
+                status = '<span class="badge bg-warning">良好</span>';
+            } else {
+                status = '<span class="badge bg-danger">要改善</span>';
+            }
+            document.getElementById('modal-model-status').innerHTML = status;
+            
+            new bootstrap.Modal(document.getElementById('modelDetailsModal')).show();
+        }
+
+        function selectModel(modelName) {
+            if (confirm(`モデル "${modelName}" を選択しますか？`)) {
+                showAlert('info', `モデル "${modelName}" を選択しました`);
+            }
+        }
+
+        function deleteModel(modelName) {
+            if (confirm(`モデル "${modelName}" を削除しますか？この操作は取り消せません。`)) {
+                showAlert('warning', `モデル削除機能は実装予定です: ${modelName}`);
+            }
+        }
+
+        function showAlert(type, message) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-dismissible fade show`;
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            container.appendChild(alert);
+
+            // 5秒後に自動削除
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+
+        // WebSocket接続
+        document.addEventListener('DOMContentLoaded', function() {
+            const socket = io();
+            
+            socket.on('connect', function() {
+                console.log('モデル管理画面に接続しました');
+            });
+        });
+    </script>
+</body>
+</html>

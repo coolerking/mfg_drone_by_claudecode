@@ -143,3 +143,10 @@ models/*.model
 
 # Temporary development directory
 backend/tmp/
+
+# Test data directories (Phase 4.5)
+frontend/admin/test_data/
+frontend/admin/uploads/
+frontend/admin/temp/
+*.test_images
+test_images/

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>モデル訓練 - MFG Drone Admin</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- ナビゲーションバー -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-drone"></i> MFG Drone Admin
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-home"></i> ダッシュボード
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('model.training') }}">
+                            <i class="fas fa-brain"></i> モデル訓練
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('model.management') }}">
+                            <i class="fas fa-cog"></i> モデル管理
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <div class="container main-container">
+        <!-- ヘッダー -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="display-4">
+                    <i class="fas fa-brain text-primary"></i>
+                    モデル訓練
+                </h1>
+                <p class="lead text-muted">
+                    物体認識モデルのトレーニングを実行します
+                </p>
+            </div>
+        </div>
+
+        <!-- アラート表示エリア -->
+        <div id="alertContainer" class="mb-4"></div>
+
+        <!-- 訓練フォーム -->
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="card feature-card">
+                    <div class="card-header">
+                        <h4 class="mb-0">
+                            <i class="fas fa-upload"></i> 新しいモデルの訓練
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="trainingForm" enctype="multipart/form-data">
+                            <!-- オブジェクト名入力 -->
+                            <div class="mb-4">
+                                <label for="objectName" class="form-label">
+                                    <i class="fas fa-tag"></i> 学習対象オブジェクト名
+                                </label>
+                                <input type="text" class="form-control" id="objectName" 
+                                       placeholder="例: person, vehicle, ball" required>
+                                <div class="form-text">
+                                    学習させたいオブジェクトの名前を入力してください
+                                </div>
+                            </div>
+
+                            <!-- ファイルアップロードエリア -->
+                            <div class="mb-4">
+                                <label class="form-label">
+                                    <i class="fas fa-images"></i> 学習用画像 
+                                    <span class="text-muted">(最低5枚、最大10MB/ファイル)</span>
+                                </label>
+                                
+                                <!-- ドラッグ&ドロップエリア -->
+                                <div id="uploadZone" class="upload-zone">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <h5>ファイルをドラッグ&ドロップするか、クリックして選択</h5>
+                                    <p class="text-muted">
+                                        対応形式: JPG, PNG, GIF, BMP<br>
+                                        最大サイズ: 10MB/ファイル
+                                    </p>
+                                    <input type="file" id="imageFiles" class="file-input" 
+                                           multiple accept="image/*">
+                                </div>
+
+                                <!-- ファイル数表示 -->
+                                <div class="mt-2">
+                                    <span class="badge bg-info">
+                                        選択中: <span id="fileCount">0</span>枚
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- バリデーション結果表示 -->
+                            <div id="validationResults" class="mb-4"></div>
+
+                            <!-- 画像プレビューエリア -->
+                            <div class="image-preview-container">
+                                <div id="imagePreview" class="d-flex flex-wrap"></div>
+                            </div>
+
+                            <!-- 訓練開始ボタン -->
+                            <div class="d-grid gap-2 mt-4">
+                                <button type="submit" id="startTrainingBtn" class="btn btn-primary btn-lg" disabled>
+                                    <i class="fas fa-play"></i> 訓練開始
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- 訓練進行状況 -->
+                        <div id="trainingProgress" class="training-progress mt-4" style="display: none;">
+                            <h5>
+                                <i class="fas fa-cog fa-spin"></i> 訓練中...
+                            </h5>
+                            <div class="progress">
+                                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" 
+                                     style="width: 0%"></div>
+                            </div>
+                            <p id="progressText" class="mt-2 text-muted">訓練を開始しています...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 使用方法ガイド -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-question-circle"></i> 使用方法ガイド
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-info-circle text-info"></i> 基本手順</h6>
+                                <ol>
+                                    <li>学習させたいオブジェクト名を入力</li>
+                                    <li>様々な角度・環境の画像を5枚以上アップロード</li>
+                                    <li>バリデーションが通過することを確認</li>
+                                    <li>「訓練開始」ボタンをクリック</li>
+                                </ol>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-lightbulb text-warning"></i> 最適な結果を得るために</h6>
+                                <ul>
+                                    <li>明瞭で高品質な画像を使用する</li>
+                                    <li>様々な角度や距離から撮影する</li>
+                                    <li>異なる照明条件下での画像を含める</li>
+                                    <li>背景が異なる複数の画像を含める</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <!-- Model Training JS -->
+    <script src="{{ url_for('static', filename='js/model_training.js') }}"></script>
+</body>
+</html>
