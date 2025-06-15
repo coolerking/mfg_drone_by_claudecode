@@ -1,0 +1,37 @@
+# メインテストフレームワーク
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-flask==1.3.0
+pytest-mock==3.12.0
+
+# HTTP/API テスト
+httpx==0.25.2
+requests-mock==1.11.0
+responses==0.24.1
+
+# WebSocket テスト
+pytest-socket==0.6.0
+websocket-client==1.7.0
+
+# ブラウザ/UI テスト  
+selenium==4.16.0
+pytest-selenium==4.1.0
+webdriver-manager==4.0.1
+
+# カバレッジ・レポート
+coverage==7.3.2
+pytest-cov==4.1.0
+pytest-html==4.1.1
+
+# データ生成・テストヘルパー
+factory-boy==3.3.0
+faker==21.0.0
+
+# Flask テスト用
+Flask-Testing==0.8.1
+
+# 非同期テスト
+asyncio-run==1.4.0
+
+# モック機能拡張
+mock==5.1.0
