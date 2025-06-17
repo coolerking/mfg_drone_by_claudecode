@@ -1,0 +1,35 @@
+# UI テスト専用依存関係
+# Core testing framework
+pytest==7.4.3
+pytest-html==4.1.1
+pytest-cov==4.1.0
+pytest-xdist==3.5.0
+
+# Selenium WebDriver testing
+selenium==4.16.0
+pytest-selenium==4.1.0
+webdriver-manager==4.0.1
+
+# Additional test utilities
+pytest-mock==3.12.0
+pytest-timeout==2.2.0
+Pillow==10.1.0
+
+# HTTP testing (for API endpoints)
+requests==2.31.0
+httpx==0.25.2
+
+# Test data generation
+factory-boy==3.3.0
+faker==21.0.0
+
+# Performance and monitoring
+pytest-benchmark==4.0.0
+pytest-memprof==0.2.0
+
+# Reporting and analysis
+allure-pytest==2.13.2
+pytest-json-report==1.5.0
+
+# Environment and configuration
+python-dotenv==1.0.0
