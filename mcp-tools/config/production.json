@@ -1,0 +1,10 @@
+{
+  "backendUrl": "http://192.168.1.100:8000",
+  "timeout": 30000,
+  "retryAttempts": 5,
+  "retryDelay": 2000,
+  "debug": false,
+  "logFile": "/var/log/mcp-drone/mcp-drone.log",
+  "maxLogSize": 52428800,
+  "healthCheckInterval": 60000
+}

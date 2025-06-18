@@ -1,0 +1,10 @@
+{
+  "backendUrl": "http://localhost:8000",
+  "timeout": 30000,
+  "retryAttempts": 3,
+  "retryDelay": 1000,
+  "debug": true,
+  "logFile": "./logs/mcp-drone-dev.log",
+  "maxLogSize": 10485760,
+  "healthCheckInterval": 30000
+}
