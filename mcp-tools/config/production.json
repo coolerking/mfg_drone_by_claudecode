@@ -1,0 +1,15 @@
+{
+  "environment": "production",
+  "backend": {
+    "url": "http://raspberrypi.local:8000",
+    "timeout": 20000,
+    "retries": 5,
+    "retryDelay": 2000,
+    "healthCheckInterval": 60000
+  },
+  "logging": {
+    "level": "info",
+    "structured": true,
+    "file": "/var/log/mcp-drone/server.log"
+  }
+}

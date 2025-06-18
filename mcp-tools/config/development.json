@@ -1,0 +1,15 @@
+{
+  "environment": "development",
+  "backend": {
+    "url": "http://localhost:8000",
+    "timeout": 30000,
+    "retries": 3,
+    "retryDelay": 1000,
+    "healthCheckInterval": 30000
+  },
+  "logging": {
+    "level": "debug",
+    "structured": false,
+    "file": "logs/mcp-drone-dev.log"
+  }
+}
