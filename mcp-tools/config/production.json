@@ -1,0 +1,36 @@
+{
+  "server": {
+    "name": "MFG Drone MCP Tools",
+    "version": "1.0.0"
+  },
+  "backend": {
+    "baseUrl": "http://192.168.1.100:8000",
+    "timeout": 30000,
+    "retries": 3,
+    "retryDelay": 2000,
+    "keepAlive": true,
+    "maxSockets": 20
+  },
+  "websocket": {
+    "enabled": true,
+    "reconnectInterval": 10000,
+    "maxReconnectAttempts": 5,
+    "pingInterval": 60000
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "file": {
+      "enabled": true,
+      "filename": "/var/log/mcp-drone-tools/app.log",
+      "maxSize": "50m",
+      "maxFiles": 10
+    }
+  },
+  "performance": {
+    "targetResponseTime": 50,
+    "enableMetrics": true,
+    "metricsInterval": 30000
+  },
+  "debug": false
+}
