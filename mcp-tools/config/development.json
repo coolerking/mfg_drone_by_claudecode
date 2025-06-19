@@ -1,0 +1,11 @@
+{
+  "backendUrl": "http://localhost:8000",
+  "timeout": 5000,
+  "retries": 3,
+  "debug": true,
+  "logLevel": "debug",
+  "logFile": "logs/mcp-server-dev.log",
+  "transport": "stdio",
+  "port": 3000,
+  "host": "localhost"
+}

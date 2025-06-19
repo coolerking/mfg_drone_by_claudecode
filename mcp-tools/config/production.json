@@ -1,0 +1,11 @@
+{
+  "backendUrl": "http://192.168.1.100:8000",
+  "timeout": 3000,
+  "retries": 5,
+  "debug": false,
+  "logLevel": "info",
+  "logFile": "/var/log/mcp-drone-server.log",
+  "transport": "stdio",
+  "port": 3000,
+  "host": "0.0.0.0"
+}
