@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}センサー監視 - MFG Drone 管理者画面{% endblock %}
+{% block header_title %}センサー監視{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- バッテリー情報 -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">バッテリー</h3>
+        </div>
+        <div class="card-body">
+            <div class="metric-card">
+                <div id="battery-percentage" class="metric-value">--%</div>
+                <div class="metric-label">残量</div>
+                <div class="progress mt-2">
+                    <div id="battery-progress" class="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 高度情報 -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">高度</h3>
+        </div>
+        <div class="card-body">
+            <div class="metric-card">
+                <div id="altitude-cm" class="metric-value">--</div>
+                <div class="metric-label">cm</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 温度 -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">温度</h3>
+        </div>
+        <div class="card-body">
+            <div class="metric-card">
+                <div id="temperature-c" class="metric-value">--</div>
+                <div class="metric-label">℃</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 詳細センサーデータ -->
+<div class="card mt-6">
+    <div class="card-header">
+        <h3 class="card-title">詳細センサーデータ</h3>
+        <p class="card-subtitle">リアルタイム更新</p>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>センサー</th>
+                        <th>値</th>
+                        <th>単位</th>
+                        <th>最終更新</th>
+                    </tr>
+                </thead>
+                <tbody id="sensor-table">
+                    <tr>
+                        <td>バッテリー</td>
+                        <td id="table-battery">--</td>
+                        <td>%</td>
+                        <td id="table-battery-time">--</td>
+                    </tr>
+                    <tr>
+                        <td>高度</td>
+                        <td id="table-altitude">--</td>
+                        <td>cm</td>
+                        <td id="table-altitude-time">--</td>
+                    </tr>
+                    <tr>
+                        <td>温度</td>
+                        <td id="table-temperature">--</td>
+                        <td>℃</td>
+                        <td id="table-temperature-time">--</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

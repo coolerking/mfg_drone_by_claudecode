@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}移動制御 - MFG Drone 管理者画面{% endblock %}
+{% block header_title %}移動制御{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- 方向制御 -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">方向制御</h3>
+            <p class="card-subtitle">ドローンの移動制御</p>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-3 gap-2 mb-4">
+                <div></div>
+                <button id="forward-btn" class="btn btn-primary">
+                    <i class="fas fa-arrow-up"></i>
+                    前進
+                </button>
+                <div></div>
+                
+                <button id="left-btn" class="btn btn-primary">
+                    <i class="fas fa-arrow-left"></i>
+                    左
+                </button>
+                <button id="up-btn" class="btn btn-success">
+                    <i class="fas fa-arrow-up"></i>
+                    上昇
+                </button>
+                <button id="right-btn" class="btn btn-primary">
+                    <i class="fas fa-arrow-right"></i>
+                    右
+                </button>
+                
+                <div></div>
+                <button id="backward-btn" class="btn btn-primary">
+                    <i class="fas fa-arrow-down"></i>
+                    後退
+                </button>
+                <button id="down-btn" class="btn btn-warning">
+                    <i class="fas fa-arrow-down"></i>
+                    下降
+                </button>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">移動距離</label>
+                <input id="distance-input" type="range" min="20" max="500" value="50" class="form-input">
+                <div class="text-center mt-1">
+                    <span id="distance-value">50</span> cm
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- キーボード制御ガイド -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">キーボード制御</h3>
+            <p class="card-subtitle">ショートカットキー</p>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <kbd class="px-2 py-1 bg-gray-200 rounded">W</kbd>
+                        <span>前進</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <kbd class="px-2 py-1 bg-gray-200 rounded">S</kbd>
+                        <span>後退</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <kbd class="px-2 py-1 bg-gray-200 rounded">A</kbd>
+                        <span>左移動</span>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <kbd class="px-2 py-1 bg-gray-200 rounded">D</kbd>
+                        <span>右移動</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <kbd class="px-2 py-1 bg-gray-200 rounded">Q</kbd>
+                        <span>上昇</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <kbd class="px-2 py-1 bg-gray-200 rounded">E</kbd>
+                        <span>下降</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

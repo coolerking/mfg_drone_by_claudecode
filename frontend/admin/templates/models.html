@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}モデル管理 - MFG Drone 管理者画面{% endblock %}
+{% block header_title %}モデル管理{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- 学習画像アップロード -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">学習画像アップロード</h3>
+            <p class="card-subtitle">新しいオブジェクトの学習</p>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label class="form-label">オブジェクト名</label>
+                <input id="object-name" type="text" class="form-input" placeholder="例: 赤いボール">
+            </div>
+            
+            <div id="upload-area" class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-primary-color">
+                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600">画像をドラッグ&ドロップまたはクリックして選択</p>
+                <input id="image-files" type="file" multiple accept="image/*" class="hidden">
+            </div>
+            
+            <button id="upload-btn" class="btn btn-primary w-full mt-4" disabled>
+                <i class="fas fa-upload"></i>
+                画像をアップロード
+            </button>
+        </div>
+    </div>
+    
+    <!-- 訓練進捗 -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">訓練進捗</h3>
+            <p class="card-subtitle">AIモデルの学習状況</p>
+        </div>
+        <div class="card-body">
+            <div id="training-status" class="space-y-4">
+                <p class="text-muted">訓練中のモデルはありません</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 利用可能なモデル -->
+<div class="card mt-6">
+    <div class="card-header">
+        <h3 class="card-title">利用可能なモデル</h3>
+        <p class="card-subtitle">学習済みのAIモデル一覧</p>
+    </div>
+    <div class="card-body">
+        <div id="model-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="text-center text-muted py-8">
+                学習済みモデルはありません
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

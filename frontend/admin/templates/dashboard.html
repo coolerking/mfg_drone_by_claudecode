@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}ダッシュボード - MFG Drone 管理者画面{% endblock %}
+{% block header_title %}ダッシュボード{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- システム状態カード -->
+    <div class="lg:col-span-2">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">システム状態</h3>
+                <p class="card-subtitle">ドローンとシステムの状態を監視</p>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <!-- バッテリー残量 -->
+                    <div class="metric-card">
+                        <div id="battery-value" class="metric-value">--</div>
+                        <div class="metric-label">バッテリー残量</div>
+                        <div class="progress mt-2">
+                            <div id="battery-bar" class="progress-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- 高度 -->
+                    <div class="metric-card">
+                        <div id="altitude-value" class="metric-value">--</div>
+                        <div class="metric-label">現在高度</div>
+                    </div>
+                    
+                    <!-- 追跡状態 -->
+                    <div class="metric-card">
+                        <div id="tracking-status" class="metric-value text-muted">停止中</div>
+                        <div class="metric-label">追跡状態</div>
+                    </div>
+                    
+                    <!-- 接続時間 -->
+                    <div class="metric-card">
+                        <div id="connection-time" class="metric-value">--</div>
+                        <div class="metric-label">接続時間</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- クイックアクション -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">クイックアクション</h3>
+            <p class="card-subtitle">よく使用する操作</p>
+        </div>
+        <div class="card-body">
+            <div class="grid gap-3">
+                <button id="connect-btn" class="btn btn-primary">
+                    <i class="fas fa-wifi"></i>
+                    ドローンに接続
+                </button>
+                <button id="takeoff-btn" class="btn btn-success" disabled>
+                    <i class="fas fa-plane-departure"></i>
+                    離陸
+                </button>
+                <button id="land-btn" class="btn btn-warning" disabled>
+                    <i class="fas fa-plane-arrival"></i>
+                    着陸
+                </button>
+                <button id="emergency-btn" class="btn btn-error" disabled>
+                    <i class="fas fa-exclamation-triangle"></i>
+                    緊急停止
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ライブ映像・センサーデータ -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+    <!-- ライブ映像 -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">ライブ映像</h3>
+            <p class="card-subtitle">ドローンカメラからのリアルタイム映像</p>
+        </div>
+        <div class="card-body">
+            <div id="camera-stream" class="bg-gray-100 rounded-lg" style="min-height: 300px; display: flex; align-items: center; justify-content: center;">
+                <p class="text-muted">カメラ映像を読み込み中...</p>
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="toolbar">
+                <div class="toolbar-actions">
+                    <button id="capture-btn" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-camera"></i>
+                        撮影
+                    </button>
+                    <button class="btn btn-secondary btn-sm">
+                        <i class="fas fa-video"></i>
+                        録画
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- センサーデータ -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">センサーデータ</h3>
+            <p class="card-subtitle">リアルタイムセンサー情報</p>
+        </div>
+        <div class="card-body">
+            <div class="grid gap-4">
+                <!-- 姿勢情報 -->
+                <div class="border rounded-lg p-3">
+                    <h4 class="font-semibold mb-2">姿勢情報</h4>
+                    <div class="grid grid-cols-3 gap-2 text-sm">
+                        <div class="text-center">
+                            <div class="text-gray-500">ピッチ</div>
+                            <div id="pitch-value" class="font-mono">--°</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-gray-500">ロール</div>
+                            <div id="roll-value" class="font-mono">--°</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-gray-500">ヨー</div>
+                            <div id="yaw-value" class="font-mono">--°</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 速度情報 -->
+                <div class="border rounded-lg p-3">
+                    <h4 class="font-semibold mb-2">速度情報</h4>
+                    <div class="grid grid-cols-3 gap-2 text-sm">
+                        <div class="text-center">
+                            <div class="text-gray-500">X軸</div>
+                            <div id="vx-value" class="font-mono">-- cm/s</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-gray-500">Y軸</div>
+                            <div id="vy-value" class="font-mono">-- cm/s</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-gray-500">Z軸</div>
+                            <div id="vz-value" class="font-mono">-- cm/s</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 温度・気圧 -->
+                <div class="border rounded-lg p-3">
+                    <h4 class="font-semibold mb-2">環境情報</h4>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div class="text-center">
+                            <div class="text-gray-500">温度</div>
+                            <div id="temperature-value" class="font-mono">--℃</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-gray-500">気圧</div>
+                            <div id="pressure-value" class="font-mono">-- hPa</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 最近のアクティビティ -->
+<div class="card mt-6">
+    <div class="card-header">
+        <h3 class="card-title">最近のアクティビティ</h3>
+        <p class="card-subtitle">システムの動作ログ</p>
+    </div>
+    <div class="card-body">
+        <div id="activity-log" class="space-y-2">
+            <div class="flex items-center justify-between py-2 border-b text-sm">
+                <div class="flex items-center">
+                    <div class="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                    <span>システム起動完了</span>
+                </div>
+                <span class="text-gray-500">2分前</span>
+            </div>
+            <div class="flex items-center justify-between py-2 border-b text-sm">
+                <div class="flex items-center">
+                    <div class="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                    <span>管理者ページにアクセス</span>
+                </div>
+                <span class="text-gray-500">3分前</span>
+            </div>
+            <div class="flex items-center justify-between py-2 text-sm">
+                <div class="flex items-center">
+                    <div class="w-2 h-2 bg-gray-400 rounded-full mr-3"></div>
+                    <span>ドローン接続待機中</span>
+                </div>
+                <span class="text-gray-500">5分前</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ダッシュボード専用の初期化処理
+document.addEventListener('DOMContentLoaded', function() {
+    // 接続ボタンのイベントリスナー
+    document.getElementById('connect-btn').addEventListener('click', function() {
+        if (app) {
+            app.connectDrone();
+        }
+    });
+    
+    // その他のボタンイベント
+    document.getElementById('takeoff-btn').addEventListener('click', function() {
+        if (app) app.takeoff();
+    });
+    
+    document.getElementById('land-btn').addEventListener('click', function() {
+        if (app) app.land();
+    });
+    
+    document.getElementById('emergency-btn').addEventListener('click', function() {
+        if (app) app.emergencyStop();
+    });
+    
+    document.getElementById('capture-btn').addEventListener('click', function() {
+        if (app) {
+            app.apiCall('/camera/capture', { method: 'POST' })
+                .then(result => {
+                    app.showAlert('写真を撮影しました', 'success');
+                })
+                .catch(error => {
+                    // エラーは apiCall で処理済み
+                });
+        }
+    });
+});
+</script>
+{% endblock %}

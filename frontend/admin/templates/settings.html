@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}設定 - MFG Drone 管理者画面{% endblock %}
+{% block header_title %}設定{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- ドローン設定 -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">ドローン設定</h3>
+            <p class="card-subtitle">飛行パラメータの調整</p>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label class="form-label">飛行速度</label>
+                <input id="flight-speed" type="range" min="10" max="100" value="50" class="form-input">
+                <div class="text-center mt-1">
+                    <span id="speed-value">50</span> cm/s
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">最大高度</label>
+                <input id="max-altitude" type="number" min="50" max="500" value="200" class="form-input">
+                <small class="text-muted">50-500cm</small>
+            </div>
+            
+            <button class="btn btn-primary">
+                <i class="fas fa-save"></i>
+                設定保存
+            </button>
+        </div>
+    </div>
+    
+    <!-- システム設定 -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">システム設定</h3>
+            <p class="card-subtitle">アプリケーション設定</p>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label class="form-label">バックエンドAPI URL</label>
+                <input id="api-url" type="url" value="http://localhost:8000" class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">更新間隔</label>
+                <select id="update-interval" class="form-select">
+                    <option value="1000">1秒</option>
+                    <option value="2000" selected>2秒</option>
+                    <option value="5000">5秒</option>
+                </select>
+            </div>
+            
+            <button class="btn btn-primary">
+                <i class="fas fa-save"></i>
+                設定保存
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- システム情報 -->
+<div class="card mt-6">
+    <div class="card-header">
+        <h3 class="card-title">システム情報</h3>
+        <p class="card-subtitle">現在のシステム状態</p>
+    </div>
+    <div class="card-body">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h4 class="font-semibold mb-3">フロントエンド</h4>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span>バージョン:</span>
+                        <span>1.0.0-phase1</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>フレームワーク:</span>
+                        <span>Flask 3.0.0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Python:</span>
+                        <span>3.11</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h4 class="font-semibold mb-3">バックエンド</h4>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span>API Status:</span>
+                        <span id="backend-status" class="text-muted">確認中...</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>ドローン:</span>
+                        <span>Tello EDU</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>AI Framework:</span>
+                        <span>OpenCV + Custom</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}カメラ・映像 - MFG Drone 管理者画面{% endblock %}
+{% block header_title %}カメラ・映像{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6">
+    <!-- ライブ映像 -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">ライブ映像</h3>
+            <p class="card-subtitle">ドローンカメラからのリアルタイム映像</p>
+        </div>
+        <div class="card-body">
+            <div id="camera-stream" class="bg-gray-100 rounded-lg" style="min-height: 400px; display: flex; align-items: center; justify-content: center;">
+                <p class="text-muted">カメラ映像を読み込み中...</p>
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="toolbar">
+                <div class="toolbar-actions">
+                    <button id="capture-btn" class="btn btn-primary">
+                        <i class="fas fa-camera"></i>
+                        写真撮影
+                    </button>
+                    <button id="record-btn" class="btn btn-success">
+                        <i class="fas fa-video"></i>
+                        録画開始
+                    </button>
+                    <button id="stop-record-btn" class="btn btn-warning" disabled>
+                        <i class="fas fa-stop"></i>
+                        録画停止
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

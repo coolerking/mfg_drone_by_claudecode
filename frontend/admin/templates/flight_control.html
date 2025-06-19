@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}飛行制御 - MFG Drone 管理者画面{% endblock %}
+{% block header_title %}飛行制御{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- 基本飛行制御 -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">基本飛行制御</h3>
+            <p class="card-subtitle">離陸・着陸・緊急停止</p>
+        </div>
+        <div class="card-body">
+            <div class="grid gap-4">
+                <button id="takeoff-btn" class="btn btn-success btn-lg" disabled>
+                    <i class="fas fa-plane-departure"></i>
+                    離陸
+                </button>
+                <button id="land-btn" class="btn btn-warning btn-lg" disabled>
+                    <i class="fas fa-plane-arrival"></i>
+                    着陸
+                </button>
+                <button id="emergency-btn" class="btn btn-error btn-lg">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    緊急停止
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 飛行状態 -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">飛行状態</h3>
+            <p class="card-subtitle">現在のドローン状態</p>
+        </div>
+        <div class="card-body">
+            <div class="space-y-3">
+                <div class="flex justify-between">
+                    <span>飛行状態:</span>
+                    <span id="flight-status" class="text-muted">地上待機</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>バッテリー:</span>
+                    <span id="battery-level">--%</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>高度:</span>
+                    <span id="current-altitude">--cm</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

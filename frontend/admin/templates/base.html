@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MFG Drone - 管理者画面{% endblock %}</title>
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        <!-- サイドバー -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">MFG Drone</h2>
+                <p class="sidebar-subtitle">管理者画面</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-item">
+                    <a href="#dashboard" class="nav-link" data-view="dashboard">
+                        <i class="fas fa-tachometer-alt"></i>
+                        ダッシュボード
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="#connection" class="nav-link" data-view="connection">
+                        <i class="fas fa-wifi"></i>
+                        ドローン接続
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="#flight" class="nav-link" data-view="flight">
+                        <i class="fas fa-plane"></i>
+                        飛行制御
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="#movement" class="nav-link" data-view="movement">
+                        <i class="fas fa-arrows-alt"></i>
+                        移動制御
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="#camera" class="nav-link" data-view="camera">
+                        <i class="fas fa-camera"></i>
+                        カメラ・映像
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="#sensors" class="nav-link" data-view="sensors">
+                        <i class="fas fa-chart-line"></i>
+                        センサー監視
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="#tracking" class="nav-link" data-view="tracking">
+                        <i class="fas fa-crosshairs"></i>
+                        物体追跡
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="#models" class="nav-link" data-view="models">
+                        <i class="fas fa-brain"></i>
+                        モデル管理
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="#settings" class="nav-link" data-view="settings">
+                        <i class="fas fa-cog"></i>
+                        設定
+                    </a>
+                </div>
+            </nav>
+        </aside>
+        
+        <!-- メインコンテンツ -->
+        <main class="main-content">
+            <!-- ヘッダー -->
+            <header class="main-header">
+                <div class="header-left">
+                    <button id="menu-toggle" class="btn btn-secondary d-lg-none">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="header-title">{% block header_title %}ダッシュボード{% endblock %}</h1>
+                </div>
+                
+                <div class="header-status">
+                    <div class="status-indicator disconnected">
+                        <span class="status-dot disconnected"></span>
+                        未接続
+                    </div>
+                </div>
+            </header>
+            
+            <!-- アラート表示エリア -->
+            <div id="alert-container" class="alert-container">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'error' if category == 'error' else category }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+            
+            <!-- コンテンツエリア -->
+            <div class="content-area">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
