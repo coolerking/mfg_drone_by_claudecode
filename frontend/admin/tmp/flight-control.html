@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飛行制御 - MFG Drone Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="drone-icon">🚁</div>
+                    <h1>MFG Drone Admin</h1>
+                </div>
+                <div class="connection-status status-connected">
+                    <div class="status-indicator"></div>
+                    接続中
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="container">
+            <div class="nav-container">
+                <a href="dashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    ダッシュボード
+                </a>
+                <a href="connection.html" class="nav-item">
+                    <span class="nav-icon">🔗</span>
+                    接続管理
+                </a>
+                <a href="flight-control.html" class="nav-item active">
+                    <span class="nav-icon">🚁</span>
+                    飛行制御
+                </a>
+                <a href="movement.html" class="nav-item">
+                    <span class="nav-icon">🎮</span>
+                    移動制御
+                </a>
+                <a href="camera.html" class="nav-item">
+                    <span class="nav-icon">📹</span>
+                    カメラ
+                </a>
+                <a href="sensors.html" class="nav-item">
+                    <span class="nav-icon">📡</span>
+                    センサー
+                </a>
+                <a href="tracking.html" class="nav-item">
+                    <span class="nav-icon">🎯</span>
+                    物体追跡
+                </a>
+                <a href="models.html" class="nav-item">
+                    <span class="nav-icon">🧠</span>
+                    モデル管理
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    設定
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="page-title">飛行制御</div>
+            <div class="page-subtitle">ドローンの基本的な飛行制御を行う</div>
+
+            <!-- Status Banner -->
+            <div class="alert alert-info mb-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <strong>飛行状態:</strong> <span id="flight-status">地上待機中</span>
+                        <span class="ml-4"><strong>高度:</strong> <span id="current-altitude">0cm</span></span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="status-indicator-large status-warning" id="flight-indicator"></span>
+                        <span class="ml-2" id="status-text">待機中</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Control Grid -->
+            <div class="grid grid-2">
+                <!-- Primary Flight Controls -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🚁 基本飛行制御</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="control-group">
+                            <div class="control-group-title">主要操作</div>
+                            <div class="control-buttons">
+                                <button class="btn btn-success btn-lg takeoff-btn" id="takeoff-btn">
+                                    <span>🚀</span> 離陸
+                                </button>
+                                <button class="btn btn-primary btn-lg land-btn" id="land-btn" disabled>
+                                    <span>🛬</span> 着陸
+                                </button>
+                                <button class="btn btn-warning btn-lg" id="hover-btn" disabled>
+                                    <span>⏸️</span> ホバリング
+                                </button>
+                                <button class="btn btn-danger btn-lg emergency-btn" id="emergency-btn">
+                                    <span>🚨</span> 緊急停止
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <label class="form-label">離陸高度設定</label>
+                            <div class="flex items-center gap-2">
+                                <input type="range" class="form-input" id="takeoff-height" min="50" max="300" value="100" style="flex: 1;">
+                                <span id="height-display" class="font-semibold">100cm</span>
+                            </div>
+                            <div class="text-sm text-gray-500 mt-1">推奨: 100-150cm</div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="auto-takeoff" class="form-checkbox">
+                                <label for="auto-takeoff" class="form-label mb-0">自動離陸モード</label>
+                            </div>
+                            <div class="text-sm text-gray-500 mt-1">バッテリーチェック後に自動で離陸</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flight Status -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📊 飛行状態</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="metrics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="metric-item" style="text-align: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: var(--primary-color);">
+                                    <span id="battery-percent">85</span><span class="metric-unit">%</span>
+                                </div>
+                                <div class="metric-label">バッテリー</div>
+                            </div>
+                            <div class="metric-item" style="text-align: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: var(--primary-color);">
+                                    <span id="flight-time">00:00</span>
+                                </div>
+                                <div class="metric-label">飛行時間</div>
+                            </div>
+                            <div class="metric-item" style="text-align: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: var(--primary-color);">
+                                    <span id="temperature">42</span><span class="metric-unit">°C</span>
+                                </div>
+                                <div class="metric-label">温度</div>
+                            </div>
+                            <div class="metric-item" style="text-align: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: var(--primary-color);">
+                                    <span id="speed">0</span><span class="metric-unit">cm/s</span>
+                                </div>
+                                <div class="metric-label">速度</div>
+                            </div>
+                        </div>
+
+                        <div class="progress-section mt-4">
+                            <div class="form-label">バッテリー残量</div>
+                            <div class="progress">
+                                <div class="progress-bar" id="battery-bar" style="width: 85%; background-color: var(--success-color);"></div>
+                            </div>
+                            <div class="text-sm text-gray-500 mt-1">残り約 <span id="estimated-time">15</span> 分</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Safety Checks -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🛡️ 安全チェック</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="safety-checklist">
+                            <div class="safety-item" style="display: flex; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
+                                <div class="status-indicator-large status-online"></div>
+                                <span class="ml-3">バッテリー残量 (85%)</span>
+                                <span class="ml-auto text-success font-semibold">✓</span>
+                            </div>
+                            <div class="safety-item" style="display: flex; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
+                                <div class="status-indicator-large status-online"></div>
+                                <span class="ml-3">プロペラ状態</span>
+                                <span class="ml-auto text-success font-semibold">✓</span>
+                            </div>
+                            <div class="safety-item" style="display: flex; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
+                                <div class="status-indicator-large status-online"></div>
+                                <span class="ml-3">センサー正常性</span>
+                                <span class="ml-auto text-success font-semibold">✓</span>
+                            </div>
+                            <div class="safety-item" style="display: flex; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
+                                <div class="status-indicator-large status-warning"></div>
+                                <span class="ml-3">GPS信号</span>
+                                <span class="ml-auto text-warning font-semibold">⚠</span>
+                            </div>
+                            <div class="safety-item" style="display: flex; align-items: center; padding: 0.75rem 0;">
+                                <div class="status-indicator-large status-online"></div>
+                                <span class="ml-3">通信状態</span>
+                                <span class="ml-auto text-success font-semibold">✓</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button class="btn btn-secondary w-full" id="run-check">
+                                <span>🔍</span> 安全チェック実行
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pre-flight Settings -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">⚙️ 飛行前設定</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="form-group">
+                            <label class="form-label">飛行速度</label>
+                            <select class="form-select" id="flight-speed">
+                                <option value="slow">低速 (1-3 m/s)</option>
+                                <option value="normal" selected>標準 (3-6 m/s)</option>
+                                <option value="fast">高速 (6-10 m/s)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">最大高度制限</label>
+                            <div class="flex items-center gap-2">
+                                <input type="range" class="form-input" id="max-altitude" min="100" max="500" value="300" style="flex: 1;">
+                                <span id="altitude-display" class="font-semibold">300cm</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="led-enabled" class="form-checkbox" checked>
+                                <label for="led-enabled" class="form-label mb-0">LED インジケーター</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="obstacle-avoidance" class="form-checkbox" checked>
+                                <label for="obstacle-avoidance" class="form-label mb-0">障害物回避</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <button class="btn btn-primary w-full" id="apply-settings">
+                                <span>💾</span> 設定を適用
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flight Commands History -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h3 class="card-title">📝 飛行コマンド履歴</h3>
+                </div>
+                <div class="card-content">
+                    <div class="command-history" id="command-history">
+                        <div class="command-item" style="display: flex; justify-content: between; padding: 0.5rem 0; border-bottom: 1px solid #e5e7eb;">
+                            <span class="text-sm text-gray-500">16:45:23</span>
+                            <span class="ml-3">システム起動</span>
+                            <span class="ml-auto text-success">成功</span>
+                        </div>
+                        <div class="command-item" style="display: flex; justify-content: between; padding: 0.5rem 0; border-bottom: 1px solid #e5e7eb;">
+                            <span class="text-sm text-gray-500">16:45:30</span>
+                            <span class="ml-3">ドローン接続</span>
+                            <span class="ml-auto text-success">成功</span>
+                        </div>
+                        <div class="command-item" style="display: flex; justify-content: between; padding: 0.5rem 0; border-bottom: 1px solid #e5e7eb;">
+                            <span class="text-sm text-gray-500">16:46:15</span>
+                            <span class="ml-3">安全チェック実行</span>
+                            <span class="ml-auto text-success">完了</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/admin.js"></script>
+    <script>
+        // Update font family for Japanese text
+        document.body.style.fontFamily = "'Noto Sans JP', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        
+        let isFlying = false;
+        let flightStartTime = null;
+        
+        // Flight control event listeners
+        document.getElementById('takeoff-btn').addEventListener('click', function() {
+            if (!isFlying) {
+                this.disabled = true;
+                this.innerHTML = '<span class="loading"></span> 離陸中...';
+                
+                setTimeout(() => {
+                    isFlying = true;
+                    flightStartTime = new Date();
+                    updateFlightStatus('飛行中', 'status-online', '飛行中');
+                    
+                    this.disabled = false;
+                    this.innerHTML = '<span>🚀</span> 離陸';
+                    document.getElementById('land-btn').disabled = false;
+                    document.getElementById('hover-btn').disabled = false;
+                    document.getElementById('takeoff-btn').disabled = true;
+                    
+                    const height = document.getElementById('takeoff-height').value;
+                    document.getElementById('current-altitude').textContent = height + 'cm';
+                    
+                    addCommandHistory('離陸', '成功');
+                    window.DroneAdmin.showAlert('離陸しました', 'success');
+                }, 3000);
+            }
+        });
+        
+        document.getElementById('land-btn').addEventListener('click', function() {
+            if (isFlying) {
+                this.disabled = true;
+                this.innerHTML = '<span class="loading"></span> 着陸中...';
+                
+                setTimeout(() => {
+                    isFlying = false;
+                    flightStartTime = null;
+                    updateFlightStatus('地上待機中', 'status-warning', '待機中');
+                    
+                    this.disabled = true;
+                    this.innerHTML = '<span>🛬</span> 着陸';
+                    document.getElementById('takeoff-btn').disabled = false;
+                    document.getElementById('hover-btn').disabled = true;
+                    
+                    document.getElementById('current-altitude').textContent = '0cm';
+                    document.getElementById('flight-time').textContent = '00:00';
+                    
+                    addCommandHistory('着陸', '成功');
+                    window.DroneAdmin.showAlert('着陸しました', 'success');
+                }, 2000);
+            }
+        });
+        
+        document.getElementById('hover-btn').addEventListener('click', function() {
+            addCommandHistory('ホバリング', '実行');
+            window.DroneAdmin.showAlert('ホバリング中', 'info');
+        });
+        
+        document.getElementById('emergency-btn').addEventListener('click', function() {
+            if (confirm('緊急停止を実行しますか？')) {
+                isFlying = false;
+                flightStartTime = null;
+                updateFlightStatus('緊急停止', 'status-offline', '停止');
+                
+                document.getElementById('takeoff-btn').disabled = false;
+                document.getElementById('land-btn').disabled = true;
+                document.getElementById('hover-btn').disabled = true;
+                document.getElementById('current-altitude').textContent = '0cm';
+                
+                addCommandHistory('緊急停止', '実行');
+                window.DroneAdmin.showAlert('緊急停止しました', 'danger');
+            }
+        });
+        
+        // Settings event listeners
+        document.getElementById('takeoff-height').addEventListener('input', function() {
+            document.getElementById('height-display').textContent = this.value + 'cm';
+        });
+        
+        document.getElementById('max-altitude').addEventListener('input', function() {
+            document.getElementById('altitude-display').textContent = this.value + 'cm';
+        });
+        
+        document.getElementById('apply-settings').addEventListener('click', function() {
+            window.DroneAdmin.showAlert('設定を適用しました', 'success');
+            addCommandHistory('設定適用', '完了');
+        });
+        
+        document.getElementById('run-check').addEventListener('click', function() {
+            this.disabled = true;
+            this.innerHTML = '<span class="loading"></span> チェック中...';
+            
+            setTimeout(() => {
+                this.disabled = false;
+                this.innerHTML = '<span>🔍</span> 安全チェック実行';
+                window.DroneAdmin.showAlert('安全チェック完了: すべて正常', 'success');
+                addCommandHistory('安全チェック', '完了');
+            }, 2000);
+        });
+        
+        // Helper functions
+        function updateFlightStatus(status, indicatorClass, statusText) {
+            document.getElementById('flight-status').textContent = status;
+            document.getElementById('flight-indicator').className = `status-indicator-large ${indicatorClass}`;
+            document.getElementById('status-text').textContent = statusText;
+            
+            const alertElement = document.querySelector('.alert');
+            if (status === '飛行中') {
+                alertElement.className = 'alert alert-success mb-4';
+            } else if (status === '緊急停止') {
+                alertElement.className = 'alert alert-danger mb-4';
+            } else {
+                alertElement.className = 'alert alert-info mb-4';
+            }
+        }
+        
+        function addCommandHistory(command, result) {
+            const history = document.getElementById('command-history');
+            const time = new Date().toTimeString().split(' ')[0];
+            const resultClass = result === '成功' || result === '完了' ? 'text-success' : 
+                               result === '実行' ? 'text-info' : 'text-warning';
+            
+            const item = document.createElement('div');
+            item.className = 'command-item';
+            item.style.cssText = 'display: flex; justify-content: between; padding: 0.5rem 0; border-bottom: 1px solid #e5e7eb;';
+            item.innerHTML = `
+                <span class="text-sm text-gray-500">${time}</span>
+                <span class="ml-3">${command}</span>
+                <span class="ml-auto ${resultClass}">${result}</span>
+            `;
+            
+            history.insertBefore(item, history.firstChild);
+            
+            // Keep only last 10 items
+            while (history.children.length > 10) {
+                history.removeChild(history.lastChild);
+            }
+        }
+        
+        // Update flight time
+        function updateFlightTime() {
+            if (isFlying && flightStartTime) {
+                const now = new Date();
+                const diff = Math.floor((now - flightStartTime) / 1000);
+                const minutes = Math.floor(diff / 60);
+                const seconds = diff % 60;
+                
+                document.getElementById('flight-time').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+        
+        // Update battery and other metrics
+        function updateMetrics() {
+            // Simulate battery drain during flight
+            if (isFlying) {
+                const batteryElement = document.getElementById('battery-percent');
+                const currentBattery = parseInt(batteryElement.textContent);
+                if (currentBattery > 20 && Math.random() < 0.05) {
+                    const newBattery = currentBattery - 1;
+                    batteryElement.textContent = newBattery;
+                    
+                    const batteryBar = document.getElementById('battery-bar');
+                    batteryBar.style.width = newBattery + '%';
+                    
+                    if (newBattery < 20) {
+                        batteryBar.style.backgroundColor = 'var(--danger-color)';
+                    } else if (newBattery < 50) {
+                        batteryBar.style.backgroundColor = 'var(--warning-color)';
+                    }
+                    
+                    // Update estimated time
+                    document.getElementById('estimated-time').textContent = Math.floor(newBattery / 6);
+                }
+            }
+            
+            // Update temperature
+            const tempElement = document.getElementById('temperature');
+            const currentTemp = parseInt(tempElement.textContent);
+            if (Math.random() < 0.1) {
+                const newTemp = currentTemp + (Math.random() < 0.5 ? -1 : 1);
+                if (newTemp >= 35 && newTemp <= 50) {
+                    tempElement.textContent = newTemp;
+                }
+            }
+        }
+        
+        // Start updating timers and metrics
+        setInterval(updateFlightTime, 1000);
+        setInterval(updateMetrics, 2000);
+    </script>
+</body>
+</html>

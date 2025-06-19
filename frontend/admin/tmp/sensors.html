@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>センサー監視 - MFG Drone Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="drone-icon">🚁</div>
+                    <h1>MFG Drone Admin</h1>
+                </div>
+                <div class="connection-status status-connected">
+                    <div class="status-indicator"></div>
+                    接続中
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="container">
+            <div class="nav-container">
+                <a href="dashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    ダッシュボード
+                </a>
+                <a href="connection.html" class="nav-item">
+                    <span class="nav-icon">🔗</span>
+                    接続管理
+                </a>
+                <a href="flight-control.html" class="nav-item">
+                    <span class="nav-icon">🚁</span>
+                    飛行制御
+                </a>
+                <a href="movement.html" class="nav-item">
+                    <span class="nav-icon">🎮</span>
+                    移動制御
+                </a>
+                <a href="camera.html" class="nav-item">
+                    <span class="nav-icon">📹</span>
+                    カメラ
+                </a>
+                <a href="sensors.html" class="nav-item active">
+                    <span class="nav-icon">📡</span>
+                    センサー
+                </a>
+                <a href="tracking.html" class="nav-item">
+                    <span class="nav-icon">🎯</span>
+                    物体追跡
+                </a>
+                <a href="models.html" class="nav-item">
+                    <span class="nav-icon">🧠</span>
+                    モデル管理
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    設定
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="page-title">センサー監視</div>
+            <div class="page-subtitle">ドローンの各種センサー情報をリアルタイム表示</div>
+
+            <!-- Main Metrics -->
+            <div class="metrics">
+                <div class="metric-card">
+                    <div class="metric-value" id="battery-level">85<span class="metric-unit">%</span></div>
+                    <div class="metric-label">バッテリー</div>
+                    <div class="progress mt-2">
+                        <div class="progress-bar" id="battery-bar" style="width: 85%; background-color: var(--success-color);"></div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="altitude-reading">120<span class="metric-unit">cm</span></div>
+                    <div class="metric-label">飛行高度</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="temperature-reading">42<span class="metric-unit">°C</span></div>
+                    <div class="metric-label">温度</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="flight-time-reading">05:42</div>
+                    <div class="metric-label">飛行時間</div>
+                </div>
+            </div>
+
+            <!-- Sensor Grid -->
+            <div class="grid grid-2">
+                <!-- Position & Orientation -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🧭 位置・姿勢</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="sensor-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="sensor-item">
+                                <div class="sensor-label">ピッチ角</div>
+                                <div class="sensor-value" id="pitch-value">2°</div>
+                                <div class="sensor-bar">
+                                    <div class="progress">
+                                        <div class="progress-bar" id="pitch-bar" style="width: 51%; background-color: var(--info-color);"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="sensor-item">
+                                <div class="sensor-label">ロール角</div>
+                                <div class="sensor-value" id="roll-value">-1°</div>
+                                <div class="sensor-bar">
+                                    <div class="progress">
+                                        <div class="progress-bar" id="roll-bar" style="width: 49%; background-color: var(--info-color);"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="sensor-item">
+                                <div class="sensor-label">ヨー角</div>
+                                <div class="sensor-value" id="yaw-value">45°</div>
+                                <div class="sensor-bar">
+                                    <div class="progress">
+                                        <div class="progress-bar" id="yaw-bar" style="width: 62%; background-color: var(--info-color);"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="sensor-item">
+                                <div class="sensor-label">ToF距離</div>
+                                <div class="sensor-value" id="tof-value">150mm</div>
+                                <div class="sensor-bar">
+                                    <div class="progress">
+                                        <div class="progress-bar" id="tof-bar" style="width: 30%; background-color: var(--warning-color);"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Velocity & Acceleration -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">⚡ 速度・加速度</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="velocity-section mb-4">
+                            <div class="sensor-label mb-2">速度 (cm/s)</div>
+                            <div class="grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                                <div class="velocity-axis">
+                                    <div class="axis-label">X軸</div>
+                                    <div class="axis-value" id="velocity-x">5</div>
+                                </div>
+                                <div class="velocity-axis">
+                                    <div class="axis-label">Y軸</div>
+                                    <div class="axis-value" id="velocity-y">-2</div>
+                                </div>
+                                <div class="velocity-axis">
+                                    <div class="axis-label">Z軸</div>
+                                    <div class="axis-value" id="velocity-z">0</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="acceleration-section">
+                            <div class="sensor-label mb-2">加速度 (g)</div>
+                            <div class="grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                                <div class="acceleration-axis">
+                                    <div class="axis-label">X軸</div>
+                                    <div class="axis-value" id="acceleration-x">0.12</div>
+                                </div>
+                                <div class="acceleration-axis">
+                                    <div class="axis-label">Y軸</div>
+                                    <div class="axis-value" id="acceleration-y">-0.05</div>
+                                </div>
+                                <div class="acceleration-axis">
+                                    <div class="axis-label">Z軸</div>
+                                    <div class="axis-value" id="acceleration-z">0.98</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Environmental -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🌡️ 環境センサー</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="env-sensors">
+                            <div class="env-item mb-3" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="flex items-center">
+                                    <span class="sensor-icon mr-3">🌡️</span>
+                                    <span class="sensor-name">温度</span>
+                                </div>
+                                <div class="sensor-reading">
+                                    <span id="temp-detailed" class="font-semibold">42°C</span>
+                                    <div class="text-xs text-gray-500">正常範囲</div>
+                                </div>
+                            </div>
+
+                            <div class="env-item mb-3" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="flex items-center">
+                                    <span class="sensor-icon mr-3">🌬️</span>
+                                    <span class="sensor-name">気圧</span>
+                                </div>
+                                <div class="sensor-reading">
+                                    <span id="barometer-reading" class="font-semibold">1013.2 hPa</span>
+                                    <div class="text-xs text-gray-500">海面レベル</div>
+                                </div>
+                            </div>
+
+                            <div class="env-item mb-3" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="flex items-center">
+                                    <span class="sensor-icon mr-3">💨</span>
+                                    <span class="sensor-name">風速推定</span>
+                                </div>
+                                <div class="sensor-reading">
+                                    <span id="wind-speed" class="font-semibold">3.2 m/s</span>
+                                    <div class="text-xs text-gray-500">軽風</div>
+                                </div>
+                            </div>
+
+                            <div class="env-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="flex items-center">
+                                    <span class="sensor-icon mr-3">🔋</span>
+                                    <span class="sensor-name">電圧</span>
+                                </div>
+                                <div class="sensor-reading">
+                                    <span id="voltage-reading" class="font-semibold">11.8V</span>
+                                    <div class="text-xs text-gray-500">3セル満充電</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Status -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🔧 システム状態</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="system-status">
+                            <div class="status-item mb-3" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="flex items-center">
+                                    <div class="status-indicator-large status-online"></div>
+                                    <span class="ml-3">IMU センサー</span>
+                                </div>
+                                <span class="text-success font-semibold">正常</span>
+                            </div>
+
+                            <div class="status-item mb-3" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="flex items-center">
+                                    <div class="status-indicator-large status-online"></div>
+                                    <span class="ml-3">ジャイロスコープ</span>
+                                </div>
+                                <span class="text-success font-semibold">正常</span>
+                            </div>
+
+                            <div class="status-item mb-3" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="flex items-center">
+                                    <div class="status-indicator-large status-online"></div>
+                                    <span class="ml-3">加速度計</span>
+                                </div>
+                                <span class="text-success font-semibold">正常</span>
+                            </div>
+
+                            <div class="status-item mb-3" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="flex items-center">
+                                    <div class="status-indicator-large status-warning"></div>
+                                    <span class="ml-3">GPS</span>
+                                </div>
+                                <span class="text-warning font-semibold">信号弱</span>
+                            </div>
+
+                            <div class="status-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="flex items-center">
+                                    <div class="status-indicator-large status-online"></div>
+                                    <span class="ml-3">モーター</span>
+                                </div>
+                                <span class="text-success font-semibold">4基正常</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sensor Charts -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <div class="flex justify-between items-center">
+                        <h3 class="card-title">📈 センサー履歴</h3>
+                        <div class="flex gap-2">
+                            <select class="btn btn-secondary btn-sm" id="chart-timerange" style="border: 1px solid #d1d5db; background: white;">
+                                <option value="1m">1分</option>
+                                <option value="5m" selected>5分</option>
+                                <option value="15m">15分</option>
+                                <option value="1h">1時間</option>
+                            </select>
+                            <button class="btn btn-secondary btn-sm" id="export-data">
+                                <span>📊</span> エクスポート
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="chart-container" style="height: 300px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6b7280;">
+                        <div class="text-center">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">📈</div>
+                            <div class="font-semibold">センサーデータ履歴グラフ</div>
+                            <div class="text-sm mt-1">Chart.js または類似ライブラリで実装予定</div>
+                            <div class="text-sm">バッテリー、温度、高度、姿勢角の時系列データ</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sensor Calibration -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h3 class="card-title">🎯 センサー校正</h3>
+                </div>
+                <div class="card-content">
+                    <div class="grid grid-2">
+                        <div>
+                            <h4 class="font-semibold mb-2">IMU校正</h4>
+                            <p class="text-sm text-gray-600 mb-3">
+                                ジャイロスコープと加速度計の校正を行います。
+                                ドローンを水平な場所に置いて実行してください。
+                            </p>
+                            <div class="mb-3">
+                                <div class="form-label text-sm">校正ステータス</div>
+                                <div class="flex items-center">
+                                    <div class="status-indicator-large status-online"></div>
+                                    <span class="ml-2 text-success">校正済み (2024/06/19)</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-warning" id="calibrate-imu">
+                                <span>🎯</span> IMU校正実行
+                            </button>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold mb-2">コンパス校正</h4>
+                            <p class="text-sm text-gray-600 mb-3">
+                                磁力計の校正を行います。ドローンを様々な方向に
+                                回転させて磁場のキャリブレーションを行います。
+                            </p>
+                            <div class="mb-3">
+                                <div class="form-label text-sm">校正ステータス</div>
+                                <div class="flex items-center">
+                                    <div class="status-indicator-large status-warning"></div>
+                                    <span class="ml-2 text-warning">要校正</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-warning" id="calibrate-compass">
+                                <span>🧭</span> コンパス校正
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sensor Settings -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h3 class="card-title">⚙️ センサー設定</h3>
+                </div>
+                <div class="card-content">
+                    <div class="grid grid-2">
+                        <div>
+                            <div class="form-group">
+                                <label class="form-label">データ更新頻度</label>
+                                <select class="form-select" id="update-frequency">
+                                    <option value="1">1秒毎</option>
+                                    <option value="0.5" selected>0.5秒毎</option>
+                                    <option value="0.1">0.1秒毎 (高頻度)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="flex items-center gap-2">
+                                    <input type="checkbox" id="auto-logging" class="form-checkbox" checked>
+                                    <label for="auto-logging" class="form-label mb-0">自動ログ記録</label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="flex items-center gap-2">
+                                    <input type="checkbox" id="alert-enabled" class="form-checkbox" checked>
+                                    <label for="alert-enabled" class="form-label mb-0">異常値アラート</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="form-group">
+                                <label class="form-label">温度警告閾値</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="range" class="form-input" id="temp-threshold" min="50" max="80" value="65" style="flex: 1;">
+                                    <span id="temp-threshold-display" class="font-semibold">65°C</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">バッテリー警告閾値</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="range" class="form-input" id="battery-threshold" min="10" max="50" value="20" style="flex: 1;">
+                                    <span id="battery-threshold-display" class="font-semibold">20%</span>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-primary" id="apply-sensor-settings">
+                                <span>💾</span> 設定を適用
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/admin.js"></script>
+    <script>
+        // Update font family for Japanese text
+        document.body.style.fontFamily = "'Noto Sans JP', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        
+        // Sensor data simulation
+        function updateSensorData() {
+            // Battery
+            const battery = Math.max(15, parseInt(document.getElementById('battery-level').textContent) - (Math.random() < 0.05 ? 1 : 0));
+            document.getElementById('battery-level').innerHTML = `${battery}<span class="metric-unit">%</span>`;
+            document.getElementById('battery-bar').style.width = battery + '%';
+            
+            if (battery < 20) {
+                document.getElementById('battery-bar').style.backgroundColor = 'var(--danger-color)';
+            } else if (battery < 50) {
+                document.getElementById('battery-bar').style.backgroundColor = 'var(--warning-color)';
+            }
+            
+            // Temperature
+            const temp = Math.floor(Math.random() * 4 + 40);
+            document.getElementById('temperature-reading').innerHTML = `${temp}<span class="metric-unit">°C</span>`;
+            document.getElementById('temp-detailed').textContent = `${temp}°C`;
+            
+            // Altitude (random walk)
+            const currentAlt = parseInt(document.getElementById('altitude-reading').textContent);
+            const altChange = (Math.random() - 0.5) * 10;
+            const newAlt = Math.max(50, Math.min(300, currentAlt + altChange));
+            document.getElementById('altitude-reading').innerHTML = `${Math.round(newAlt)}<span class="metric-unit">cm</span>`;
+            
+            // Attitude
+            updateAttitude();
+            
+            // Velocity
+            updateVelocity();
+            
+            // Acceleration
+            updateAcceleration();
+            
+            // Environmental
+            updateEnvironmental();
+        }
+        
+        function updateAttitude() {
+            // Pitch (-10 to +10 degrees)
+            const pitch = Math.floor(Math.random() * 20 - 10);
+            document.getElementById('pitch-value').textContent = pitch + '°';
+            document.getElementById('pitch-bar').style.width = (50 + pitch * 2.5) + '%';
+            
+            // Roll (-10 to +10 degrees)
+            const roll = Math.floor(Math.random() * 20 - 10);
+            document.getElementById('roll-value').textContent = roll + '°';
+            document.getElementById('roll-bar').style.width = (50 + roll * 2.5) + '%';
+            
+            // Yaw (0 to 360 degrees)
+            const yaw = Math.floor(Math.random() * 360);
+            document.getElementById('yaw-value').textContent = yaw + '°';
+            document.getElementById('yaw-bar').style.width = (yaw / 360 * 100) + '%';
+            
+            // ToF distance
+            const tof = Math.floor(Math.random() * 300 + 100);
+            document.getElementById('tof-value').textContent = tof + 'mm';
+            document.getElementById('tof-bar').style.width = Math.min(100, tof / 5) + '%';
+        }
+        
+        function updateVelocity() {
+            const vx = (Math.random() * 20 - 10).toFixed(0);
+            const vy = (Math.random() * 20 - 10).toFixed(0);
+            const vz = (Math.random() * 10 - 5).toFixed(0);
+            
+            document.getElementById('velocity-x').textContent = vx;
+            document.getElementById('velocity-y').textContent = vy;
+            document.getElementById('velocity-z').textContent = vz;
+        }
+        
+        function updateAcceleration() {
+            const ax = (Math.random() * 0.4 - 0.2).toFixed(2);
+            const ay = (Math.random() * 0.4 - 0.2).toFixed(2);
+            const az = (Math.random() * 0.2 + 0.9).toFixed(2);
+            
+            document.getElementById('acceleration-x').textContent = ax;
+            document.getElementById('acceleration-y').textContent = ay;
+            document.getElementById('acceleration-z').textContent = az;
+        }
+        
+        function updateEnvironmental() {
+            // Barometer
+            const pressure = (Math.random() * 10 + 1010).toFixed(1);
+            document.getElementById('barometer-reading').textContent = pressure + ' hPa';
+            
+            // Wind speed
+            const wind = (Math.random() * 5 + 1).toFixed(1);
+            document.getElementById('wind-speed').textContent = wind + ' m/s';
+            
+            // Voltage
+            const voltage = (Math.random() * 0.5 + 11.5).toFixed(1);
+            document.getElementById('voltage-reading').textContent = voltage + 'V';
+        }
+        
+        function updateFlightTime() {
+            const timeElement = document.getElementById('flight-time-reading');
+            const currentTime = timeElement.textContent;
+            const [minutes, seconds] = currentTime.split(':').map(Number);
+            const totalSeconds = minutes * 60 + seconds + 1;
+            const newMinutes = Math.floor(totalSeconds / 60);
+            const newSeconds = totalSeconds % 60;
+            timeElement.textContent = `${newMinutes.toString().padStart(2, '0')}:${newSeconds.toString().padStart(2, '0')}`;
+        }
+        
+        // Calibration functions
+        document.getElementById('calibrate-imu').addEventListener('click', function() {
+            this.disabled = true;
+            this.innerHTML = '<span class="loading"></span> 校正中...';
+            
+            setTimeout(() => {
+                this.disabled = false;
+                this.innerHTML = '<span>🎯</span> IMU校正実行';
+                window.DroneAdmin.showAlert('IMU校正が完了しました', 'success');
+            }, 5000);
+        });
+        
+        document.getElementById('calibrate-compass').addEventListener('click', function() {
+            this.disabled = true;
+            this.innerHTML = '<span class="loading"></span> 校正中...';
+            
+            setTimeout(() => {
+                this.disabled = false;
+                this.innerHTML = '<span>🧭</span> コンパス校正';
+                window.DroneAdmin.showAlert('コンパス校正が完了しました', 'success');
+            }, 8000);
+        });
+        
+        // Settings
+        document.getElementById('temp-threshold').addEventListener('input', function() {
+            document.getElementById('temp-threshold-display').textContent = this.value + '°C';
+        });
+        
+        document.getElementById('battery-threshold').addEventListener('input', function() {
+            document.getElementById('battery-threshold-display').textContent = this.value + '%';
+        });
+        
+        document.getElementById('apply-sensor-settings').addEventListener('click', function() {
+            window.DroneAdmin.showAlert('センサー設定を適用しました', 'success');
+        });
+        
+        document.getElementById('export-data').addEventListener('click', function() {
+            window.DroneAdmin.showAlert('センサーデータをエクスポートしました', 'success');
+        });
+        
+        // Chart time range
+        document.getElementById('chart-timerange').addEventListener('change', function() {
+            window.DroneAdmin.showAlert(`表示範囲を${this.value}に変更しました`, 'info');
+        });
+        
+        // Add CSS for axis values
+        const style = document.createElement('style');
+        style.textContent = `
+            .velocity-axis, .acceleration-axis {
+                text-align: center;
+                padding: 0.75rem;
+                background: #f9fafb;
+                border-radius: 8px;
+            }
+            
+            .axis-label {
+                font-size: 0.75rem;
+                color: #6b7280;
+                margin-bottom: 0.5rem;
+            }
+            
+            .axis-value {
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: var(--primary-color);
+            }
+            
+            .sensor-item {
+                text-align: center;
+            }
+            
+            .sensor-label {
+                font-size: 0.75rem;
+                color: #6b7280;
+                margin-bottom: 0.5rem;
+            }
+            
+            .sensor-value {
+                font-size: 1.1rem;
+                font-weight: 600;
+                color: var(--primary-color);
+                margin-bottom: 0.5rem;
+            }
+            
+            .sensor-bar .progress {
+                height: 4px;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Start real-time updates
+        setInterval(updateSensorData, 1000);
+        setInterval(updateFlightTime, 1000);
+    </script>
+</body>
+</html>

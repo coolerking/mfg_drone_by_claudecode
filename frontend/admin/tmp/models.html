@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>モデル管理 - MFG Drone Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="drone-icon">🚁</div>
+                    <h1>MFG Drone Admin</h1>
+                </div>
+                <div class="connection-status status-connected">
+                    <div class="status-indicator"></div>
+                    接続中
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="container">
+            <div class="nav-container">
+                <a href="dashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    ダッシュボード
+                </a>
+                <a href="connection.html" class="nav-item">
+                    <span class="nav-icon">🔗</span>
+                    接続管理
+                </a>
+                <a href="flight-control.html" class="nav-item">
+                    <span class="nav-icon">🚁</span>
+                    飛行制御
+                </a>
+                <a href="movement.html" class="nav-item">
+                    <span class="nav-icon">🎮</span>
+                    移動制御
+                </a>
+                <a href="camera.html" class="nav-item">
+                    <span class="nav-icon">📹</span>
+                    カメラ
+                </a>
+                <a href="sensors.html" class="nav-item">
+                    <span class="nav-icon">📡</span>
+                    センサー
+                </a>
+                <a href="tracking.html" class="nav-item">
+                    <span class="nav-icon">🎯</span>
+                    物体追跡
+                </a>
+                <a href="models.html" class="nav-item active">
+                    <span class="nav-icon">🧠</span>
+                    モデル管理
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    設定
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="page-title">モデル管理</div>
+            <div class="page-subtitle">AI物体認識モデルの学習・管理</div>
+
+            <!-- Main Grid -->
+            <div class="grid grid-2">
+                <!-- New Model Training -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🎓 新規モデル学習</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="form-group">
+                            <label class="form-label">モデル名</label>
+                            <input type="text" class="form-input" id="model-name" placeholder="例: マイペット認識モデル">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">対象物カテゴリ</label>
+                            <select class="form-select" id="object-category">
+                                <option value="person">人物</option>
+                                <option value="vehicle">車両</option>
+                                <option value="animal">動物</option>
+                                <option value="object">物体</option>
+                                <option value="custom">カスタム</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">学習用画像</label>
+                            <div class="upload-area" style="border: 2px dashed #d1d5db; border-radius: 8px; padding: 2rem; text-align: center; cursor: pointer;" id="upload-area">
+                                <div class="upload-content">
+                                    <div style="font-size: 3rem; margin-bottom: 1rem;">📁</div>
+                                    <div class="font-semibold">画像ファイルをドラッグ&ドロップ</div>
+                                    <div class="text-sm text-gray-500 mt-1">または</div>
+                                    <button type="button" class="btn btn-secondary mt-2">ファイルを選択</button>
+                                    <input type="file" id="image-files" multiple accept="image/*" style="display: none;">
+                                </div>
+                            </div>
+                            <div class="text-sm text-gray-500 mt-2">
+                                推奨: 最低50枚、様々な角度・環境での画像
+                            </div>
+                        </div>
+
+                        <div class="uploaded-files" id="uploaded-files" style="display: none;">
+                            <div class="form-label">アップロード済み画像 (<span id="file-count">0</span>枚)</div>
+                            <div class="file-list" id="file-list" style="max-height: 150px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 4px; padding: 0.5rem;">
+                                <!-- Files will be listed here -->
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">学習設定</label>
+                            <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div>
+                                    <label class="form-label text-sm">エポック数</label>
+                                    <input type="number" class="form-input" id="epochs" value="100" min="10" max="500">
+                                </div>
+                                <div>
+                                    <label class="form-label text-sm">バッチサイズ</label>
+                                    <select class="form-select" id="batch-size">
+                                        <option value="8">8</option>
+                                        <option value="16" selected>16</option>
+                                        <option value="32">32</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-success w-full" id="start-training" disabled>
+                            <span>🚀</span> 学習開始
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Training Progress -->
+                <div class="card" id="training-progress-card" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title">📈 学習進捗</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="training-info mb-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-semibold">学習中モデル:</span>
+                                <span id="training-model-name">-</span>
+                            </div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-semibold">進捗:</span>
+                                <span id="training-progress-text">0/100 エポック</span>
+                            </div>
+                            <div class="progress mb-2">
+                                <div class="progress-bar" id="training-progress-bar" style="width: 0%;"></div>
+                            </div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-semibold">推定残り時間:</span>
+                                <span id="eta">-</span>
+                            </div>
+                        </div>
+
+                        <div class="metrics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="metric-item" style="text-align: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: var(--primary-color);">
+                                    <span id="current-accuracy">0</span><span class="metric-unit">%</span>
+                                </div>
+                                <div class="metric-label">現在の精度</div>
+                            </div>
+                            <div class="metric-item" style="text-align: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: var(--primary-color);">
+                                    <span id="training-loss">0.000</span>
+                                </div>
+                                <div class="metric-label">損失値</div>
+                            </div>
+                        </div>
+
+                        <div class="training-log mt-4">
+                            <div class="form-label">学習ログ</div>
+                            <div class="log-container" style="height: 120px; overflow-y: auto; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px; padding: 0.5rem; font-family: monospace; font-size: 0.75rem;" id="training-log">
+                                学習ログがここに表示されます...
+                            </div>
+                        </div>
+
+                        <button class="btn btn-danger w-full mt-4" id="stop-training">
+                            <span>⏹️</span> 学習停止
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Model List -->
+                <div class="card" style="grid-column: span 2;">
+                    <div class="card-header">
+                        <div class="flex justify-between items-center">
+                            <h3 class="card-title">📚 モデル一覧</h3>
+                            <div class="flex gap-2">
+                                <button class="btn btn-secondary btn-sm" id="refresh-models">
+                                    <span>🔄</span> 更新
+                                </button>
+                                <button class="btn btn-secondary btn-sm" id="import-model">
+                                    <span>📥</span> インポート
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="model-list" id="model-list">
+                            <!-- Existing models -->
+                            <div class="model-item" style="display: flex; align-items: center; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 1rem;">
+                                <div class="model-icon" style="width: 48px; height: 48px; background: var(--primary-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; margin-right: 1rem;">
+                                    🧠
+                                </div>
+                                <div class="model-info" style="flex: 1;">
+                                    <div class="model-name font-semibold">人物検出モデル</div>
+                                    <div class="model-meta text-sm text-gray-500">
+                                        作成日: 2024-06-15 | 精度: 92.3% | サイズ: 45.2MB
+                                    </div>
+                                </div>
+                                <div class="model-status">
+                                    <span class="status-badge" style="background: rgba(16, 185, 129, 0.1); color: var(--success-color); padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem;">
+                                        アクティブ
+                                    </span>
+                                </div>
+                                <div class="model-actions ml-4">
+                                    <button class="btn btn-secondary btn-sm mr-2" onclick="testModel('person')">
+                                        <span>🧪</span> テスト
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm mr-2" onclick="downloadModel('person')">
+                                        <span>📥</span> DL
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteModel('person')">
+                                        <span>🗑️</span> 削除
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="model-item" style="display: flex; align-items: center; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 1rem;">
+                                <div class="model-icon" style="width: 48px; height: 48px; background: var(--success-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; margin-right: 1rem;">
+                                    🚗
+                                </div>
+                                <div class="model-info" style="flex: 1;">
+                                    <div class="model-name font-semibold">車両検出モデル</div>
+                                    <div class="model-meta text-sm text-gray-500">
+                                        作成日: 2024-06-12 | 精度: 88.7% | サイズ: 52.1MB
+                                    </div>
+                                </div>
+                                <div class="model-status">
+                                    <span class="status-badge" style="background: rgba(107, 114, 128, 0.1); color: var(--gray-500); padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem;">
+                                        非アクティブ
+                                    </span>
+                                </div>
+                                <div class="model-actions ml-4">
+                                    <button class="btn btn-secondary btn-sm mr-2" onclick="testModel('vehicle')">
+                                        <span>🧪</span> テスト
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm mr-2" onclick="downloadModel('vehicle')">
+                                        <span>📥</span> DL
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteModel('vehicle')">
+                                        <span>🗑️</span> 削除
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="model-item" style="display: flex; align-items: center; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 1rem;">
+                                <div class="model-icon" style="width: 48px; height: 48px; background: var(--warning-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; margin-right: 1rem;">
+                                    🐕
+                                </div>
+                                <div class="model-info" style="flex: 1;">
+                                    <div class="model-name font-semibold">ペット検出モデル</div>
+                                    <div class="model-meta text-sm text-gray-500">
+                                        作成日: 2024-06-10 | 精度: 85.2% | サイズ: 38.9MB
+                                    </div>
+                                </div>
+                                <div class="model-status">
+                                    <span class="status-badge" style="background: rgba(245, 158, 11, 0.1); color: var(--warning-color); padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem;">
+                                        学習中
+                                    </span>
+                                </div>
+                                <div class="model-actions ml-4">
+                                    <button class="btn btn-secondary btn-sm mr-2" disabled>
+                                        <span>🧪</span> テスト
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm mr-2" disabled>
+                                        <span>📥</span> DL
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteModel('pet')">
+                                        <span>🗑️</span> 削除
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model Testing -->
+            <div class="card mt-4" id="model-test-card" style="display: none;">
+                <div class="card-header">
+                    <h3 class="card-title">🧪 モデルテスト</h3>
+                </div>
+                <div class="card-content">
+                    <div class="test-area">
+                        <div class="form-group">
+                            <label class="form-label">テスト画像</label>
+                            <div class="test-image-area" style="border: 2px dashed #d1d5db; border-radius: 8px; padding: 2rem; text-align: center;">
+                                <div id="test-image-placeholder">
+                                    <div style="font-size: 3rem; margin-bottom: 1rem;">🖼️</div>
+                                    <div class="font-semibold">テスト画像をアップロード</div>
+                                    <button type="button" class="btn btn-secondary mt-2" id="upload-test-image">ファイルを選択</button>
+                                    <input type="file" id="test-image-file" accept="image/*" style="display: none;">
+                                </div>
+                                <img id="test-image-preview" style="max-width: 100%; max-height: 300px; display: none;">
+                            </div>
+                        </div>
+
+                        <div class="test-results" id="test-results" style="display: none;">
+                            <div class="form-label">検出結果</div>
+                            <div class="results-container" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem;">
+                                <div class="result-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0;">
+                                    <span>検出オブジェクト:</span>
+                                    <span id="detected-object" class="font-semibold">-</span>
+                                </div>
+                                <div class="result-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0;">
+                                    <span>信頼度:</span>
+                                    <span id="detection-confidence" class="font-semibold">-</span>
+                                </div>
+                                <div class="result-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0;">
+                                    <span>処理時間:</span>
+                                    <span id="processing-time" class="font-semibold">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="test-actions mt-4">
+                            <button class="btn btn-primary" id="run-test" disabled>
+                                <span>🚀</span> テスト実行
+                            </button>
+                            <button class="btn btn-secondary ml-2" id="close-test">
+                                <span>❌</span> 閉じる
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usage Instructions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h3 class="card-title">📖 使用方法</h3>
+                </div>
+                <div class="card-content">
+                    <div class="grid grid-2">
+                        <div>
+                            <h4 class="font-semibold mb-2">モデル学習手順</h4>
+                            <ol style="list-style: decimal; padding-left: 1.5rem;">
+                                <li class="mb-1">モデル名と対象物カテゴリを設定</li>
+                                <li class="mb-1">学習用画像を50枚以上アップロード</li>
+                                <li class="mb-1">学習設定を調整（エポック数、バッチサイズ）</li>
+                                <li class="mb-1">「学習開始」ボタンをクリック</li>
+                                <li class="mb-1">学習完了まで待機（通常30分〜数時間）</li>
+                            </ol>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold mb-2">学習のコツ</h4>
+                            <ul style="list-style: disc; padding-left: 1.5rem;">
+                                <li class="mb-1">様々な角度・環境の画像を使用</li>
+                                <li class="mb-1">明るさや背景の異なる画像を含める</li>
+                                <li class="mb-1">対象物以外の画像も少量含める</li>
+                                <li class="mb-1">画像の品質は解像度よりも多様性を重視</li>
+                                <li class="mb-1">学習完了後は必ずテストを実行</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/admin.js"></script>
+    <script>
+        // Update font family for Japanese text
+        document.body.style.fontFamily = "'Noto Sans JP', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        
+        let uploadedFiles = [];
+        let trainingActive = false;
+        let currentTestModel = null;
+        
+        // File upload handling
+        document.getElementById('upload-area').addEventListener('click', function() {
+            document.getElementById('image-files').click();
+        });
+        
+        document.getElementById('image-files').addEventListener('change', function(e) {
+            handleFileSelection(e.target.files);
+        });
+        
+        // Drag and drop
+        document.getElementById('upload-area').addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.borderColor = 'var(--primary-color)';
+            this.style.backgroundColor = 'rgba(37, 99, 235, 0.05)';
+        });
+        
+        document.getElementById('upload-area').addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#d1d5db';
+            this.style.backgroundColor = 'transparent';
+        });
+        
+        document.getElementById('upload-area').addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#d1d5db';
+            this.style.backgroundColor = 'transparent';
+            handleFileSelection(e.dataTransfer.files);
+        });
+        
+        function handleFileSelection(files) {
+            for (let file of files) {
+                if (file.type.startsWith('image/')) {
+                    uploadedFiles.push(file);
+                }
+            }
+            
+            updateFileList();
+            updateStartButton();
+        }
+        
+        function updateFileList() {
+            const fileCount = document.getElementById('file-count');
+            const fileList = document.getElementById('file-list');
+            const uploadedSection = document.getElementById('uploaded-files');
+            
+            fileCount.textContent = uploadedFiles.length;
+            
+            if (uploadedFiles.length > 0) {
+                uploadedSection.style.display = 'block';
+                fileList.innerHTML = uploadedFiles.map((file, index) => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0; border-bottom: 1px solid #f3f4f6;">
+                        <span style="font-size: 0.75rem;">${file.name}</span>
+                        <button onclick="removeFile(${index})" style="color: var(--danger-color); background: none; border: none; cursor: pointer;">×</button>
+                    </div>
+                `).join('');
+            } else {
+                uploadedSection.style.display = 'none';
+            }
+        }
+        
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            updateFileList();
+            updateStartButton();
+        }
+        
+        function updateStartButton() {
+            const startBtn = document.getElementById('start-training');
+            const modelName = document.getElementById('model-name').value.trim();
+            
+            startBtn.disabled = !(modelName && uploadedFiles.length >= 10);
+        }
+        
+        // Training controls
+        document.getElementById('model-name').addEventListener('input', updateStartButton);
+        
+        document.getElementById('start-training').addEventListener('click', function() {
+            if (!trainingActive) {
+                startTraining();
+            }
+        });
+        
+        document.getElementById('stop-training').addEventListener('click', function() {
+            if (trainingActive) {
+                stopTraining();
+            }
+        });
+        
+        function startTraining() {
+            trainingActive = true;
+            
+            const modelName = document.getElementById('model-name').value;
+            document.getElementById('training-model-name').textContent = modelName;
+            document.getElementById('training-progress-card').style.display = 'block';
+            
+            // Clear form
+            document.getElementById('model-name').value = '';
+            uploadedFiles = [];
+            updateFileList();
+            updateStartButton();
+            
+            window.DroneAdmin.showAlert('モデル学習を開始しました', 'success');
+            
+            // Simulate training progress
+            simulateTraining();
+        }
+        
+        function stopTraining() {
+            trainingActive = false;
+            document.getElementById('training-progress-card').style.display = 'none';
+            window.DroneAdmin.showAlert('モデル学習を停止しました', 'warning');
+        }
+        
+        function simulateTraining() {
+            let epoch = 0;
+            const totalEpochs = parseInt(document.getElementById('epochs').value);
+            
+            const trainingInterval = setInterval(() => {
+                if (!trainingActive) {
+                    clearInterval(trainingInterval);
+                    return;
+                }
+                
+                epoch++;
+                const progress = (epoch / totalEpochs) * 100;
+                
+                // Update progress
+                document.getElementById('training-progress-text').textContent = `${epoch}/${totalEpochs} エポック`;
+                document.getElementById('training-progress-bar').style.width = progress + '%';
+                
+                // Update metrics
+                const accuracy = Math.min(95, Math.floor(Math.random() * 10 + 60 + (epoch / totalEpochs) * 30));
+                const loss = (Math.random() * 0.5 + 0.1).toFixed(3);
+                
+                document.getElementById('current-accuracy').textContent = accuracy;
+                document.getElementById('training-loss').textContent = loss;
+                
+                // Update ETA
+                const remainingEpochs = totalEpochs - epoch;
+                const eta = Math.floor(remainingEpochs * 0.5); // 0.5 minutes per epoch
+                document.getElementById('eta').textContent = `${eta}分`;
+                
+                // Add log entry
+                addTrainingLog(`Epoch ${epoch}/${totalEpochs} - Loss: ${loss} - Accuracy: ${accuracy}%`);
+                
+                if (epoch >= totalEpochs) {
+                    clearInterval(trainingInterval);
+                    completeTraining();
+                }
+            }, 1000); // Simulate 1 epoch per second for demo
+        }
+        
+        function addTrainingLog(message) {
+            const log = document.getElementById('training-log');
+            const time = new Date().toTimeString().split(' ')[0];
+            log.innerHTML += `<div>[${time}] ${message}</div>`;
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function completeTraining() {
+            trainingActive = false;
+            document.getElementById('training-progress-card').style.display = 'none';
+            window.DroneAdmin.showAlert('モデル学習が完了しました', 'success');
+            
+            // Add new model to list (simulation)
+            addNewModelToList();
+        }
+        
+        function addNewModelToList() {
+            const modelName = document.getElementById('training-model-name').textContent;
+            const modelList = document.getElementById('model-list');
+            const accuracy = document.getElementById('current-accuracy').textContent;
+            
+            const newModel = document.createElement('div');
+            newModel.className = 'model-item';
+            newModel.style.cssText = 'display: flex; align-items: center; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 1rem;';
+            newModel.innerHTML = `
+                <div class="model-icon" style="width: 48px; height: 48px; background: var(--info-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; margin-right: 1rem;">
+                    🆕
+                </div>
+                <div class="model-info" style="flex: 1;">
+                    <div class="model-name font-semibold">${modelName}</div>
+                    <div class="model-meta text-sm text-gray-500">
+                        作成日: ${new Date().toLocaleDateString()} | 精度: ${accuracy}% | サイズ: 42.1MB
+                    </div>
+                </div>
+                <div class="model-status">
+                    <span class="status-badge" style="background: rgba(16, 185, 129, 0.1); color: var(--success-color); padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem;">
+                        新規
+                    </span>
+                </div>
+                <div class="model-actions ml-4">
+                    <button class="btn btn-secondary btn-sm mr-2" onclick="testModel('new')">
+                        <span>🧪</span> テスト
+                    </button>
+                    <button class="btn btn-secondary btn-sm mr-2" onclick="downloadModel('new')">
+                        <span>📥</span> DL
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteModel('new')">
+                        <span>🗑️</span> 削除
+                    </button>
+                </div>
+            `;
+            
+            modelList.insertBefore(newModel, modelList.firstChild);
+        }
+        
+        // Model actions
+        function testModel(modelId) {
+            currentTestModel = modelId;
+            document.getElementById('model-test-card').style.display = 'block';
+            window.DroneAdmin.showAlert(`${modelId} モデルのテストを開始します`, 'info');
+        }
+        
+        function downloadModel(modelId) {
+            window.DroneAdmin.showAlert(`${modelId} モデルをダウンロードします`, 'info');
+        }
+        
+        function deleteModel(modelId) {
+            if (confirm(`${modelId} モデルを削除しますか？この操作は取り消せません。`)) {
+                window.DroneAdmin.showAlert(`${modelId} モデルを削除しました`, 'warning');
+            }
+        }
+        
+        // Model testing
+        document.getElementById('upload-test-image').addEventListener('click', function() {
+            document.getElementById('test-image-file').click();
+        });
+        
+        document.getElementById('test-image-file').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('test-image-preview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    document.getElementById('test-image-placeholder').style.display = 'none';
+                    document.getElementById('run-test').disabled = false;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        document.getElementById('run-test').addEventListener('click', function() {
+            if (currentTestModel) {
+                this.disabled = true;
+                this.innerHTML = '<span class="loading"></span> 処理中...';
+                
+                setTimeout(() => {
+                    // Simulate test results
+                    const objects = ['Person', 'Car', 'Dog', 'Cat', 'Ball'];
+                    const randomObject = objects[Math.floor(Math.random() * objects.length)];
+                    const confidence = Math.floor(Math.random() * 30 + 70);
+                    const processingTime = Math.floor(Math.random() * 200 + 50);
+                    
+                    document.getElementById('detected-object').textContent = randomObject;
+                    document.getElementById('detection-confidence').textContent = confidence + '%';
+                    document.getElementById('processing-time').textContent = processingTime + 'ms';
+                    document.getElementById('test-results').style.display = 'block';
+                    
+                    this.disabled = false;
+                    this.innerHTML = '<span>🚀</span> テスト実行';
+                    
+                    window.DroneAdmin.showAlert('テストが完了しました', 'success');
+                }, 2000);
+            }
+        });
+        
+        document.getElementById('close-test').addEventListener('click', function() {
+            document.getElementById('model-test-card').style.display = 'none';
+            document.getElementById('test-image-preview').style.display = 'none';
+            document.getElementById('test-image-placeholder').style.display = 'block';
+            document.getElementById('test-results').style.display = 'none';
+            document.getElementById('run-test').disabled = true;
+            currentTestModel = null;
+        });
+        
+        // Other controls
+        document.getElementById('refresh-models').addEventListener('click', function() {
+            window.DroneAdmin.showAlert('モデル一覧を更新しました', 'success');
+        });
+        
+        document.getElementById('import-model').addEventListener('click', function() {
+            window.DroneAdmin.showAlert('モデルインポート機能は開発中です', 'info');
+        });
+        
+        // Make functions globally accessible
+        window.testModel = testModel;
+        window.downloadModel = downloadModel;
+        window.deleteModel = deleteModel;
+        window.removeFile = removeFile;
+    </script>
+</body>
+</html>

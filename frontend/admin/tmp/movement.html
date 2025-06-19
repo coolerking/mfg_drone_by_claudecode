@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>移動制御 - MFG Drone Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="drone-icon">🚁</div>
+                    <h1>MFG Drone Admin</h1>
+                </div>
+                <div class="connection-status status-connected">
+                    <div class="status-indicator"></div>
+                    接続中
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="container">
+            <div class="nav-container">
+                <a href="dashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    ダッシュボード
+                </a>
+                <a href="connection.html" class="nav-item">
+                    <span class="nav-icon">🔗</span>
+                    接続管理
+                </a>
+                <a href="flight-control.html" class="nav-item">
+                    <span class="nav-icon">🚁</span>
+                    飛行制御
+                </a>
+                <a href="movement.html" class="nav-item active">
+                    <span class="nav-icon">🎮</span>
+                    移動制御
+                </a>
+                <a href="camera.html" class="nav-item">
+                    <span class="nav-icon">📹</span>
+                    カメラ
+                </a>
+                <a href="sensors.html" class="nav-item">
+                    <span class="nav-icon">📡</span>
+                    センサー
+                </a>
+                <a href="tracking.html" class="nav-item">
+                    <span class="nav-icon">🎯</span>
+                    物体追跡
+                </a>
+                <a href="models.html" class="nav-item">
+                    <span class="nav-icon">🧠</span>
+                    モデル管理
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    設定
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="page-title">移動制御</div>
+            <div class="page-subtitle">ドローンの移動・回転を制御</div>
+
+            <!-- Status Banner -->
+            <div class="alert alert-success mb-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <strong>現在位置:</strong> X: <span id="pos-x">0</span>cm, Y: <span id="pos-y">0</span>cm, Z: <span id="pos-z">100</span>cm
+                    </div>
+                    <div class="flex items-center">
+                        <span class="status-indicator-large status-online"></span>
+                        <span class="ml-2">飛行中</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Grid -->
+            <div class="grid grid-3">
+                <!-- Directional Movement -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🎮 方向制御</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="movement-section">
+                            <div class="form-group">
+                                <label class="form-label">移動距離</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="range" class="form-input distance-input" min="20" max="500" value="50" style="flex: 1;">
+                                    <span id="distance-display" class="font-semibold">50cm</span>
+                                </div>
+                            </div>
+
+                            <div class="movement-grid mb-4">
+                                <div></div>
+                                <button class="movement-btn" data-direction="forward" title="前進">
+                                    ↑
+                                </button>
+                                <div></div>
+                                <button class="movement-btn" data-direction="left" title="左">
+                                    ←
+                                </button>
+                                <button class="movement-btn" data-direction="up" title="上昇" style="background: var(--success-color); color: white;">
+                                    ↗
+                                </button>
+                                <button class="movement-btn" data-direction="right" title="右">
+                                    →
+                                </button>
+                                <div></div>
+                                <button class="movement-btn" data-direction="back" title="後退">
+                                    ↓
+                                </button>
+                                <button class="movement-btn" data-direction="down" title="下降" style="background: var(--warning-color); color: white;">
+                                    ↙
+                                </button>
+                            </div>
+
+                            <div class="control-group">
+                                <div class="control-group-title">回転制御</div>
+                                <div class="form-group">
+                                    <label class="form-label">回転角度</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="range" class="form-input" id="rotation-angle" min="15" max="360" value="90" style="flex: 1;">
+                                        <span id="angle-display" class="font-semibold">90°</span>
+                                    </div>
+                                </div>
+                                <div class="control-buttons">
+                                    <button class="btn btn-secondary" id="rotate-left">
+                                        <span>↺</span> 左回転
+                                    </button>
+                                    <button class="btn btn-secondary" id="rotate-right">
+                                        <span>↻</span> 右回転
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coordinate Movement -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🎯 座標移動</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="form-group">
+                            <label class="form-label">目標座標</label>
+                            <div class="grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;">
+                                <div>
+                                    <label class="form-label text-sm">X (cm)</label>
+                                    <input type="number" class="form-input" id="target-x" value="0" min="-500" max="500">
+                                </div>
+                                <div>
+                                    <label class="form-label text-sm">Y (cm)</label>
+                                    <input type="number" class="form-input" id="target-y" value="0" min="-500" max="500">
+                                </div>
+                                <div>
+                                    <label class="form-label text-sm">Z (cm)</label>
+                                    <input type="number" class="form-input" id="target-z" value="100" min="50" max="300">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">移動速度</label>
+                            <select class="form-select" id="movement-speed">
+                                <option value="10">低速 (10 cm/s)</option>
+                                <option value="30" selected>標準 (30 cm/s)</option>
+                                <option value="60">高速 (60 cm/s)</option>
+                                <option value="100">最高速 (100 cm/s)</option>
+                            </select>
+                        </div>
+
+                        <button class="btn btn-primary w-full" id="go-to-position">
+                            <span>🎯</span> 指定座標へ移動
+                        </button>
+
+                        <div class="mt-4">
+                            <div class="form-label">クイック座標</div>
+                            <div class="control-buttons">
+                                <button class="btn btn-secondary btn-sm" data-quick="0,0,100">
+                                    🏠 ホーム
+                                </button>
+                                <button class="btn btn-secondary btn-sm" data-quick="100,0,150">
+                                    📍 A地点
+                                </button>
+                                <button class="btn btn-secondary btn-sm" data-quick="-100,100,120">
+                                    📍 B地点
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Controls -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🚀 高度制御</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="form-group">
+                            <label class="form-label">宙返り</label>
+                            <div class="control-buttons">
+                                <button class="btn btn-warning btn-sm" data-flip="forward">
+                                    🔄 前方
+                                </button>
+                                <button class="btn btn-warning btn-sm" data-flip="back">
+                                    🔄 後方
+                                </button>
+                                <button class="btn btn-warning btn-sm" data-flip="left">
+                                    🔄 左
+                                </button>
+                                <button class="btn btn-warning btn-sm" data-flip="right">
+                                    🔄 右
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">曲線飛行</label>
+                            <div class="alert alert-info">
+                                中間点と終点を設定して曲線軌道で移動
+                            </div>
+                            <button class="btn btn-secondary w-full" id="curve-setup">
+                                <span>📈</span> 曲線飛行設定
+                            </button>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">リアルタイム制御</label>
+                            <div class="alert alert-warning">
+                                <small>⚠️ 上級者向け機能</small>
+                            </div>
+                            <button class="btn btn-danger w-full" id="rc-mode">
+                                <span>🎮</span> RCモード
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Position Visualization -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h3 class="card-title">🗺️ 位置可視化</h3>
+                </div>
+                <div class="card-content">
+                    <div class="position-map" style="position: relative; height: 300px; background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%), linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f0f0f0 75%), linear-gradient(-45deg, transparent 75%, #f0f0f0 75%); background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px; border: 2px solid #e5e7eb; border-radius: 8px;">
+                        <!-- Center point -->
+                        <div style="position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: #666; border-radius: 50%; transform: translate(-50%, -50%);"></div>
+                        
+                        <!-- Drone position -->
+                        <div id="drone-indicator" style="position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; background: var(--primary-color); border-radius: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                            🚁
+                        </div>
+                        
+                        <!-- Coordinate labels -->
+                        <div style="position: absolute; top: 10px; left: 10px; font-size: 12px; color: #666;">
+                            座標表示 (XY平面)
+                        </div>
+                        <div style="position: absolute; bottom: 10px; right: 10px; font-size: 12px; color: #666;">
+                            高度: <span id="altitude-display">100cm</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Movement History -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h3 class="card-title">📝 移動履歴</h3>
+                </div>
+                <div class="card-content">
+                    <div class="movement-history" id="movement-history">
+                        <div class="history-item" style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e5e7eb;">
+                            <span class="text-sm text-gray-500">16:47:23</span>
+                            <span class="ml-3">前進 50cm</span>
+                            <span class="ml-auto text-success">完了</span>
+                        </div>
+                        <div class="history-item" style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e5e7eb;">
+                            <span class="text-sm text-gray-500">16:47:15</span>
+                            <span class="ml-3">上昇 30cm</span>
+                            <span class="ml-auto text-success">完了</span>
+                        </div>
+                        <div class="history-item" style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e5e7eb;">
+                            <span class="text-sm text-gray-500">16:47:08</span>
+                            <span class="ml-3">右回転 90°</span>
+                            <span class="ml-auto text-success">完了</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usage Instructions -->
+            <div class="alert alert-info mt-4">
+                <div class="grid grid-2">
+                    <div>
+                        <strong>キーボードショートカット:</strong>
+                        <ul style="list-style: disc; padding-left: 1.5rem; margin-top: 0.5rem;">
+                            <li>W/S: 前進/後退</li>
+                            <li>A/D: 左/右</li>
+                            <li>Q/E: 上昇/下降</li>
+                            <li>矢印キー: 移動</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong>注意事項:</strong>
+                        <ul style="list-style: disc; padding-left: 1.5rem; margin-top: 0.5rem;">
+                            <li>移動前にバッテリー残量を確認</li>
+                            <li>障害物との距離に注意</li>
+                            <li>緊急時はスペースキーで停止</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/admin.js"></script>
+    <script>
+        // Update font family for Japanese text
+        document.body.style.fontFamily = "'Noto Sans JP', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        
+        let currentPosition = { x: 0, y: 0, z: 100 };
+        
+        // Movement control event listeners
+        document.querySelector('.distance-input').addEventListener('input', function() {
+            document.getElementById('distance-display').textContent = this.value + 'cm';
+        });
+        
+        document.getElementById('rotation-angle').addEventListener('input', function() {
+            document.getElementById('angle-display').textContent = this.value + '°';
+        });
+        
+        // Directional movement
+        document.querySelectorAll('.movement-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const direction = this.dataset.direction;
+                const distance = parseInt(document.querySelector('.distance-input').value);
+                
+                executeMovement(direction, distance);
+            });
+        });
+        
+        // Rotation controls
+        document.getElementById('rotate-left').addEventListener('click', function() {
+            const angle = document.getElementById('rotation-angle').value;
+            executeRotation('counter_clockwise', angle);
+        });
+        
+        document.getElementById('rotate-right').addEventListener('click', function() {
+            const angle = document.getElementById('rotation-angle').value;
+            executeRotation('clockwise', angle);
+        });
+        
+        // Coordinate movement
+        document.getElementById('go-to-position').addEventListener('click', function() {
+            const x = parseInt(document.getElementById('target-x').value);
+            const y = parseInt(document.getElementById('target-y').value);
+            const z = parseInt(document.getElementById('target-z').value);
+            const speed = parseInt(document.getElementById('movement-speed').value);
+            
+            executeCoordinateMovement(x, y, z, speed);
+        });
+        
+        // Quick coordinates
+        document.querySelectorAll('[data-quick]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const coords = this.dataset.quick.split(',').map(Number);
+                document.getElementById('target-x').value = coords[0];
+                document.getElementById('target-y').value = coords[1];
+                document.getElementById('target-z').value = coords[2];
+            });
+        });
+        
+        // Flip controls
+        document.querySelectorAll('[data-flip]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const direction = this.dataset.flip;
+                if (confirm(`${direction}方向に宙返りを実行しますか？`)) {
+                    executeFlip(direction);
+                }
+            });
+        });
+        
+        // Advanced controls
+        document.getElementById('curve-setup').addEventListener('click', function() {
+            window.DroneAdmin.showAlert('曲線飛行設定画面を開発中', 'info');
+        });
+        
+        document.getElementById('rc-mode').addEventListener('click', function() {
+            if (confirm('RCモードに切り替えますか？このモードでは手動制御が必要です。')) {
+                window.DroneAdmin.showAlert('RCモードは開発中の機能です', 'warning');
+            }
+        });
+        
+        // Movement execution functions
+        function executeMovement(direction, distance) {
+            const directionNames = {
+                'forward': '前進',
+                'back': '後退',
+                'left': '左',
+                'right': '右',
+                'up': '上昇',
+                'down': '下降'
+            };
+            
+            const movementName = directionNames[direction];
+            addMovementHistory(`${movementName} ${distance}cm`, '実行中');
+            
+            // Update position
+            switch(direction) {
+                case 'forward': currentPosition.y += distance; break;
+                case 'back': currentPosition.y -= distance; break;
+                case 'left': currentPosition.x -= distance; break;
+                case 'right': currentPosition.x += distance; break;
+                case 'up': currentPosition.z += distance; break;
+                case 'down': currentPosition.z = Math.max(50, currentPosition.z - distance); break;
+            }
+            
+            updatePositionDisplay();
+            
+            setTimeout(() => {
+                updateMovementHistoryStatus(`${movementName} ${distance}cm`, '完了');
+                window.DroneAdmin.showAlert(`${movementName} ${distance}cm 完了`, 'success');
+            }, 2000);
+        }
+        
+        function executeRotation(direction, angle) {
+            const directionName = direction === 'clockwise' ? '右回転' : '左回転';
+            addMovementHistory(`${directionName} ${angle}°`, '実行中');
+            
+            setTimeout(() => {
+                updateMovementHistoryStatus(`${directionName} ${angle}°`, '完了');
+                window.DroneAdmin.showAlert(`${directionName} ${angle}° 完了`, 'success');
+            }, 1500);
+        }
+        
+        function executeCoordinateMovement(x, y, z, speed) {
+            addMovementHistory(`座標移動 (${x}, ${y}, ${z})`, '実行中');
+            
+            // Animate position change
+            const startPos = { ...currentPosition };
+            const targetPos = { x, y, z };
+            const steps = 20;
+            let step = 0;
+            
+            const animateMovement = setInterval(() => {
+                step++;
+                const progress = step / steps;
+                
+                currentPosition.x = startPos.x + (targetPos.x - startPos.x) * progress;
+                currentPosition.y = startPos.y + (targetPos.y - startPos.y) * progress;
+                currentPosition.z = startPos.z + (targetPos.z - startPos.z) * progress;
+                
+                updatePositionDisplay();
+                
+                if (step >= steps) {
+                    clearInterval(animateMovement);
+                    updateMovementHistoryStatus(`座標移動 (${x}, ${y}, ${z})`, '完了');
+                    window.DroneAdmin.showAlert('座標移動完了', 'success');
+                }
+            }, 100);
+        }
+        
+        function executeFlip(direction) {
+            const directionNames = {
+                'forward': '前方',
+                'back': '後方',
+                'left': '左',
+                'right': '右'
+            };
+            
+            const flipName = `${directionNames[direction]}宙返り`;
+            addMovementHistory(flipName, '実行中');
+            
+            setTimeout(() => {
+                updateMovementHistoryStatus(flipName, '完了');
+                window.DroneAdmin.showAlert(`${flipName}完了`, 'success');
+            }, 3000);
+        }
+        
+        // UI update functions
+        function updatePositionDisplay() {
+            document.getElementById('pos-x').textContent = Math.round(currentPosition.x);
+            document.getElementById('pos-y').textContent = Math.round(currentPosition.y);
+            document.getElementById('pos-z').textContent = Math.round(currentPosition.z);
+            document.getElementById('altitude-display').textContent = Math.round(currentPosition.z) + 'cm';
+            
+            // Update drone position on map (simplified 2D visualization)
+            const droneIndicator = document.getElementById('drone-indicator');
+            const mapWidth = 300; // Approximate map width
+            const mapHeight = 300; // Approximate map height
+            const scale = 2; // pixels per cm
+            
+            const mapX = mapWidth / 2 + currentPosition.x / scale;
+            const mapY = mapHeight / 2 - currentPosition.y / scale; // Invert Y for screen coordinates
+            
+            droneIndicator.style.left = Math.max(10, Math.min(mapWidth - 10, mapX)) + 'px';
+            droneIndicator.style.top = Math.max(10, Math.min(mapHeight - 10, mapY)) + 'px';
+        }
+        
+        function addMovementHistory(movement, status) {
+            const history = document.getElementById('movement-history');
+            const time = new Date().toTimeString().split(' ')[0];
+            const statusClass = status === '完了' ? 'text-success' : 
+                               status === '実行中' ? 'text-info' : 'text-warning';
+            
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.style.cssText = 'display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e5e7eb;';
+            item.innerHTML = `
+                <span class="text-sm text-gray-500">${time}</span>
+                <span class="ml-3">${movement}</span>
+                <span class="ml-auto ${statusClass}">${status}</span>
+            `;
+            item.dataset.movement = movement;
+            
+            history.insertBefore(item, history.firstChild);
+            
+            // Keep only last 10 items
+            while (history.children.length > 10) {
+                history.removeChild(history.lastChild);
+            }
+        }
+        
+        function updateMovementHistoryStatus(movement, newStatus) {
+            const items = document.querySelectorAll('.history-item');
+            for (let item of items) {
+                if (item.querySelector('span:nth-child(2)').textContent === movement) {
+                    const statusElement = item.querySelector('span:last-child');
+                    statusElement.textContent = newStatus;
+                    statusElement.className = 'ml-auto text-success';
+                    break;
+                }
+            }
+        }
+        
+        // Keyboard controls
+        document.addEventListener('keydown', function(e) {
+            if (document.activeElement.tagName === 'INPUT') return;
+            
+            const distance = parseInt(document.querySelector('.distance-input').value);
+            
+            switch(e.key.toLowerCase()) {
+                case 'w':
+                case 'arrowup':
+                    e.preventDefault();
+                    executeMovement('forward', distance);
+                    break;
+                case 's':
+                case 'arrowdown':
+                    e.preventDefault();
+                    executeMovement('back', distance);
+                    break;
+                case 'a':
+                case 'arrowleft':
+                    e.preventDefault();
+                    executeMovement('left', distance);
+                    break;
+                case 'd':
+                case 'arrowright':
+                    e.preventDefault();
+                    executeMovement('right', distance);
+                    break;
+                case 'q':
+                    e.preventDefault();
+                    executeMovement('up', distance);
+                    break;
+                case 'e':
+                    e.preventDefault();
+                    executeMovement('down', distance);
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    window.DroneAdmin.showAlert('ホバリング', 'info');
+                    break;
+            }
+        });
+        
+        // Initialize position display
+        updatePositionDisplay();
+    </script>
+</body>
+</html>

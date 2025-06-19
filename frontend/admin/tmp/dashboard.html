@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ダッシュボード - MFG Drone Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="drone-icon">🚁</div>
+                    <h1>MFG Drone Admin</h1>
+                </div>
+                <div class="connection-status status-connected">
+                    <div class="status-indicator"></div>
+                    接続中
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="container">
+            <div class="nav-container">
+                <a href="dashboard.html" class="nav-item active">
+                    <span class="nav-icon">📊</span>
+                    ダッシュボード
+                </a>
+                <a href="connection.html" class="nav-item">
+                    <span class="nav-icon">🔗</span>
+                    接続管理
+                </a>
+                <a href="flight-control.html" class="nav-item">
+                    <span class="nav-icon">🚁</span>
+                    飛行制御
+                </a>
+                <a href="movement.html" class="nav-item">
+                    <span class="nav-icon">🎮</span>
+                    移動制御
+                </a>
+                <a href="camera.html" class="nav-item">
+                    <span class="nav-icon">📹</span>
+                    カメラ
+                </a>
+                <a href="sensors.html" class="nav-item">
+                    <span class="nav-icon">📡</span>
+                    センサー
+                </a>
+                <a href="tracking.html" class="nav-item">
+                    <span class="nav-icon">🎯</span>
+                    物体追跡
+                </a>
+                <a href="models.html" class="nav-item">
+                    <span class="nav-icon">🧠</span>
+                    モデル管理
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    設定
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="page-title">ダッシュボード</div>
+            <div class="page-subtitle">システム全体の状態を一覧で確認</div>
+
+            <!-- Status Metrics -->
+            <div class="metrics">
+                <div class="metric-card">
+                    <div class="metric-value battery-level">85<span class="metric-unit">%</span></div>
+                    <div class="metric-label">バッテリー</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value height-value">120<span class="metric-unit">cm</span></div>
+                    <div class="metric-label">飛行高度</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value temperature-value">45<span class="metric-unit">°C</span></div>
+                    <div class="metric-label">温度</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value flight-time-value">05:23</div>
+                    <div class="metric-label">飛行時間</div>
+                </div>
+            </div>
+
+            <!-- Main Dashboard Grid -->
+            <div class="grid grid-2">
+                <!-- Live Video Feed -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📹 ライブ映像</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="video-container">
+                            <img src="https://via.placeholder.com/640x360/1f2937/ffffff?text=Live+Stream" alt="Live Stream" class="video-stream">
+                            <div class="video-overlay" style="display: none;">
+                                <div class="loading"></div>
+                                <div class="ml-2">映像読み込み中...</div>
+                            </div>
+                            <div class="video-controls">
+                                <button class="btn btn-primary btn-sm start-stream-btn">
+                                    <span>▶️</span> 開始
+                                </button>
+                                <button class="btn btn-secondary btn-sm stop-stream-btn">
+                                    <span>⏹️</span> 停止
+                                </button>
+                                <button class="btn btn-warning btn-sm photo-btn">
+                                    <span>📷</span> 撮影
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Status -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🔧 システム状態</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="status-items">
+                            <div class="status-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
+                                <div class="flex items-center">
+                                    <div class="status-indicator-large status-online"></div>
+                                    <span>ドローン接続</span>
+                                </div>
+                                <span class="text-success font-semibold">接続中</span>
+                            </div>
+                            <div class="status-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
+                                <div class="flex items-center">
+                                    <div class="status-indicator-large status-online"></div>
+                                    <span>映像ストリーミング</span>
+                                </div>
+                                <span class="text-success font-semibold">配信中</span>
+                            </div>
+                            <div class="status-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
+                                <div class="flex items-center">
+                                    <div class="status-indicator-large status-warning"></div>
+                                    <span>物体追跡</span>
+                                </div>
+                                <span class="text-warning font-semibold">待機中</span>
+                            </div>
+                            <div class="status-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
+                                <div class="flex items-center">
+                                    <div class="status-indicator-large status-online"></div>
+                                    <span>センサー</span>
+                                </div>
+                                <span class="text-success font-semibold">正常</span>
+                            </div>
+                            <div class="status-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0;">
+                                <div class="flex items-center">
+                                    <div class="status-indicator-large status-online"></div>
+                                    <span>API サーバー</span>
+                                </div>
+                                <span class="text-success font-semibold">稼働中</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">⚡ クイックアクション</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="control-buttons">
+                            <button class="btn btn-success takeoff-btn">
+                                <span>🚀</span> 離陸
+                            </button>
+                            <button class="btn btn-primary land-btn">
+                                <span>🛬</span> 着陸
+                            </button>
+                            <button class="btn btn-danger emergency-btn">
+                                <span>🚨</span> 緊急停止
+                            </button>
+                            <button class="btn btn-warning start-tracking-btn">
+                                <span>🎯</span> 追跡開始
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tracking Status -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🎯 追跡状態</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="tracking-info">
+                            <div class="form-group">
+                                <label class="form-label">追跡対象</label>
+                                <select class="form-select target-object-input">
+                                    <option value="">対象を選択...</option>
+                                    <option value="person">人物</option>
+                                    <option value="car">車</option>
+                                    <option value="ball">ボール</option>
+                                    <option value="custom">カスタムモデル</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">検出状況</label>
+                                <div class="alert alert-warning">
+                                    対象物が検出されていません
+                                </div>
+                            </div>
+                            <div class="control-buttons">
+                                <button class="btn btn-primary start-tracking-btn">
+                                    <span>▶️</span> 追跡開始
+                                </button>
+                                <button class="btn btn-secondary stop-tracking-btn">
+                                    <span>⏹️</span> 追跡停止
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h3 class="card-title">📝 最近のアクティビティ</h3>
+                </div>
+                <div class="card-content">
+                    <div class="activity-log">
+                        <div class="activity-item" style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <span class="font-semibold">ドローン接続</span>
+                                    <span class="text-success ml-2">成功</span>
+                                </div>
+                                <span class="text-sm text-gray-500">2分前</span>
+                            </div>
+                        </div>
+                        <div class="activity-item" style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <span class="font-semibold">映像ストリーミング開始</span>
+                                    <span class="text-success ml-2">開始</span>
+                                </div>
+                                <span class="text-sm text-gray-500">3分前</span>
+                            </div>
+                        </div>
+                        <div class="activity-item" style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <span class="font-semibold">離陸</span>
+                                    <span class="text-success ml-2">完了</span>
+                                </div>
+                                <span class="text-sm text-gray-500">5分前</span>
+                            </div>
+                        </div>
+                        <div class="activity-item" style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <span class="font-semibold">写真撮影</span>
+                                    <span class="text-success ml-2">保存完了</span>
+                                </div>
+                                <span class="text-sm text-gray-500">8分前</span>
+                            </div>
+                        </div>
+                        <div class="activity-item" style="padding: 0.75rem 0;">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <span class="font-semibold">システム起動</span>
+                                    <span class="text-success ml-2">完了</span>
+                                </div>
+                                <span class="text-sm text-gray-500">15分前</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation hint -->
+            <div class="alert alert-info mt-4">
+                <strong>ヒント:</strong> 上部のナビゲーションから他の機能画面に移動できます。各機能の詳細な操作は専用画面で行えます。
+            </div>
+        </div>
+    </main>
+
+    <script src="js/admin.js"></script>
+    <script>
+        // Update font family for Japanese text
+        document.body.style.fontFamily = "'Noto Sans JP', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        
+        // Simulate real-time updates
+        setInterval(() => {
+            // Update flight time
+            const flightTimeElement = document.querySelector('.flight-time-value');
+            if (flightTimeElement) {
+                const currentTime = flightTimeElement.textContent;
+                const [minutes, seconds] = currentTime.split(':').map(Number);
+                const totalSeconds = minutes * 60 + seconds + 1;
+                const newMinutes = Math.floor(totalSeconds / 60);
+                const newSeconds = totalSeconds % 60;
+                flightTimeElement.textContent = `${newMinutes.toString().padStart(2, '0')}:${newSeconds.toString().padStart(2, '0')}`;
+            }
+            
+            // Simulate battery drain
+            const batteryElement = document.querySelector('.battery-level');
+            if (batteryElement) {
+                const currentBattery = parseInt(batteryElement.textContent);
+                if (currentBattery > 20 && Math.random() < 0.1) {
+                    batteryElement.innerHTML = `${currentBattery - 1}<span class="metric-unit">%</span>`;
+                    // Update color based on battery level
+                    if (currentBattery - 1 < 20) {
+                        batteryElement.style.color = 'var(--danger-color)';
+                    } else if (currentBattery - 1 < 50) {
+                        batteryElement.style.color = 'var(--warning-color)';
+                    }
+                }
+            }
+        }, 1000);
+        
+        // Add interactivity to tracking target selection
+        document.querySelector('.target-object-input').addEventListener('change', function() {
+            const alertElement = document.querySelector('.alert-warning');
+            if (this.value) {
+                alertElement.className = 'alert alert-info';
+                alertElement.textContent = `${this.options[this.selectedIndex].text}を検索中...`;
+            } else {
+                alertElement.className = 'alert alert-warning';
+                alertElement.textContent = '対象物が検出されていません';
+            }
+        });
+    </script>
+</body>
+</html>

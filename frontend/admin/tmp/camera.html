@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カメラ制御 - MFG Drone Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="drone-icon">🚁</div>
+                    <h1>MFG Drone Admin</h1>
+                </div>
+                <div class="connection-status status-connected">
+                    <div class="status-indicator"></div>
+                    接続中
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="container">
+            <div class="nav-container">
+                <a href="dashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    ダッシュボード
+                </a>
+                <a href="connection.html" class="nav-item">
+                    <span class="nav-icon">🔗</span>
+                    接続管理
+                </a>
+                <a href="flight-control.html" class="nav-item">
+                    <span class="nav-icon">🚁</span>
+                    飛行制御
+                </a>
+                <a href="movement.html" class="nav-item">
+                    <span class="nav-icon">🎮</span>
+                    移動制御
+                </a>
+                <a href="camera.html" class="nav-item active">
+                    <span class="nav-icon">📹</span>
+                    カメラ
+                </a>
+                <a href="sensors.html" class="nav-item">
+                    <span class="nav-icon">📡</span>
+                    センサー
+                </a>
+                <a href="tracking.html" class="nav-item">
+                    <span class="nav-icon">🎯</span>
+                    物体追跡
+                </a>
+                <a href="models.html" class="nav-item">
+                    <span class="nav-icon">🧠</span>
+                    モデル管理
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    設定
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="page-title">カメラ制御</div>
+            <div class="page-subtitle">ライブ映像・録画・撮影機能の管理</div>
+
+            <!-- Main Grid -->
+            <div class="grid grid-2">
+                <!-- Live Video Feed -->
+                <div class="card" style="grid-column: span 2;">
+                    <div class="card-header">
+                        <h3 class="card-title">📹 ライブ映像</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="video-container">
+                            <img src="https://via.placeholder.com/640x360/1f2937/ffffff?text=Drone+Camera+Feed" alt="Live Stream" class="video-stream" id="main-video">
+                            <div class="video-overlay" id="video-overlay" style="display: none;">
+                                <div class="loading"></div>
+                                <div class="ml-2">映像読み込み中...</div>
+                            </div>
+                            <div class="video-controls">
+                                <button class="btn btn-success btn-sm start-stream-btn" id="start-stream">
+                                    <span>▶️</span> 配信開始
+                                </button>
+                                <button class="btn btn-danger btn-sm stop-stream-btn" id="stop-stream" disabled>
+                                    <span>⏹️</span> 配信停止
+                                </button>
+                                <button class="btn btn-primary btn-sm photo-btn" id="take-photo">
+                                    <span>📷</span> 撮影
+                                </button>
+                                <button class="btn btn-warning btn-sm" id="start-recording" disabled>
+                                    <span>🔴</span> 録画開始
+                                </button>
+                                <button class="btn btn-secondary btn-sm" id="stop-recording" disabled>
+                                    <span>⏸️</span> 録画停止
+                                </button>
+                            </div>
+                            
+                            <!-- Stream Status -->
+                            <div class="stream-status" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+                                <div class="flex items-center gap-2">
+                                    <div class="status-indicator-large status-offline" id="stream-indicator"></div>
+                                    <span id="stream-status-text">オフライン</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Recording Indicator -->
+                            <div class="recording-indicator" style="position: absolute; top: 10px; right: 10px; background: rgba(220, 38, 38, 0.9); color: white; padding: 0.5rem; border-radius: 4px; font-size: 0.75rem; display: none;" id="recording-indicator">
+                                <div class="flex items-center gap-2">
+                                    <div style="width: 8px; height: 8px; background: white; border-radius: 50%; animation: pulse 1s infinite;"></div>
+                                    <span>録画中</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Camera Settings -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">⚙️ カメラ設定</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="form-group">
+                            <label class="form-label">解像度</label>
+                            <select class="form-select" id="resolution">
+                                <option value="low">低解像度 (480p)</option>
+                                <option value="high" selected>高解像度 (720p)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">フレームレート</label>
+                            <select class="form-select" id="fps">
+                                <option value="low">低 (15 fps)</option>
+                                <option value="middle" selected>中 (24 fps)</option>
+                                <option value="high">高 (30 fps)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">ビットレート</label>
+                            <div class="flex items-center gap-2">
+                                <input type="range" class="form-input" id="bitrate" min="1" max="5" value="3" style="flex: 1;">
+                                <span id="bitrate-display" class="font-semibold">3 Mbps</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="auto-exposure" class="form-checkbox" checked>
+                                <label for="auto-exposure" class="form-label mb-0">自動露出</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="stabilization" class="form-checkbox" checked>
+                                <label for="stabilization" class="form-label mb-0">映像安定化</label>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary w-full" id="apply-camera-settings">
+                            <span>💾</span> 設定を適用
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stream Information -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📊 配信情報</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="info-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="info-item" style="text-align: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: var(--primary-color);">
+                                    <span id="stream-resolution">720p</span>
+                                </div>
+                                <div class="metric-label">解像度</div>
+                            </div>
+                            <div class="info-item" style="text-align: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: var(--primary-color);">
+                                    <span id="stream-fps">24</span><span class="metric-unit">fps</span>
+                                </div>
+                                <div class="metric-label">フレームレート</div>
+                            </div>
+                            <div class="info-item" style="text-align: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: var(--primary-color);">
+                                    <span id="stream-latency">125</span><span class="metric-unit">ms</span>
+                                </div>
+                                <div class="metric-label">遅延</div>
+                            </div>
+                            <div class="info-item" style="text-align: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: var(--primary-color);">
+                                    <span id="data-usage">15.2</span><span class="metric-unit">MB</span>
+                                </div>
+                                <div class="metric-label">データ使用量</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <div class="form-label">配信時間</div>
+                            <div class="text-center text-2xl font-bold" style="color: var(--primary-color);" id="stream-duration">00:00:00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Media Gallery -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <div class="flex justify-between items-center">
+                        <h3 class="card-title">🖼️ メディアギャラリー</h3>
+                        <div class="flex gap-2">
+                            <button class="btn btn-secondary btn-sm" id="refresh-gallery">
+                                <span>🔄</span> 更新
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="download-all">
+                                <span>📥</span> 一括ダウンロード
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="media-tabs" style="border-bottom: 1px solid #e5e7eb; margin-bottom: 1rem;">
+                        <div class="flex gap-4">
+                            <button class="tab-btn active" data-tab="photos" style="padding: 0.5rem 1rem; border: none; background: none; color: var(--primary-color); border-bottom: 2px solid var(--primary-color);">
+                                📷 写真 (12)
+                            </button>
+                            <button class="tab-btn" data-tab="videos" style="padding: 0.5rem 1rem; border: none; background: none; color: #6b7280; border-bottom: 2px solid transparent;">
+                                🎥 動画 (5)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Photos Tab -->
+                    <div class="tab-content" id="photos-tab">
+                        <div class="media-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem;">
+                            <div class="media-item" style="position: relative; aspect-ratio: 16/9; background: #f3f4f6; border-radius: 8px; overflow: hidden; cursor: pointer;">
+                                <img src="https://via.placeholder.com/160x90/2563eb/ffffff?text=Photo+1" alt="Photo 1" style="width: 100%; height: 100%; object-fit: cover;">
+                                <div class="media-overlay" style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); color: white; padding: 0.5rem; font-size: 0.75rem;">
+                                    16:45:23
+                                </div>
+                            </div>
+                            <div class="media-item" style="position: relative; aspect-ratio: 16/9; background: #f3f4f6; border-radius: 8px; overflow: hidden; cursor: pointer;">
+                                <img src="https://via.placeholder.com/160x90/10b981/ffffff?text=Photo+2" alt="Photo 2" style="width: 100%; height: 100%; object-fit: cover;">
+                                <div class="media-overlay" style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); color: white; padding: 0.5rem; font-size: 0.75rem;">
+                                    16:42:15
+                                </div>
+                            </div>
+                            <div class="media-item" style="position: relative; aspect-ratio: 16/9; background: #f3f4f6; border-radius: 8px; overflow: hidden; cursor: pointer;">
+                                <img src="https://via.placeholder.com/160x90/f59e0b/ffffff?text=Photo+3" alt="Photo 3" style="width: 100%; height: 100%; object-fit: cover;">
+                                <div class="media-overlay" style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); color: white; padding: 0.5rem; font-size: 0.75rem;">
+                                    16:38:42
+                                </div>
+                            </div>
+                            <div class="media-item" style="position: relative; aspect-ratio: 16/9; background: #f3f4f6; border-radius: 8px; overflow: hidden; cursor: pointer;">
+                                <img src="https://via.placeholder.com/160x90/ef4444/ffffff?text=Photo+4" alt="Photo 4" style="width: 100%; height: 100%; object-fit: cover;">
+                                <div class="media-overlay" style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); color: white; padding: 0.5rem; font-size: 0.75rem;">
+                                    16:35:18
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Videos Tab -->
+                    <div class="tab-content" id="videos-tab" style="display: none;">
+                        <div class="media-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                            <div class="media-item" style="position: relative; aspect-ratio: 16/9; background: #f3f4f6; border-radius: 8px; overflow: hidden; cursor: pointer;">
+                                <img src="https://via.placeholder.com/200x112/8b5cf6/ffffff?text=Video+1" alt="Video 1" style="width: 100%; height: 100%; object-fit: cover;">
+                                <div class="play-button" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                                    ▶️
+                                </div>
+                                <div class="media-overlay" style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); color: white; padding: 0.5rem; font-size: 0.75rem;">
+                                    <div class="flex justify-between">
+                                        <span>16:40:30</span>
+                                        <span>02:45</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="media-item" style="position: relative; aspect-ratio: 16/9; background: #f3f4f6; border-radius: 8px; overflow: hidden; cursor: pointer;">
+                                <img src="https://via.placeholder.com/200x112/06b6d4/ffffff?text=Video+2" alt="Video 2" style="width: 100%; height: 100%; object-fit: cover;">
+                                <div class="play-button" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                                    ▶️
+                                </div>
+                                <div class="media-overlay" style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); color: white; padding: 0.5rem; font-size: 0.75rem;">
+                                    <div class="flex justify-between">
+                                        <span>16:35:12</span>
+                                        <span>01:23</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/admin.js"></script>
+    <script>
+        // Update font family for Japanese text
+        document.body.style.fontFamily = "'Noto Sans JP', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        
+        let streamActive = false;
+        let recordingActive = false;
+        let streamStartTime = null;
+        
+        // Stream controls
+        document.getElementById('start-stream').addEventListener('click', function() {
+            if (!streamActive) {
+                this.disabled = true;
+                this.innerHTML = '<span class="loading"></span> 開始中...';
+                
+                const overlay = document.getElementById('video-overlay');
+                overlay.style.display = 'flex';
+                
+                setTimeout(() => {
+                    streamActive = true;
+                    streamStartTime = new Date();
+                    
+                    this.disabled = false;
+                    this.innerHTML = '<span>▶️</span> 配信開始';
+                    document.getElementById('stop-stream').disabled = false;
+                    document.getElementById('start-recording').disabled = false;
+                    
+                    overlay.style.display = 'none';
+                    
+                    updateStreamStatus('配信中', 'status-online');
+                    window.DroneAdmin.showAlert('映像配信を開始しました', 'success');
+                    
+                    updateStreamTimer();
+                }, 2000);
+            }
+        });
+        
+        document.getElementById('stop-stream').addEventListener('click', function() {
+            if (streamActive) {
+                streamActive = false;
+                streamStartTime = null;
+                
+                this.disabled = true;
+                document.getElementById('start-stream').disabled = false;
+                document.getElementById('start-recording').disabled = true;
+                document.getElementById('stop-recording').disabled = true;
+                
+                if (recordingActive) {
+                    recordingActive = false;
+                    document.getElementById('recording-indicator').style.display = 'none';
+                }
+                
+                updateStreamStatus('オフライン', 'status-offline');
+                window.DroneAdmin.showAlert('映像配信を停止しました', 'info');
+                
+                document.getElementById('stream-duration').textContent = '00:00:00';
+            }
+        });
+        
+        // Photo capture
+        document.getElementById('take-photo').addEventListener('click', function() {
+            const flash = document.createElement('div');
+            flash.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; opacity: 0; pointer-events: none;';
+            document.body.appendChild(flash);
+            
+            // Flash effect
+            flash.style.opacity = '0.8';
+            setTimeout(() => {
+                flash.style.opacity = '0';
+                setTimeout(() => {
+                    document.body.removeChild(flash);
+                }, 200);
+            }, 100);
+            
+            window.DroneAdmin.showAlert('写真を撮影しました', 'success');
+            
+            // Add to gallery (simulation)
+            addPhotoToGallery();
+        });
+        
+        // Recording controls
+        document.getElementById('start-recording').addEventListener('click', function() {
+            if (streamActive && !recordingActive) {
+                recordingActive = true;
+                this.disabled = true;
+                document.getElementById('stop-recording').disabled = false;
+                document.getElementById('recording-indicator').style.display = 'block';
+                
+                window.DroneAdmin.showAlert('録画を開始しました', 'success');
+            }
+        });
+        
+        document.getElementById('stop-recording').addEventListener('click', function() {
+            if (recordingActive) {
+                recordingActive = false;
+                this.disabled = true;
+                document.getElementById('start-recording').disabled = false;
+                document.getElementById('recording-indicator').style.display = 'none';
+                
+                window.DroneAdmin.showAlert('録画を停止しました', 'info');
+                
+                // Add to gallery (simulation)
+                addVideoToGallery();
+            }
+        });
+        
+        // Settings
+        document.getElementById('bitrate').addEventListener('input', function() {
+            document.getElementById('bitrate-display').textContent = this.value + ' Mbps';
+        });
+        
+        document.getElementById('apply-camera-settings').addEventListener('click', function() {
+            const resolution = document.getElementById('resolution').value;
+            const fps = document.getElementById('fps').value;
+            
+            document.getElementById('stream-resolution').textContent = resolution === 'high' ? '720p' : '480p';
+            document.getElementById('stream-fps').textContent = fps === 'high' ? '30' : fps === 'middle' ? '24' : '15';
+            
+            window.DroneAdmin.showAlert('カメラ設定を適用しました', 'success');
+        });
+        
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tab = this.dataset.tab;
+                
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.style.color = '#6b7280';
+                    b.style.borderBottomColor = 'transparent';
+                });
+                
+                this.classList.add('active');
+                this.style.color = 'var(--primary-color)';
+                this.style.borderBottomColor = 'var(--primary-color)';
+                
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.style.display = 'none';
+                });
+                
+                document.getElementById(`${tab}-tab`).style.display = 'block';
+            });
+        });
+        
+        // Media gallery interactions
+        document.querySelectorAll('.media-item').forEach(item => {
+            item.addEventListener('click', function() {
+                window.DroneAdmin.showAlert('メディアビューアーを開発中', 'info');
+            });
+        });
+        
+        // Gallery controls
+        document.getElementById('refresh-gallery').addEventListener('click', function() {
+            window.DroneAdmin.showAlert('ギャラリーを更新しました', 'success');
+        });
+        
+        document.getElementById('download-all').addEventListener('click', function() {
+            window.DroneAdmin.showAlert('一括ダウンロードを開始しました', 'info');
+        });
+        
+        // Helper functions
+        function updateStreamStatus(status, indicatorClass) {
+            document.getElementById('stream-status-text').textContent = status;
+            document.getElementById('stream-indicator').className = `status-indicator-large ${indicatorClass}`;
+        }
+        
+        function updateStreamTimer() {
+            if (streamActive && streamStartTime) {
+                const now = new Date();
+                const diff = Math.floor((now - streamStartTime) / 1000);
+                const hours = Math.floor(diff / 3600);
+                const minutes = Math.floor((diff % 3600) / 60);
+                const seconds = diff % 60;
+                
+                document.getElementById('stream-duration').textContent = 
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                // Update data usage (simulation)
+                const usage = (diff * 0.125).toFixed(1); // ~1 MB per 8 seconds
+                document.getElementById('data-usage').textContent = usage;
+                
+                // Update latency (simulation)
+                const latency = Math.floor(Math.random() * 30 + 110);
+                document.getElementById('stream-latency').textContent = latency;
+            }
+        }
+        
+        function addPhotoToGallery() {
+            const photoCount = document.querySelector('[data-tab="photos"]');
+            const currentCount = parseInt(photoCount.textContent.match(/\d+/)[0]);
+            photoCount.textContent = `📷 写真 (${currentCount + 1})`;
+        }
+        
+        function addVideoToGallery() {
+            const videoCount = document.querySelector('[data-tab="videos"]');
+            const currentCount = parseInt(videoCount.textContent.match(/\d+/)[0]);
+            videoCount.textContent = `🎥 動画 (${currentCount + 1})`;
+        }
+        
+        // Update stream timer every second
+        setInterval(updateStreamTimer, 1000);
+    </script>
+</body>
+</html>

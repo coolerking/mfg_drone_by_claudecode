@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>接続管理 - MFG Drone Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="drone-icon">🚁</div>
+                    <h1>MFG Drone Admin</h1>
+                </div>
+                <div class="connection-status status-disconnected">
+                    <div class="status-indicator"></div>
+                    切断
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="container">
+            <div class="nav-container">
+                <a href="dashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    ダッシュボード
+                </a>
+                <a href="connection.html" class="nav-item active">
+                    <span class="nav-icon">🔗</span>
+                    接続管理
+                </a>
+                <a href="flight-control.html" class="nav-item">
+                    <span class="nav-icon">🚁</span>
+                    飛行制御
+                </a>
+                <a href="movement.html" class="nav-item">
+                    <span class="nav-icon">🎮</span>
+                    移動制御
+                </a>
+                <a href="camera.html" class="nav-item">
+                    <span class="nav-icon">📹</span>
+                    カメラ
+                </a>
+                <a href="sensors.html" class="nav-item">
+                    <span class="nav-icon">📡</span>
+                    センサー
+                </a>
+                <a href="tracking.html" class="nav-item">
+                    <span class="nav-icon">🎯</span>
+                    物体追跡
+                </a>
+                <a href="models.html" class="nav-item">
+                    <span class="nav-icon">🧠</span>
+                    モデル管理
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    設定
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="page-title">接続管理</div>
+            <div class="page-subtitle">ドローンとの接続・切断を管理</div>
+
+            <!-- Main Grid -->
+            <div class="grid grid-2">
+                <!-- Connection Control -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🔗 ドローン接続</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="connection-info mb-4">
+                            <div class="alert alert-warning">
+                                <strong>状態:</strong> ドローンに接続されていません
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">ドローンIP アドレス</label>
+                            <input type="text" class="form-input" id="drone-ip" value="192.168.10.1" readonly>
+                            <div class="text-sm text-gray-500 mt-1">Tello EDU のデフォルトIP</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">接続ポート</label>
+                            <input type="number" class="form-input" id="drone-port" value="8889" readonly>
+                            <div class="text-sm text-gray-500 mt-1">Tello SDK ポート</div>
+                        </div>
+
+                        <div class="control-buttons">
+                            <button class="btn btn-success btn-lg connect-btn" id="connect-btn">
+                                <span>🔗</span> 接続
+                            </button>
+                            <button class="btn btn-danger btn-lg disconnect-btn" id="disconnect-btn" disabled>
+                                <span>❌</span> 切断
+                            </button>
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <button class="btn btn-secondary w-full" id="test-connection-btn">
+                                <span>🔍</span> 接続テスト
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Connection Status -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📊 接続状態</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="status-grid">
+                            <div class="status-item mb-3" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <span class="font-semibold">接続状態</span>
+                                <span class="text-danger" id="connection-status-text">切断</span>
+                            </div>
+                            <div class="status-item mb-3" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <span class="font-semibold">最終接続</span>
+                                <span class="text-gray-500" id="last-connection">未接続</span>
+                            </div>
+                            <div class="status-item mb-3" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <span class="font-semibold">接続時間</span>
+                                <span class="text-gray-500" id="connection-duration">00:00</span>
+                            </div>
+                            <div class="status-item mb-3" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <span class="font-semibold">信号強度</span>
+                                <span class="text-gray-500" id="signal-strength">-</span>
+                            </div>
+                            <div class="status-item mb-3" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <span class="font-semibold">通信遅延</span>
+                                <span class="text-gray-500" id="latency">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Connection History -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📝 接続履歴</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="connection-history">
+                            <div class="history-item" style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="font-semibold">2024-06-19 16:45:23</div>
+                                        <div class="text-sm text-success">接続成功</div>
+                                    </div>
+                                    <span class="text-sm text-gray-500">2分前</span>
+                                </div>
+                            </div>
+                            <div class="history-item" style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="font-semibold">2024-06-19 16:40:15</div>
+                                        <div class="text-sm text-info">切断</div>
+                                    </div>
+                                    <span class="text-sm text-gray-500">7分前</span>
+                                </div>
+                            </div>
+                            <div class="history-item" style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="font-semibold">2024-06-19 16:25:08</div>
+                                        <div class="text-sm text-success">接続成功</div>
+                                    </div>
+                                    <span class="text-sm text-gray-500">22分前</span>
+                                </div>
+                            </div>
+                            <div class="history-item" style="padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb;">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="font-semibold">2024-06-19 16:20:45</div>
+                                        <div class="text-sm text-danger">接続失敗</div>
+                                    </div>
+                                    <span class="text-sm text-gray-500">27分前</span>
+                                </div>
+                            </div>
+                            <div class="history-item" style="padding: 0.75rem 0;">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="font-semibold">2024-06-19 16:15:30</div>
+                                        <div class="text-sm text-success">接続成功</div>
+                                    </div>
+                                    <span class="text-sm text-gray-500">32分前</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Troubleshooting -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🔧 トラブルシューティング</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="troubleshooting-section">
+                            <h4 class="font-semibold mb-2">接続できない場合</h4>
+                            <ul class="mb-4" style="list-style: disc; padding-left: 1.5rem;">
+                                <li class="mb-1">ドローンの電源が入っているか確認</li>
+                                <li class="mb-1">ドローンのWiFiに接続されているか確認</li>
+                                <li class="mb-1">ファイアウォールの設定を確認</li>
+                                <li class="mb-1">他のアプリケーションがポートを使用していないか確認</li>
+                            </ul>
+
+                            <h4 class="font-semibold mb-2">診断ツール</h4>
+                            <div class="control-buttons">
+                                <button class="btn btn-secondary btn-sm" id="ping-test">
+                                    <span>📡</span> Pingテスト
+                                </button>
+                                <button class="btn btn-secondary btn-sm" id="port-check">
+                                    <span>🔍</span> ポート確認
+                                </button>
+                                <button class="btn btn-secondary btn-sm" id="wifi-scan">
+                                    <span>📶</span> WiFi検索
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usage Instructions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h3 class="card-title">📖 使用方法</h3>
+                </div>
+                <div class="card-content">
+                    <div class="grid grid-2">
+                        <div>
+                            <h4 class="font-semibold mb-2">接続手順</h4>
+                            <ol style="list-style: decimal; padding-left: 1.5rem;">
+                                <li class="mb-1">Tello EDU ドローンの電源を入れる</li>
+                                <li class="mb-1">PCをドローンのWiFiネットワークに接続</li>
+                                <li class="mb-1">「接続」ボタンをクリック</li>
+                                <li class="mb-1">接続状態が「接続中」になることを確認</li>
+                            </ol>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold mb-2">注意事項</h4>
+                            <ul style="list-style: disc; padding-left: 1.5rem;">
+                                <li class="mb-1">接続中は他のTelloアプリを閉じてください</li>
+                                <li class="mb-1">バッテリー残量が20%以下の場合は飛行できません</li>
+                                <li class="mb-1">通信が不安定な場合は再接続してください</li>
+                                <li class="mb-1">緊急時は物理的な電源ボタンで停止できます</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/admin.js"></script>
+    <script>
+        // Update font family for Japanese text
+        document.body.style.fontFamily = "'Noto Sans JP', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        
+        let connected = false;
+        let connectionStartTime = null;
+        
+        // Connection control
+        document.getElementById('connect-btn').addEventListener('click', function() {
+            const alertElement = document.querySelector('.alert');
+            const connectBtn = document.getElementById('connect-btn');
+            const disconnectBtn = document.getElementById('disconnect-btn');
+            const statusText = document.getElementById('connection-status-text');
+            const lastConnection = document.getElementById('last-connection');
+            const headerStatus = document.querySelector('.connection-status');
+            
+            connectBtn.disabled = true;
+            connectBtn.innerHTML = '<span class="loading"></span> 接続中...';
+            
+            // Simulate connection delay
+            setTimeout(() => {
+                connected = true;
+                connectionStartTime = new Date();
+                
+                alertElement.className = 'alert alert-success';
+                alertElement.innerHTML = '<strong>状態:</strong> ドローンに接続されました';
+                
+                connectBtn.disabled = false;
+                connectBtn.innerHTML = '<span>🔗</span> 接続';
+                disconnectBtn.disabled = false;
+                
+                statusText.textContent = '接続中';
+                statusText.className = 'text-success';
+                
+                lastConnection.textContent = new Date().toLocaleString('ja-JP');
+                
+                headerStatus.className = 'connection-status status-connected';
+                headerStatus.innerHTML = '<div class="status-indicator"></div> 接続中';
+                
+                // Start connection timer
+                updateConnectionTimer();
+                
+                window.DroneAdmin.showAlert('ドローンに接続しました', 'success');
+            }, 2000);
+        });
+        
+        document.getElementById('disconnect-btn').addEventListener('click', function() {
+            const alertElement = document.querySelector('.alert');
+            const connectBtn = document.getElementById('connect-btn');
+            const disconnectBtn = document.getElementById('disconnect-btn');
+            const statusText = document.getElementById('connection-status-text');
+            const duration = document.getElementById('connection-duration');
+            const headerStatus = document.querySelector('.connection-status');
+            
+            connected = false;
+            connectionStartTime = null;
+            
+            alertElement.className = 'alert alert-warning';
+            alertElement.innerHTML = '<strong>状態:</strong> ドローンから切断されました';
+            
+            connectBtn.disabled = false;
+            disconnectBtn.disabled = true;
+            
+            statusText.textContent = '切断';
+            statusText.className = 'text-danger';
+            
+            duration.textContent = '00:00';
+            
+            headerStatus.className = 'connection-status status-disconnected';
+            headerStatus.innerHTML = '<div class="status-indicator"></div> 切断';
+            
+            window.DroneAdmin.showAlert('ドローンから切断しました', 'info');
+        });
+        
+        // Test connection
+        document.getElementById('test-connection-btn').addEventListener('click', function() {
+            this.disabled = true;
+            this.innerHTML = '<span class="loading"></span> テスト中...';
+            
+            setTimeout(() => {
+                this.disabled = false;
+                this.innerHTML = '<span>🔍</span> 接続テスト';
+                window.DroneAdmin.showAlert('接続テスト完了: ドローンが検出されました', 'success');
+            }, 3000);
+        });
+        
+        // Diagnostic tools
+        document.getElementById('ping-test').addEventListener('click', function() {
+            window.DroneAdmin.showAlert('Ping Test: 192.168.10.1 に応答あり (12ms)', 'success');
+        });
+        
+        document.getElementById('port-check').addEventListener('click', function() {
+            window.DroneAdmin.showAlert('Port 8889: 開放されています', 'success');
+        });
+        
+        document.getElementById('wifi-scan').addEventListener('click', function() {
+            window.DroneAdmin.showAlert('WiFi検索: TELLO-XXXXXX が見つかりました', 'info');
+        });
+        
+        // Update connection timer
+        function updateConnectionTimer() {
+            if (connected && connectionStartTime) {
+                const now = new Date();
+                const diff = Math.floor((now - connectionStartTime) / 1000);
+                const minutes = Math.floor(diff / 60);
+                const seconds = diff % 60;
+                
+                document.getElementById('connection-duration').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                // Update signal strength and latency
+                document.getElementById('signal-strength').textContent = '-45 dBm';
+                document.getElementById('latency').textContent = Math.floor(Math.random() * 10 + 8) + 'ms';
+            }
+        }
+        
+        // Update timer every second
+        setInterval(updateConnectionTimer, 1000);
+    </script>
+</body>
+</html>

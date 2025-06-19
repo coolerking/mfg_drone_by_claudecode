@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物体追跡 - MFG Drone Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="drone-icon">🚁</div>
+                    <h1>MFG Drone Admin</h1>
+                </div>
+                <div class="connection-status status-connected">
+                    <div class="status-indicator"></div>
+                    接続中
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="container">
+            <div class="nav-container">
+                <a href="dashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    ダッシュボード
+                </a>
+                <a href="connection.html" class="nav-item">
+                    <span class="nav-icon">🔗</span>
+                    接続管理
+                </a>
+                <a href="flight-control.html" class="nav-item">
+                    <span class="nav-icon">🚁</span>
+                    飛行制御
+                </a>
+                <a href="movement.html" class="nav-item">
+                    <span class="nav-icon">🎮</span>
+                    移動制御
+                </a>
+                <a href="camera.html" class="nav-item">
+                    <span class="nav-icon">📹</span>
+                    カメラ
+                </a>
+                <a href="sensors.html" class="nav-item">
+                    <span class="nav-icon">📡</span>
+                    センサー
+                </a>
+                <a href="tracking.html" class="nav-item active">
+                    <span class="nav-icon">🎯</span>
+                    物体追跡
+                </a>
+                <a href="models.html" class="nav-item">
+                    <span class="nav-icon">🧠</span>
+                    モデル管理
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    設定
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="page-title">物体追跡</div>
+            <div class="page-subtitle">AI物体認識と自動追跡制御</div>
+
+            <!-- Status Banner -->
+            <div class="alert alert-warning mb-4" id="tracking-status-banner">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <strong>追跡状態:</strong> <span id="tracking-status">待機中</span>
+                        <span class="ml-4"><strong>対象:</strong> <span id="current-target">未選択</span></span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="status-indicator-large status-warning" id="tracking-indicator"></span>
+                        <span class="ml-2" id="detection-status">未検出</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Grid -->
+            <div class="grid grid-2">
+                <!-- Live Tracking View -->
+                <div class="card" style="grid-column: span 2;">
+                    <div class="card-header">
+                        <h3 class="card-title">🎯 ライブ追跡画面</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="tracking-view-container" style="position: relative; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden;">
+                            <img src="https://via.placeholder.com/640x360/1f2937/ffffff?text=Live+Tracking+View" alt="Tracking View" style="width: 100%; height: 100%; object-fit: cover;" id="tracking-video">
+                            
+                            <!-- Detection Overlay -->
+                            <div class="detection-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none;">
+                                <!-- Target bounding box (example) -->
+                                <div class="bounding-box" style="position: absolute; left: 30%; top: 25%; width: 120px; height: 80px; border: 3px solid #10b981; border-radius: 4px; display: none;" id="target-box">
+                                    <div style="position: absolute; top: -25px; left: 0; background: #10b981; color: white; padding: 2px 6px; border-radius: 3px; font-size: 12px;">
+                                        Person (87%)
+                                    </div>
+                                </div>
+                                
+                                <!-- Crosshair center -->
+                                <div class="crosshair" style="position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; transform: translate(-50%, -50%); border: 2px solid rgba(255,255,255,0.5); border-radius: 50%;">
+                                    <div style="position: absolute; top: 50%; left: 50%; width: 2px; height: 20px; background: rgba(255,255,255,0.7); transform: translate(-50%, -50%);"></div>
+                                    <div style="position: absolute; top: 50%; left: 50%; width: 20px; height: 2px; background: rgba(255,255,255,0.7); transform: translate(-50%, -50%);"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Status Overlay -->
+                            <div class="tracking-info" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+                                <div>FPS: <span id="detection-fps">30</span></div>
+                                <div>信頼度: <span id="confidence">-</span>%</div>
+                                <div>距離: <span id="target-distance">-</span>m</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tracking Control -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🎮 追跡制御</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="form-group">
+                            <label class="form-label">追跡対象</label>
+                            <select class="form-select target-object-input" id="target-select">
+                                <option value="">対象を選択...</option>
+                                <option value="person">人物</option>
+                                <option value="car">車</option>
+                                <option value="bicycle">自転車</option>
+                                <option value="ball">ボール</option>
+                                <option value="dog">犬</option>
+                                <option value="cat">猫</option>
+                                <option value="custom1">カスタムモデル1</option>
+                                <option value="custom2">カスタムモデル2</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">追跡モード</label>
+                            <select class="form-select" id="tracking-mode">
+                                <option value="center">中央維持</option>
+                                <option value="follow">追従</option>
+                                <option value="circle">周回</option>
+                                <option value="fixed">固定位置</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">追跡感度</label>
+                            <div class="flex items-center gap-2">
+                                <input type="range" class="form-input" id="tracking-sensitivity" min="0.3" max="0.9" value="0.7" step="0.1" style="flex: 1;">
+                                <span id="sensitivity-display" class="font-semibold">70%</span>
+                            </div>
+                            <div class="text-sm text-gray-500 mt-1">低い値: 精密、高い値: 応答性</div>
+                        </div>
+
+                        <div class="control-buttons mb-4">
+                            <button class="btn btn-success start-tracking-btn" id="start-tracking">
+                                <span>▶️</span> 追跡開始
+                            </button>
+                            <button class="btn btn-danger stop-tracking-btn" id="stop-tracking" disabled>
+                                <span>⏹️</span> 追跡停止
+                            </button>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="auto-adjust-height" class="form-checkbox" checked>
+                                <label for="auto-adjust-height" class="form-label mb-0">高度自動調整</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="keep-distance" class="form-checkbox" checked>
+                                <label for="keep-distance" class="form-label mb-0">安全距離維持</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detection Settings -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🔍 検出設定</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="form-group">
+                            <label class="form-label">最小信頼度</label>
+                            <div class="flex items-center gap-2">
+                                <input type="range" class="form-input" id="min-confidence" min="0.1" max="0.9" value="0.5" step="0.1" style="flex: 1;">
+                                <span id="confidence-display" class="font-semibold">50%</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">追跡範囲</label>
+                            <div class="flex items-center gap-2">
+                                <input type="range" class="form-input" id="tracking-range" min="5" max="50" value="20" style="flex: 1;">
+                                <span id="range-display" class="font-semibold">20m</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">検出頻度</label>
+                            <select class="form-select" id="detection-frequency">
+                                <option value="low">低 (10 FPS)</option>
+                                <option value="medium" selected>中 (20 FPS)</option>
+                                <option value="high">高 (30 FPS)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="multiple-targets" class="form-checkbox">
+                                <label for="multiple-targets" class="form-label mb-0">複数対象検出</label>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary w-full" id="apply-detection-settings">
+                            <span>💾</span> 設定を適用
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tracking Statistics -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📊 追跡統計</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="stats-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="stat-item" style="text-align: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: var(--primary-color);">
+                                    <span id="detection-count">0</span>
+                                </div>
+                                <div class="metric-label">検出回数</div>
+                            </div>
+                            <div class="stat-item" style="text-align: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: var(--primary-color);">
+                                    <span id="tracking-accuracy">0</span><span class="metric-unit">%</span>
+                                </div>
+                                <div class="metric-label">追跡精度</div>
+                            </div>
+                            <div class="stat-item" style="text-align: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: var(--primary-color);">
+                                    <span id="tracking-time">00:00</span>
+                                </div>
+                                <div class="metric-label">追跡時間</div>
+                            </div>
+                            <div class="stat-item" style="text-align: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                                <div class="metric-value" style="font-size: 1.5rem; font-weight: 700; color: var(--primary-color);">
+                                    <span id="lost-count">0</span>
+                                </div>
+                                <div class="metric-label">見失い回数</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <div class="form-label">パフォーマンス</div>
+                            <div class="progress mb-2">
+                                <div class="progress-bar" id="cpu-usage" style="width: 45%; background-color: var(--success-color);"></div>
+                            </div>
+                            <div class="text-sm text-gray-500">CPU使用率: <span id="cpu-percent">45</span>%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Target Information -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🎯 対象情報</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="target-info" id="target-info" style="display: none;">
+                            <div class="info-item mb-3" style="display: flex; justify-content: space-between; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <span class="font-semibold">対象タイプ</span>
+                                <span id="target-type">-</span>
+                            </div>
+                            <div class="info-item mb-3" style="display: flex; justify-content: space-between; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <span class="font-semibold">位置 (X, Y)</span>
+                                <span id="target-position">(-)</span>
+                            </div>
+                            <div class="info-item mb-3" style="display: flex; justify-content: space-between; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <span class="font-semibold">サイズ</span>
+                                <span id="target-size">-</span>
+                            </div>
+                            <div class="info-item mb-3" style="display: flex; justify-content: space-between; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <span class="font-semibold">移動速度</span>
+                                <span id="target-speed">-</span>
+                            </div>
+                            <div class="info-item" style="display: flex; justify-content: space-between; padding: 0.75rem; background: #f9fafb; border-radius: 8px;">
+                                <span class="font-semibold">最終検出</span>
+                                <span id="last-detection">-</span>
+                            </div>
+                        </div>
+                        
+                        <div class="no-target-info" id="no-target-info">
+                            <div class="alert alert-info">
+                                追跡対象が検出されていません。<br>
+                                対象を選択して追跡を開始してください。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usage Instructions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h3 class="card-title">📖 使用方法</h3>
+                </div>
+                <div class="card-content">
+                    <div class="grid grid-2">
+                        <div>
+                            <h4 class="font-semibold mb-2">追跡手順</h4>
+                            <ol style="list-style: decimal; padding-left: 1.5rem;">
+                                <li class="mb-1">ドローンを離陸させ、対象が見える位置に移動</li>
+                                <li class="mb-1">追跡対象を選択</li>
+                                <li class="mb-1">追跡モードと感度を設定</li>
+                                <li class="mb-1">「追跡開始」ボタンをクリック</li>
+                                <li class="mb-1">対象が検出されると自動追跡開始</li>
+                            </ol>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold mb-2">トラブルシューティング</h4>
+                            <ul style="list-style: disc; padding-left: 1.5rem;">
+                                <li class="mb-1">対象が検出されない → 光量・距離を確認</li>
+                                <li class="mb-1">追跡が不安定 → 感度を調整</li>
+                                <li class="mb-1">動作が重い → 検出頻度を下げる</li>
+                                <li class="mb-1">誤検出が多い → 最小信頼度を上げる</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/admin.js"></script>
+    <script>
+        // Update font family for Japanese text
+        document.body.style.fontFamily = "'Noto Sans JP', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        
+        let trackingActive = false;
+        let targetDetected = false;
+        let trackingStartTime = null;
+        let detectionCount = 0;
+        
+        // Tracking controls
+        document.getElementById('start-tracking').addEventListener('click', function() {
+            const targetSelect = document.getElementById('target-select');
+            if (!targetSelect.value) {
+                window.DroneAdmin.showAlert('追跡対象を選択してください', 'warning');
+                return;
+            }
+            
+            if (!trackingActive) {
+                trackingActive = true;
+                trackingStartTime = new Date();
+                
+                this.disabled = true;
+                document.getElementById('stop-tracking').disabled = false;
+                
+                updateTrackingStatus('追跡中', 'status-online', '検索中');
+                window.DroneAdmin.showAlert(`${targetSelect.options[targetSelect.selectedIndex].text}の追跡を開始しました`, 'success');
+                
+                // Simulate target detection
+                setTimeout(() => {
+                    simulateTargetDetection();
+                }, 3000);
+            }
+        });
+        
+        document.getElementById('stop-tracking').addEventListener('click', function() {
+            if (trackingActive) {
+                trackingActive = false;
+                targetDetected = false;
+                trackingStartTime = null;
+                
+                this.disabled = true;
+                document.getElementById('start-tracking').disabled = false;
+                
+                updateTrackingStatus('待機中', 'status-warning', '未検出');
+                hideTargetInfo();
+                hideTargetBox();
+                window.DroneAdmin.showAlert('追跡を停止しました', 'info');
+                
+                document.getElementById('tracking-time').textContent = '00:00';
+            }
+        });
+        
+        // Settings event listeners
+        document.getElementById('tracking-sensitivity').addEventListener('input', function() {
+            document.getElementById('sensitivity-display').textContent = Math.round(this.value * 100) + '%';
+        });
+        
+        document.getElementById('min-confidence').addEventListener('input', function() {
+            document.getElementById('confidence-display').textContent = Math.round(this.value * 100) + '%';
+        });
+        
+        document.getElementById('tracking-range').addEventListener('input', function() {
+            document.getElementById('range-display').textContent = this.value + 'm';
+        });
+        
+        document.getElementById('apply-detection-settings').addEventListener('click', function() {
+            window.DroneAdmin.showAlert('検出設定を適用しました', 'success');
+        });
+        
+        // Helper functions
+        function updateTrackingStatus(status, indicatorClass, detectionStatus) {
+            document.getElementById('tracking-status').textContent = status;
+            document.getElementById('tracking-indicator').className = `status-indicator-large ${indicatorClass}`;
+            document.getElementById('detection-status').textContent = detectionStatus;
+            
+            const banner = document.getElementById('tracking-status-banner');
+            if (status === '追跡中') {
+                banner.className = 'alert alert-success mb-4';
+            } else if (status === '待機中') {
+                banner.className = 'alert alert-warning mb-4';
+            } else {
+                banner.className = 'alert alert-info mb-4';
+            }
+        }
+        
+        function simulateTargetDetection() {
+            if (!trackingActive) return;
+            
+            targetDetected = true;
+            detectionCount++;
+            
+            updateTrackingStatus('追跡中', 'status-online', '検出中');
+            showTargetBox();
+            showTargetInfo();
+            
+            // Update target info
+            const targetSelect = document.getElementById('target-select');
+            document.getElementById('target-type').textContent = targetSelect.options[targetSelect.selectedIndex].text;
+            document.getElementById('target-position').textContent = '(320, 180)';
+            document.getElementById('target-size').textContent = '120×80px';
+            document.getElementById('target-speed').textContent = '2.3 m/s';
+            document.getElementById('last-detection').textContent = new Date().toLocaleTimeString();
+            
+            // Update confidence
+            const confidence = Math.floor(Math.random() * 20 + 70);
+            document.getElementById('confidence').textContent = confidence;
+            
+            // Update statistics
+            document.getElementById('detection-count').textContent = detectionCount;
+            document.getElementById('tracking-accuracy').textContent = Math.floor(Math.random() * 10 + 85);
+        }
+        
+        function showTargetBox() {
+            const targetBox = document.getElementById('target-box');
+            targetBox.style.display = 'block';
+            
+            // Animate target box (simple simulation)
+            setInterval(() => {
+                if (targetDetected) {
+                    const x = Math.random() * 10 + 25; // 25-35%
+                    const y = Math.random() * 10 + 20; // 20-30%
+                    targetBox.style.left = x + '%';
+                    targetBox.style.top = y + '%';
+                }
+            }, 500);
+        }
+        
+        function hideTargetBox() {
+            document.getElementById('target-box').style.display = 'none';
+        }
+        
+        function showTargetInfo() {
+            document.getElementById('target-info').style.display = 'block';
+            document.getElementById('no-target-info').style.display = 'none';
+        }
+        
+        function hideTargetInfo() {
+            document.getElementById('target-info').style.display = 'none';
+            document.getElementById('no-target-info').style.display = 'block';
+        }
+        
+        function updateTrackingTime() {
+            if (trackingActive && trackingStartTime) {
+                const now = new Date();
+                const diff = Math.floor((now - trackingStartTime) / 1000);
+                const minutes = Math.floor(diff / 60);
+                const seconds = diff % 60;
+                
+                document.getElementById('tracking-time').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+        
+        function updatePerformanceMetrics() {
+            // Simulate CPU usage
+            const cpuUsage = Math.floor(Math.random() * 20 + 35);
+            document.getElementById('cpu-percent').textContent = cpuUsage;
+            document.getElementById('cpu-usage').style.width = cpuUsage + '%';
+            
+            if (cpuUsage > 70) {
+                document.getElementById('cpu-usage').style.backgroundColor = 'var(--danger-color)';
+            } else if (cpuUsage > 50) {
+                document.getElementById('cpu-usage').style.backgroundColor = 'var(--warning-color)';
+            } else {
+                document.getElementById('cpu-usage').style.backgroundColor = 'var(--success-color)';
+            }
+            
+            // Update FPS
+            if (trackingActive) {
+                const fps = Math.floor(Math.random() * 5 + 28);
+                document.getElementById('detection-fps').textContent = fps;
+            }
+            
+            // Update distance
+            if (targetDetected) {
+                const distance = (Math.random() * 5 + 3).toFixed(1);
+                document.getElementById('target-distance').textContent = distance;
+            }
+        }
+        
+        // Target selection change
+        document.getElementById('target-select').addEventListener('change', function() {
+            const currentTarget = document.getElementById('current-target');
+            if (this.value) {
+                currentTarget.textContent = this.options[this.selectedIndex].text;
+            } else {
+                currentTarget.textContent = '未選択';
+            }
+        });
+        
+        // Update timers and metrics
+        setInterval(updateTrackingTime, 1000);
+        setInterval(updatePerformanceMetrics, 2000);
+        
+        // Simulate occasional target loss
+        setInterval(() => {
+            if (trackingActive && targetDetected && Math.random() < 0.1) {
+                targetDetected = false;
+                hideTargetBox();
+                updateTrackingStatus('追跡中', 'status-warning', '見失い中');
+                
+                const lostCount = parseInt(document.getElementById('lost-count').textContent) + 1;
+                document.getElementById('lost-count').textContent = lostCount;
+                
+                // Reacquire target after a moment
+                setTimeout(() => {
+                    if (trackingActive) {
+                        simulateTargetDetection();
+                    }
+                }, 2000);
+            }
+        }, 10000);
+    </script>
+</body>
+</html>
