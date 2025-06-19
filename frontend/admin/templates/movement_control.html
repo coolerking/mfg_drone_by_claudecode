@@ -1,0 +1,618 @@
+{% extends "base.html" %}
+
+{% block title %}移動制御 - MFG Drone 管理者画面{% endblock %}
+{% block page_title %}ドローン移動制御{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Movement Controls -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">移動制御パッド</h5>
+            </div>
+            <div class="card-body text-center">
+                <!-- Direction Control Pad -->
+                <div class="movement-pad">
+                    <div class="control-grid">
+                        <!-- Vertical Controls -->
+                        <div class="vertical-controls">
+                            <button id="move-up" class="btn btn-primary movement-btn vertical-btn">
+                                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                                </svg>
+                                上昇
+                            </button>
+                            <button id="move-down" class="btn btn-secondary movement-btn vertical-btn">
+                                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                </svg>
+                                下降
+                            </button>
+                        </div>
+                        
+                        <!-- Horizontal Direction Pad -->
+                        <div class="direction-pad">
+                            <div class="d-grid direction-grid">
+                                <div></div>
+                                <button id="move-forward" class="btn btn-primary movement-btn" data-direction="forward">
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                                    </svg>
+                                </button>
+                                <div></div>
+                                
+                                <button id="move-left" class="btn btn-primary movement-btn" data-direction="left">
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 12H6m0 0l4-4m-4 4l4 4" />
+                                    </svg>
+                                </button>
+                                <div class="center-indicator">
+                                    <div class="drone-icon">
+                                        <svg width="32" height="32" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <button id="move-right" class="btn btn-primary movement-btn" data-direction="right">
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h13m0 0l-4-4m4 4l-4 4" />
+                                    </svg>
+                                </button>
+                                
+                                <div></div>
+                                <button id="move-back" class="btn btn-primary movement-btn" data-direction="back">
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                    </svg>
+                                </button>
+                                <div></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Rotation Controls -->
+                        <div class="rotation-controls">
+                            <button id="rotate-left" class="btn btn-warning movement-btn rotation-btn">
+                                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                </svg>
+                                左回転
+                            </button>
+                            <button id="rotate-right" class="btn btn-warning movement-btn rotation-btn">
+                                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10H11a8 8 0 00-8 8v2m18-10l-6-6m6 6l-6 6" />
+                                </svg>
+                                右回転
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Keyboard Shortcuts Info -->
+                <div class="mt-4">
+                    <small class="text-secondary">
+                        <strong>キーボードショートカット:</strong>
+                        Ctrl + WASD (移動), Ctrl + QE (回転), Esc (緊急停止)
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Position Tracking -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">位置追跡</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-secondary">現在位置</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>X座標:</td>
+                                <td id="position-x">0 cm</td>
+                            </tr>
+                            <tr>
+                                <td>Y座標:</td>
+                                <td id="position-y">0 cm</td>
+                            </tr>
+                            <tr>
+                                <td>高度:</td>
+                                <td id="position-z">0 cm</td>
+                            </tr>
+                            <tr>
+                                <td>向き:</td>
+                                <td id="heading">0°</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-secondary">移動統計</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>移動回数:</td>
+                                <td id="move-count">0</td>
+                            </tr>
+                            <tr>
+                                <td>総移動距離:</td>
+                                <td id="total-distance">0 cm</td>
+                            </tr>
+                            <tr>
+                                <td>最後の移動:</td>
+                                <td id="last-movement">--</td>
+                            </tr>
+                            <tr>
+                                <td>平均速度:</td>
+                                <td id="average-speed">-- cm/s</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Position Reset -->
+                <div class="mt-3 text-center">
+                    <button id="reset-position" class="btn btn-outline btn-sm">位置リセット</button>
+                    <button id="home-position" class="btn btn-outline btn-sm">ホームポジション</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Movement Settings -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">移動設定</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">移動距離 (cm)</label>
+                    <input type="range" id="move-distance" class="form-range" min="10" max="500" value="50">
+                    <div class="d-flex justify-content-between">
+                        <small class="text-secondary">10cm</small>
+                        <span id="move-distance-value">50cm</span>
+                        <small class="text-secondary">500cm</small>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">回転角度 (度)</label>
+                    <input type="range" id="rotate-angle" class="form-range" min="15" max="180" value="90">
+                    <div class="d-flex justify-content-between">
+                        <small class="text-secondary">15°</small>
+                        <span id="rotate-angle-value">90°</span>
+                        <small class="text-secondary">180°</small>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">移動速度</label>
+                    <select id="movement-speed" class="form-control">
+                        <option value="10">極低速 (10 cm/s)</option>
+                        <option value="20">低速 (20 cm/s)</option>
+                        <option value="30" selected>標準 (30 cm/s)</option>
+                        <option value="50">高速 (50 cm/s)</option>
+                        <option value="100">最高速 (100 cm/s)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">精密制御モード</label>
+                    <div class="form-check">
+                        <input type="checkbox" id="precision-mode" class="form-check-input">
+                        <label class="form-check-label" for="precision-mode">
+                            精密制御を有効化 (移動距離を1/2に)
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="d-grid">
+                    <button id="save-movement-settings" class="btn btn-primary">設定を保存</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Movement Presets -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">クイック移動</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline btn-sm quick-move" data-direction="forward" data-distance="100">
+                        前進 100cm
+                    </button>
+                    <button class="btn btn-outline btn-sm quick-move" data-direction="back" data-distance="100">
+                        後退 100cm
+                    </button>
+                    <button class="btn btn-outline btn-sm quick-move" data-direction="up" data-distance="50">
+                        上昇 50cm
+                    </button>
+                    <button class="btn btn-outline btn-sm quick-move" data-direction="down" data-distance="50">
+                        下降 50cm
+                    </button>
+                </div>
+                
+                <hr>
+                
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline btn-sm quick-rotate" data-direction="cw" data-angle="90">
+                        右90度回転
+                    </button>
+                    <button class="btn btn-outline btn-sm quick-rotate" data-direction="ccw" data-angle="90">
+                        左90度回転
+                    </button>
+                    <button class="btn btn-outline btn-sm quick-rotate" data-direction="cw" data-angle="180">
+                        180度回転
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Movement Log -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">移動ログ</h5>
+            </div>
+            <div class="card-body">
+                <div id="movement-log" class="movement-log">
+                    <div class="log-entry">
+                        <div class="d-flex justify-content-between">
+                            <span>システム準備完了</span>
+                            <small class="text-secondary">10:30:00</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.movement-pad {
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 16px;
+    margin: 2rem 0;
+}
+
+.control-grid {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+}
+
+.direction-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    gap: 0.5rem;
+    width: 200px;
+    height: 200px;
+}
+
+.movement-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.movement-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.movement-btn:active {
+    transform: translateY(0);
+}
+
+.vertical-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.vertical-btn {
+    width: 80px;
+    height: 50px;
+}
+
+.rotation-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.rotation-btn {
+    width: 80px;
+    height: 50px;
+}
+
+.center-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    background: radial-gradient(circle, #3b82f6 0%, #1d4ed8 100%);
+    border-radius: 50%;
+    color: white;
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.drone-icon {
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+}
+
+.movement-log {
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 0.875rem;
+}
+
+.log-entry {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.quick-move, .quick-rotate {
+    transition: all 0.2s ease;
+}
+
+.quick-move:hover, .quick-rotate:hover {
+    background-color: var(--primary-light);
+    border-color: var(--primary-color);
+}
+
+@media (max-width: 768px) {
+    .control-grid {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .movement-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 0.65rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const moveDistanceSlider = document.getElementById('move-distance');
+    const moveDistanceValue = document.getElementById('move-distance-value');
+    const rotateAngleSlider = document.getElementById('rotate-angle');
+    const rotateAngleValue = document.getElementById('rotate-angle-value');
+    const precisionMode = document.getElementById('precision-mode');
+    
+    let moveCount = 0;
+    let totalDistance = 0;
+    
+    // Update slider values
+    moveDistanceSlider.addEventListener('input', function() {
+        let value = parseInt(this.value);
+        if (precisionMode.checked) {
+            value = Math.floor(value / 2);
+        }
+        moveDistanceValue.textContent = value + 'cm';
+    });
+    
+    rotateAngleSlider.addEventListener('input', function() {
+        rotateAngleValue.textContent = this.value + '°';
+    });
+    
+    precisionMode.addEventListener('change', function() {
+        moveDistanceSlider.dispatchEvent(new Event('input'));
+    });
+    
+    // Movement button event listeners
+    document.querySelectorAll('.movement-btn[data-direction]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const direction = this.getAttribute('data-direction');
+            let distance = parseInt(moveDistanceSlider.value);
+            
+            if (precisionMode.checked) {
+                distance = Math.floor(distance / 2);
+            }
+            
+            executeMovement(direction, distance);
+        });
+    });
+    
+    // Rotation button event listeners
+    document.getElementById('rotate-left').addEventListener('click', function() {
+        const angle = parseInt(rotateAngleSlider.value);
+        executeRotation('ccw', angle);
+    });
+    
+    document.getElementById('rotate-right').addEventListener('click', function() {
+        const angle = parseInt(rotateAngleSlider.value);
+        executeRotation('cw', angle);
+    });
+    
+    // Vertical movement buttons
+    document.getElementById('move-up').addEventListener('click', function() {
+        let distance = parseInt(moveDistanceSlider.value);
+        if (precisionMode.checked) {
+            distance = Math.floor(distance / 2);
+        }
+        executeMovement('up', distance);
+    });
+    
+    document.getElementById('move-down').addEventListener('click', function() {
+        let distance = parseInt(moveDistanceSlider.value);
+        if (precisionMode.checked) {
+            distance = Math.floor(distance / 2);
+        }
+        executeMovement('down', distance);
+    });
+    
+    // Quick movement buttons
+    document.querySelectorAll('.quick-move').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const direction = this.getAttribute('data-direction');
+            const distance = parseInt(this.getAttribute('data-distance'));
+            executeMovement(direction, distance);
+        });
+    });
+    
+    document.querySelectorAll('.quick-rotate').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const direction = this.getAttribute('data-direction');
+            const angle = parseInt(this.getAttribute('data-angle'));
+            executeRotation(direction, angle);
+        });
+    });
+    
+    // Execute movement
+    function executeMovement(direction, distance) {
+        if (window.mfgDroneAdmin) {
+            window.mfgDroneAdmin.moveDrone(direction, distance).then(() => {
+                updateMovementStats(direction, distance);
+                addMovementLog(`${getDirectionText(direction)} ${distance}cm`);
+            }).catch(error => {
+                addMovementLog(`移動エラー: ${error.message}`);
+            });
+        } else {
+            // Demo mode
+            updateMovementStats(direction, distance);
+            addMovementLog(`${getDirectionText(direction)} ${distance}cm`);
+        }
+    }
+    
+    // Execute rotation
+    function executeRotation(direction, angle) {
+        if (window.mfgDroneAdmin) {
+            window.mfgDroneAdmin.rotateDrone(direction, angle).then(() => {
+                addMovementLog(`${direction === 'cw' ? '右' : '左'}回転 ${angle}°`);
+            }).catch(error => {
+                addMovementLog(`回転エラー: ${error.message}`);
+            });
+        } else {
+            // Demo mode
+            addMovementLog(`${direction === 'cw' ? '右' : '左'}回転 ${angle}°`);
+        }
+    }
+    
+    // Update movement statistics
+    function updateMovementStats(direction, distance) {
+        moveCount++;
+        totalDistance += distance;
+        
+        document.getElementById('move-count').textContent = moveCount;
+        document.getElementById('total-distance').textContent = totalDistance + ' cm';
+        document.getElementById('last-movement').textContent = `${getDirectionText(direction)} ${distance}cm`;
+        
+        // Update average speed (mock calculation)
+        const avgSpeed = Math.floor(Math.random() * 20) + 20;
+        document.getElementById('average-speed').textContent = avgSpeed + ' cm/s';
+    }
+    
+    // Get direction text in Japanese
+    function getDirectionText(direction) {
+        const directionMap = {
+            'forward': '前進',
+            'back': '後退',
+            'left': '左移動',
+            'right': '右移動',
+            'up': '上昇',
+            'down': '下降'
+        };
+        return directionMap[direction] || direction;
+    }
+    
+    // Add movement log entry
+    function addMovementLog(message) {
+        const logContainer = document.getElementById('movement-log');
+        const now = new Date();
+        const timeString = now.toTimeString().split(' ')[0];
+        
+        const logEntry = document.createElement('div');
+        logEntry.className = 'log-entry';
+        logEntry.innerHTML = `
+            <div class="d-flex justify-content-between">
+                <span>${message}</span>
+                <small class="text-secondary">${timeString}</small>
+            </div>
+        `;
+        
+        logContainer.insertBefore(logEntry, logContainer.firstChild);
+        
+        // Keep only last 15 entries
+        const entries = logContainer.querySelectorAll('.log-entry');
+        if (entries.length > 15) {
+            logContainer.removeChild(entries[entries.length - 1]);
+        }
+    }
+    
+    // Settings form
+    document.getElementById('save-movement-settings').addEventListener('click', function() {
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-success mt-3';
+        alert.textContent = '移動設定を保存しました';
+        this.parentNode.appendChild(alert);
+        
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.parentNode.removeChild(alert);
+            }
+        }, 3000);
+        
+        addMovementLog('移動設定を更新');
+    });
+    
+    // Position reset
+    document.getElementById('reset-position').addEventListener('click', function() {
+        document.getElementById('position-x').textContent = '0 cm';
+        document.getElementById('position-y').textContent = '0 cm';
+        document.getElementById('position-z').textContent = '0 cm';
+        document.getElementById('heading').textContent = '0°';
+        addMovementLog('位置情報をリセット');
+    });
+    
+    document.getElementById('home-position').addEventListener('click', function() {
+        addMovementLog('ホームポジションに移動開始');
+        // In real implementation, this would send the drone to home position
+    });
+    
+    // Initialize
+    addMovementLog('移動制御システム初期化完了');
+    
+    // Demo position updates (in real app, this would come from drone sensors)
+    setInterval(() => {
+        if (moveCount > 0) {
+            const x = Math.floor(Math.random() * 200) - 100;
+            const y = Math.floor(Math.random() * 200) - 100;
+            const z = Math.floor(Math.random() * 300);
+            const heading = Math.floor(Math.random() * 360);
+            
+            document.getElementById('position-x').textContent = x + ' cm';
+            document.getElementById('position-y').textContent = y + ' cm';
+            document.getElementById('position-z').textContent = z + ' cm';
+            document.getElementById('heading').textContent = heading + '°';
+        }
+    }, 5000);
+});
+</script>
+{% endblock %}

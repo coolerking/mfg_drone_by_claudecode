@@ -1,0 +1,528 @@
+{% extends "base.html" %}
+
+{% block title %}飛行制御 - MFG Drone 管理者画面{% endblock %}
+{% block page_title %}基本飛行制御{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Flight Status -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">飛行状態</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="text-center">
+                            <div id="flight-status-indicator" class="flight-indicator landed">
+                                <svg width="80" height="80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
+                                <div class="mt-3">
+                                    <h4 id="flight-status-text">着陸中</h4>
+                                    <p id="flight-status-description" class="text-secondary">ドローンは地上にあります</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6 class="text-secondary">飛行データ</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>飛行時間:</td>
+                                <td id="flight-time">00:00:00</td>
+                            </tr>
+                            <tr>
+                                <td>現在高度:</td>
+                                <td id="current-altitude">0 cm</td>
+                            </tr>
+                            <tr>
+                                <td>バッテリー残量:</td>
+                                <td id="battery-remaining">--</td>
+                            </tr>
+                            <tr>
+                                <td>推定飛行可能時間:</td>
+                                <td id="estimated-flight-time">--</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Pre-flight Checklist -->
+                <div class="mt-4" id="preflight-checklist">
+                    <h6 class="text-secondary">飛行前チェックリスト</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input type="checkbox" id="check-battery" class="form-check-input">
+                                <label class="form-check-label" for="check-battery">
+                                    バッテリー残量確認 (推奨: 50%以上)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" id="check-connection" class="form-check-input">
+                                <label class="form-check-label" for="check-connection">
+                                    ドローン接続確認
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" id="check-area" class="form-check-input">
+                                <label class="form-check-label" for="check-area">
+                                    飛行エリア安全確認
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input type="checkbox" id="check-weather" class="form-check-input">
+                                <label class="form-check-label" for="check-weather">
+                                    気象条件確認
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" id="check-camera" class="form-check-input">
+                                <label class="form-check-label" for="check-camera">
+                                    カメラ動作確認
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" id="check-emergency" class="form-check-input">
+                                <label class="form-check-label" for="check-emergency">
+                                    緊急停止手順確認
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Flight Controls -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">飛行操作</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="d-grid">
+                            <button id="takeoff" class="btn btn-success btn-lg flight-control-btn" disabled>
+                                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                                </svg>
+                                離陸
+                            </button>
+                        </div>
+                        <small class="text-secondary mt-2 d-block text-center">
+                            ドローンを自動離陸させます<br>
+                            (高度: 約80-120cm)
+                        </small>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="d-grid">
+                            <button id="land" class="btn btn-warning btn-lg flight-control-btn" disabled>
+                                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                </svg>
+                                着陸
+                            </button>
+                        </div>
+                        <small class="text-secondary mt-2 d-block text-center">
+                            ドローンを安全に着陸させます<br>
+                            (自動で着陸位置を調整)
+                        </small>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="d-grid">
+                            <button id="emergency-stop" class="btn btn-danger btn-lg">
+                                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                </svg>
+                                緊急停止
+                            </button>
+                        </div>
+                        <small class="text-secondary mt-2 d-block text-center">
+                            すべてのモーターを即座に停止<br>
+                            <span class="text-danger">(高度からの落下リスク)</span>
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Flight Mode Selection -->
+                <div class="mt-4">
+                    <h6 class="text-secondary">飛行モード</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input type="radio" id="mode-manual" name="flight-mode" class="form-check-input" checked>
+                                <label class="form-check-label" for="mode-manual">
+                                    手動飛行モード
+                                </label>
+                                <div class="text-secondary small">管理者が直接操縦</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input type="radio" id="mode-auto" name="flight-mode" class="form-check-input">
+                                <label class="form-check-label" for="mode-auto">
+                                    自動追跡モード
+                                </label>
+                                <div class="text-secondary small">AI による自動制御</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Flight Settings -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">飛行設定</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">最大飛行高度 (cm)</label>
+                    <input type="range" id="max-altitude" class="form-range" min="50" max="500" value="300">
+                    <div class="d-flex justify-content-between">
+                        <small class="text-secondary">50cm</small>
+                        <span id="max-altitude-value">300cm</span>
+                        <small class="text-secondary">500cm</small>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">飛行速度</label>
+                    <select id="flight-speed" class="form-control">
+                        <option value="slow">低速 (10-30 cm/s)</option>
+                        <option value="normal" selected>標準 (30-60 cm/s)</option>
+                        <option value="fast">高速 (60-100 cm/s)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">自動帰還設定</label>
+                    <div class="form-check">
+                        <input type="checkbox" id="auto-return-low-battery" class="form-check-input" checked>
+                        <label class="form-check-label" for="auto-return-low-battery">
+                            バッテリー低下時自動帰還 (20%以下)
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="auto-return-signal-loss" class="form-check-input" checked>
+                        <label class="form-check-label" for="auto-return-signal-loss">
+                            信号ロス時自動帰還
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="d-grid">
+                    <button id="save-flight-settings" class="btn btn-primary">設定を保存</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Safety Alerts -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">安全警告</h5>
+            </div>
+            <div class="card-body">
+                <div id="safety-alerts">
+                    <div class="alert alert-warning">
+                        <strong>注意:</strong> 飛行前に周囲の安全を確認してください
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>情報:</strong> 風速5m/s以上での飛行は推奨されません
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Flight Log -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">飛行ログ</h5>
+            </div>
+            <div class="card-body">
+                <div id="flight-log" class="flight-log">
+                    <div class="log-entry">
+                        <div class="d-flex justify-content-between">
+                            <span>システム準備完了</span>
+                            <small class="text-secondary">10:30:00</small>
+                        </div>
+                    </div>
+                    <div class="log-entry">
+                        <div class="d-flex justify-content-between">
+                            <span>飛行前チェック待機中</span>
+                            <small class="text-secondary">10:30:01</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.flight-indicator {
+    padding: 2rem;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.flight-indicator.landed {
+    background-color: #f1f5f9;
+    color: #475569;
+}
+
+.flight-indicator.flying {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.flight-indicator.emergency {
+    background-color: #fef2f2;
+    color: #991b1b;
+}
+
+.flight-control-btn {
+    height: 4rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.flight-control-btn:disabled {
+    opacity: 0.4;
+}
+
+.flight-log {
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 0.875rem;
+}
+
+.log-entry {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+@keyframes flying {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.flying svg {
+    animation: flying 2s ease-in-out infinite;
+}
+
+.preflight-check-complete {
+    background-color: #dcfce7;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const takeoffBtn = document.getElementById('takeoff');
+    const landBtn = document.getElementById('land');
+    const emergencyBtn = document.getElementById('emergency-stop');
+    const flightStatusIndicator = document.getElementById('flight-status-indicator');
+    const flightStatusText = document.getElementById('flight-status-text');
+    const flightStatusDescription = document.getElementById('flight-status-description');
+    const maxAltitudeSlider = document.getElementById('max-altitude');
+    const maxAltitudeValue = document.getElementById('max-altitude-value');
+    
+    let flightStartTime = null;
+    let flightTimerInterval = null;
+    let isFlying = false;
+    
+    // Update altitude value display
+    maxAltitudeSlider.addEventListener('input', function() {
+        maxAltitudeValue.textContent = this.value + 'cm';
+    });
+    
+    // Check pre-flight checklist
+    function updatePreflightStatus() {
+        const checkboxes = document.querySelectorAll('#preflight-checklist input[type="checkbox"]');
+        const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+        const totalCount = checkboxes.length;
+        
+        const allChecked = checkedCount === totalCount;
+        
+        // Enable/disable takeoff button based on checklist and connection
+        const connectionStatus = window.mfgDroneAdmin ? window.mfgDroneAdmin.connectionStatus : false;
+        takeoffBtn.disabled = !allChecked || !connectionStatus || isFlying;
+        landBtn.disabled = !connectionStatus || !isFlying;
+        
+        if (allChecked && !document.querySelector('.preflight-check-complete')) {
+            const checklistDiv = document.getElementById('preflight-checklist');
+            const completeDiv = document.createElement('div');
+            completeDiv.className = 'preflight-check-complete';
+            completeDiv.innerHTML = `
+                <div class="text-success">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    飛行前チェック完了 - 離陸準備完了
+                </div>
+            `;
+            checklistDiv.appendChild(completeDiv);
+        } else if (!allChecked) {
+            const completeDiv = document.querySelector('.preflight-check-complete');
+            if (completeDiv) {
+                completeDiv.parentNode.removeChild(completeDiv);
+            }
+        }
+    }
+    
+    // Add event listeners to checkboxes
+    document.querySelectorAll('#preflight-checklist input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', updatePreflightStatus);
+    });
+    
+    // Flight time tracking
+    function startFlightTimer() {
+        flightStartTime = new Date();
+        flightTimerInterval = setInterval(updateFlightTime, 1000);
+    }
+    
+    function stopFlightTimer() {
+        if (flightTimerInterval) {
+            clearInterval(flightTimerInterval);
+            flightTimerInterval = null;
+        }
+    }
+    
+    function updateFlightTime() {
+        if (flightStartTime) {
+            const now = new Date();
+            const diff = now - flightStartTime;
+            const hours = Math.floor(diff / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+            
+            const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('flight-time').textContent = timeString;
+        }
+    }
+    
+    // Update flight status
+    function updateFlightStatus(status, description, className) {
+        flightStatusText.textContent = status;
+        flightStatusDescription.textContent = description;
+        flightStatusIndicator.className = `flight-indicator ${className}`;
+        
+        addFlightLog(status);
+    }
+    
+    // Add flight log entry
+    function addFlightLog(message) {
+        const logContainer = document.getElementById('flight-log');
+        const now = new Date();
+        const timeString = now.toTimeString().split(' ')[0];
+        
+        const logEntry = document.createElement('div');
+        logEntry.className = 'log-entry';
+        logEntry.innerHTML = `
+            <div class="d-flex justify-content-between">
+                <span>${message}</span>
+                <small class="text-secondary">${timeString}</small>
+            </div>
+        `;
+        
+        logContainer.insertBefore(logEntry, logContainer.firstChild);
+        
+        // Keep only last 20 entries
+        const entries = logContainer.querySelectorAll('.log-entry');
+        if (entries.length > 20) {
+            logContainer.removeChild(entries[entries.length - 1]);
+        }
+    }
+    
+    // Flight controls event listeners
+    takeoffBtn.addEventListener('click', function() {
+        if (window.mfgDroneAdmin) {
+            window.mfgDroneAdmin.takeoff().then(() => {
+                isFlying = true;
+                updateFlightStatus('飛行中', 'ドローンが飛行中です', 'flying');
+                startFlightTimer();
+                updatePreflightStatus();
+            }).catch(error => {
+                addFlightLog(`離陸エラー: ${error.message}`);
+            });
+        }
+    });
+    
+    landBtn.addEventListener('click', function() {
+        if (window.mfgDroneAdmin) {
+            window.mfgDroneAdmin.land().then(() => {
+                isFlying = false;
+                updateFlightStatus('着陸中', 'ドローンは地上にあります', 'landed');
+                stopFlightTimer();
+                updatePreflightStatus();
+            }).catch(error => {
+                addFlightLog(`着陸エラー: ${error.message}`);
+            });
+        }
+    });
+    
+    emergencyBtn.addEventListener('click', function() {
+        if (window.mfgDroneAdmin) {
+            window.mfgDroneAdmin.emergencyStop().then(() => {
+                isFlying = false;
+                updateFlightStatus('緊急停止', '緊急停止が実行されました', 'emergency');
+                stopFlightTimer();
+                updatePreflightStatus();
+            }).catch(error => {
+                addFlightLog(`緊急停止エラー: ${error.message}`);
+            });
+        }
+    });
+    
+    // Settings form
+    document.getElementById('save-flight-settings').addEventListener('click', function() {
+        const settings = {
+            maxAltitude: document.getElementById('max-altitude').value,
+            flightSpeed: document.getElementById('flight-speed').value,
+            autoReturnLowBattery: document.getElementById('auto-return-low-battery').checked,
+            autoReturnSignalLoss: document.getElementById('auto-return-signal-loss').checked
+        };
+        
+        // Show success message
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-success mt-3';
+        alert.textContent = '飛行設定を保存しました';
+        this.parentNode.appendChild(alert);
+        
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.parentNode.removeChild(alert);
+            }
+        }, 3000);
+        
+        addFlightLog('飛行設定を更新');
+    });
+    
+    // Initialize
+    updatePreflightStatus();
+    addFlightLog('飛行制御システム初期化完了');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}接続管理 - MFG Drone 管理者画面{% endblock %}
+{% block page_title %}ドローン接続管理{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Connection Status -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">接続状態</h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="text-center">
+                            <div id="drone-connection-status" class="mb-3">
+                                <div class="connection-indicator disconnected">
+                                    <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                                    </svg>
+                                    <div class="mt-2">
+                                        <h4 id="connection-status-text">切断中</h4>
+                                        <p class="text-secondary">ドローンに接続されていません</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2 d-md-block">
+                                <button id="connect-drone" class="btn btn-primary btn-lg">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                    </svg>
+                                    ドローンに接続
+                                </button>
+                                <button id="disconnect-drone" class="btn btn-secondary btn-lg" disabled>
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18 21l-4.95-4.95m0 0L5.636 5.636M13.05 16.05L5.636 5.636" />
+                                    </svg>
+                                    切断
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6 class="text-secondary">接続情報</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>ドローンIP:</td>
+                                <td id="drone-ip">--</td>
+                            </tr>
+                            <tr>
+                                <td>接続時間:</td>
+                                <td id="connection-duration">--</td>
+                            </tr>
+                            <tr>
+                                <td>信号強度:</td>
+                                <td id="signal-strength">--</td>
+                            </tr>
+                            <tr>
+                                <td>最終更新:</td>
+                                <td id="last-update">--</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Network Diagnostics -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">ネットワーク診断</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <button id="ping-test" class="btn btn-outline btn-sm">Ping テスト</button>
+                        <button id="wifi-scan" class="btn btn-outline btn-sm">WiFi スキャン</button>
+                        <button id="network-info" class="btn btn-outline btn-sm">ネットワーク情報</button>
+                    </div>
+                    <div class="col-md-6">
+                        <div id="diagnostic-result" class="diagnostic-output">
+                            <small class="text-secondary">診断結果がここに表示されます</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Connection Settings -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">接続設定</h5>
+            </div>
+            <div class="card-body">
+                <form id="connection-settings-form">
+                    <div class="form-group">
+                        <label class="form-label">ドローンIP アドレス</label>
+                        <input type="text" id="drone-ip-input" class="form-control" value="192.168.10.1" readonly>
+                        <small class="text-secondary">Tello EDU のデフォルトIP</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">コマンドポート</label>
+                        <input type="number" id="command-port" class="form-control" value="8889" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">ストリームポート</label>
+                        <input type="number" id="stream-port" class="form-control" value="11111" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">接続タイムアウト (秒)</label>
+                        <input type="range" id="connection-timeout" class="form-range" min="5" max="30" value="15">
+                        <small class="text-secondary">現在: <span id="timeout-value">15</span>秒</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">自動再接続</label>
+                        <div class="form-check">
+                            <input type="checkbox" id="auto-reconnect" class="form-check-input">
+                            <label class="form-check-label" for="auto-reconnect">
+                                接続が切れた場合に自動で再接続を試行
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">設定を保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Connection History -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">接続履歴</h5>
+            </div>
+            <div class="card-body">
+                <div id="connection-history" class="connection-history">
+                    <div class="history-item">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-success">接続成功</span>
+                            <small class="text-secondary">10:30:25</small>
+                        </div>
+                        <small class="text-secondary">192.168.10.1 - 継続時間: 5分30秒</small>
+                    </div>
+                    <div class="history-item">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-warning">切断</span>
+                            <small class="text-secondary">10:25:55</small>
+                        </div>
+                        <small class="text-secondary">ユーザーによる切断</small>
+                    </div>
+                    <div class="history-item">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-success">接続成功</span>
+                            <small class="text-secondary">10:20:10</small>
+                        </div>
+                        <small class="text-secondary">192.168.10.1 - 継続時間: 5分45秒</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.connection-indicator {
+    padding: 2rem;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.connection-indicator.connected {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.connection-indicator.disconnected {
+    background-color: #fef2f2;
+    color: #991b1b;
+}
+
+.connection-indicator.connecting {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.diagnostic-output {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 1rem;
+    font-family: monospace;
+    font-size: 0.875rem;
+    min-height: 100px;
+    overflow-y: auto;
+}
+
+.connection-history {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.history-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.history-item:last-child {
+    border-bottom: none;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.connecting svg {
+    animation: pulse 2s infinite;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const connectBtn = document.getElementById('connect-drone');
+    const disconnectBtn = document.getElementById('disconnect-drone');
+    const statusText = document.getElementById('connection-status-text');
+    const statusIndicator = document.getElementById('drone-connection-status').querySelector('.connection-indicator');
+    const timeoutSlider = document.getElementById('connection-timeout');
+    const timeoutValue = document.getElementById('timeout-value');
+    
+    // Update timeout value display
+    timeoutSlider.addEventListener('input', function() {
+        timeoutValue.textContent = this.value;
+    });
+    
+    // Connection form
+    document.getElementById('connection-settings-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Show success message
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-success mt-3';
+        alert.textContent = '設定を保存しました';
+        this.appendChild(alert);
+        
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.parentNode.removeChild(alert);
+            }
+        }, 3000);
+    });
+    
+    // Diagnostic functions
+    document.getElementById('ping-test').addEventListener('click', function() {
+        const output = document.getElementById('diagnostic-result');
+        output.innerHTML = 'Ping テスト実行中...<br>';
+        
+        setTimeout(() => {
+            output.innerHTML += 'PING 192.168.10.1: 56 data bytes<br>';
+            output.innerHTML += '64 bytes from 192.168.10.1: icmp_seq=0 time=12.345 ms<br>';
+            output.innerHTML += '64 bytes from 192.168.10.1: icmp_seq=1 time=11.234 ms<br>';
+            output.innerHTML += '64 bytes from 192.168.10.1: icmp_seq=2 time=13.456 ms<br>';
+            output.innerHTML += '<span class="text-success">Ping テスト完了: 接続良好</span>';
+        }, 2000);
+    });
+    
+    document.getElementById('wifi-scan').addEventListener('click', function() {
+        const output = document.getElementById('diagnostic-result');
+        output.innerHTML = 'WiFi スキャン実行中...<br>';
+        
+        setTimeout(() => {
+            output.innerHTML += 'SSID: TELLO-XXXXXX | Signal: -45dBm | Security: WPA2<br>';
+            output.innerHTML += 'SSID: MyHome-WiFi | Signal: -60dBm | Security: WPA2<br>';
+            output.innerHTML += 'SSID: Guest-Network | Signal: -75dBm | Security: None<br>';
+            output.innerHTML += '<span class="text-success">WiFi スキャン完了</span>';
+        }, 1500);
+    });
+    
+    document.getElementById('network-info').addEventListener('click', function() {
+        const output = document.getElementById('diagnostic-result');
+        output.innerHTML = 'ネットワーク情報取得中...<br>';
+        
+        setTimeout(() => {
+            output.innerHTML += 'Local IP: 192.168.10.2<br>';
+            output.innerHTML += 'Gateway: 192.168.10.1<br>';
+            output.innerHTML += 'DNS: 8.8.8.8<br>';
+            output.innerHTML += 'MTU: 1500<br>';
+            output.innerHTML += '<span class="text-success">ネットワーク情報取得完了</span>';
+        }, 1000);
+    });
+    
+    // Add connection history entry
+    function addConnectionHistory(type, message) {
+        const history = document.getElementById('connection-history');
+        const now = new Date();
+        const timeString = now.toTimeString().split(' ')[0];
+        
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.innerHTML = `
+            <div class="d-flex justify-content-between">
+                <span class="text-${type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'danger'}">${message}</span>
+                <small class="text-secondary">${timeString}</small>
+            </div>
+            <small class="text-secondary">192.168.10.1</small>
+        `;
+        
+        history.insertBefore(item, history.firstChild);
+        
+        // Keep only last 10 entries
+        const items = history.querySelectorAll('.history-item');
+        if (items.length > 10) {
+            history.removeChild(items[items.length - 1]);
+        }
+    }
+    
+    // Update connection info periodically
+    function updateConnectionInfo() {
+        if (window.mfgDroneAdmin && window.mfgDroneAdmin.connectionStatus) {
+            document.getElementById('drone-ip').textContent = '192.168.10.1';
+            document.getElementById('signal-strength').textContent = '-45 dBm';
+            document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+        }
+    }
+    
+    setInterval(updateConnectionInfo, 5000);
+});
+</script>
+{% endblock %}

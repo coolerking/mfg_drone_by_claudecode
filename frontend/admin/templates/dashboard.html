@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}ダッシュボード - MFG Drone 管理者画面{% endblock %}
+{% block page_title %}ダッシュボード{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- System Status Cards -->
+    <div class="col-md-6 col-lg-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="text-primary">ドローン接続</h5>
+                <div id="connection-status-card" class="status-indicator disconnected">
+                    <span class="status-dot"></span>
+                    切断中
+                </div>
+                <div class="mt-3">
+                    <button id="connect-drone" class="btn btn-primary btn-sm">接続</button>
+                    <button id="disconnect-drone" class="btn btn-secondary btn-sm">切断</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="text-success">バッテリー残量</h5>
+                <div class="display-4 text-success" id="battery-level">--</div>
+                <div class="progress mt-2">
+                    <div id="battery-progress" class="progress-bar progress-bar-success" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="text-info">現在高度</h5>
+                <div class="display-4 text-info" id="current-height">--</div>
+                <small class="text-secondary">センチメートル</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="text-warning">温度</h5>
+                <div class="display-4 text-warning" id="current-temperature">--</div>
+                <small class="text-secondary">度</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Live Video Feed -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">ライブ映像</h5>
+                <div>
+                    <button id="toggle-stream" class="btn btn-primary btn-sm">ストリーミング開始</button>
+                    <button id="take-photo" class="btn btn-success btn-sm">撮影</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="video-container" style="background: #000; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; color: white; border-radius: 4px;">
+                    <div id="video-placeholder">
+                        <svg width="64" height="64" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        <div class="mt-2">カメラ映像</div>
+                        <div class="text-secondary">ストリーミング停止中</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Controls -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">クイックコントロール</h5>
+            </div>
+            <div class="card-body">
+                <!-- Flight Controls -->
+                <div class="mb-4">
+                    <h6 class="text-secondary">基本飛行制御</h6>
+                    <div class="d-grid gap-2">
+                        <button id="takeoff" class="btn btn-success">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                            </svg>
+                            離陸
+                        </button>
+                        <button id="land" class="btn btn-warning">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                            </svg>
+                            着陸
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Tracking Controls -->
+                <div class="mb-4">
+                    <h6 class="text-secondary">追跡制御</h6>
+                    <div class="form-group">
+                        <select id="target-object" class="form-control">
+                            <option value="">追跡対象を選択</option>
+                            <option value="person">人</option>
+                            <option value="car">車</option>
+                            <option value="ball">ボール</option>
+                        </select>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button id="start-tracking" class="btn btn-primary">追跡開始</button>
+                        <button id="stop-tracking" class="btn btn-secondary">追跡停止</button>
+                    </div>
+                </div>
+                
+                <!-- Movement Controls -->
+                <div class="mb-4">
+                    <h6 class="text-secondary">移動制御</h6>
+                    <div class="text-center">
+                        <!-- Direction Pad -->
+                        <div class="d-grid gap-1" style="grid-template-columns: 1fr 1fr 1fr; max-width: 150px; margin: 0 auto;">
+                            <div></div>
+                            <button id="move-forward" class="btn btn-outline btn-sm">↑</button>
+                            <div></div>
+                            <button id="move-left" class="btn btn-outline btn-sm">←</button>
+                            <button id="move-down" class="btn btn-outline btn-sm">↓</button>
+                            <button id="move-right" class="btn btn-outline btn-sm">→</button>
+                            <div></div>
+                            <button id="move-back" class="btn btn-outline btn-sm">↓</button>
+                            <div></div>
+                        </div>
+                        <div class="mt-2">
+                            <button id="move-up" class="btn btn-outline btn-sm">上昇</button>
+                            <button id="move-down" class="btn btn-outline btn-sm">下降</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Sensor Data -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">センサーデータ</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <h6 class="text-secondary">姿勢情報</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>ピッチ</td>
+                                <td id="attitude-pitch">--°</td>
+                            </tr>
+                            <tr>
+                                <td>ロール</td>
+                                <td id="attitude-roll">--°</td>
+                            </tr>
+                            <tr>
+                                <td>ヨー</td>
+                                <td id="attitude-yaw">--°</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="text-secondary">飛行データ</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>速度</td>
+                                <td id="current-speed">-- cm/s</td>
+                            </tr>
+                            <tr>
+                                <td>加速度</td>
+                                <td id="current-acceleration">-- m/s²</td>
+                            </tr>
+                            <tr>
+                                <td>気圧</td>
+                                <td id="current-pressure">-- hPa</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Logs -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">システムログ</h5>
+            </div>
+            <div class="card-body">
+                <div id="system-logs" class="log-container" style="height: 200px; overflow-y: auto; background: #f8f9fa; padding: 1rem; border-radius: 4px; font-family: monospace; font-size: 0.875rem;">
+                    <div class="log-entry">[00:00:00] システム開始</div>
+                    <div class="log-entry">[00:00:01] ドローンAPIクライアント初期化完了</div>
+                    <div class="log-entry">[00:00:02] ダッシュボード画面読み込み完了</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update battery progress bar
+    function updateBatteryProgress() {
+        const batteryLevel = document.getElementById('battery-level');
+        const batteryProgress = document.getElementById('battery-progress');
+        
+        if (batteryLevel && batteryProgress) {
+            const level = parseInt(batteryLevel.textContent) || 0;
+            batteryProgress.style.width = level + '%';
+            
+            // Change color based on level
+            batteryProgress.className = 'progress-bar ' + 
+                (level > 50 ? 'progress-bar-success' : 
+                 level > 20 ? 'progress-bar-warning' : 'progress-bar-danger');
+        }
+    }
+    
+    // Add log entry
+    function addLogEntry(message) {
+        const logContainer = document.getElementById('system-logs');
+        if (logContainer) {
+            const now = new Date();
+            const timestamp = now.toTimeString().split(' ')[0];
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            // Keep only last 50 entries
+            const entries = logContainer.querySelectorAll('.log-entry');
+            if (entries.length > 50) {
+                logContainer.removeChild(entries[0]);
+            }
+        }
+    }
+    
+    // Update every 2 seconds
+    setInterval(updateBatteryProgress, 2000);
+    
+    // Add some sample log entries
+    setTimeout(() => addLogEntry('センサーデータ更新開始'), 1000);
+    setTimeout(() => addLogEntry('リアルタイム監視準備完了'), 2000);
+});
+</script>
+{% endblock %}

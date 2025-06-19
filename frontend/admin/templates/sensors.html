@@ -1,0 +1,687 @@
+{% extends "base.html" %}
+
+{% block title %}センサー監視 - MFG Drone 管理者画面{% endblock %}
+{% block page_title %}センサー監視{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Real-time Sensor Data -->
+    <div class="col-lg-8">
+        <!-- Primary Sensors -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">主要センサーデータ</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="sensor-card battery">
+                            <div class="sensor-icon">
+                                <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <rect x="1" y="6" width="18" height="12" rx="2" ry="2" />
+                                    <line x1="23" y1="13" x2="23" y2="11" />
+                                </svg>
+                            </div>
+                            <div class="sensor-value" id="battery-percentage">--</div>
+                            <div class="sensor-unit">%</div>
+                            <div class="sensor-label">バッテリー</div>
+                            <div class="progress mt-2">
+                                <div id="battery-progress" class="progress-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="sensor-card altitude">
+                            <div class="sensor-icon">
+                                <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <polyline points="22,12 18,12 15,21 9,3 6,12 2,12" />
+                                </svg>
+                            </div>
+                            <div class="sensor-value" id="altitude-value">--</div>
+                            <div class="sensor-unit">cm</div>
+                            <div class="sensor-label">高度</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="sensor-card temperature">
+                            <div class="sensor-icon">
+                                <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" />
+                                </svg>
+                            </div>
+                            <div class="sensor-value" id="temperature-value">--</div>
+                            <div class="sensor-unit">°C</div>
+                            <div class="sensor-label">温度</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="sensor-card speed">
+                            <div class="sensor-icon">
+                                <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <polyline points="12,6 12,12 16,14" />
+                                </svg>
+                            </div>
+                            <div class="sensor-value" id="speed-value">--</div>
+                            <div class="sensor-unit">cm/s</div>
+                            <div class="sensor-label">速度</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Attitude and Motion -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">姿勢・運動データ</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <!-- 3D Attitude Indicator -->
+                        <div class="attitude-indicator">
+                            <h6 class="text-secondary text-center">3D姿勢インジケーター</h6>
+                            <div class="attitude-display">
+                                <div id="attitude-cube" class="attitude-cube">
+                                    <div class="cube-face front">前</div>
+                                    <div class="cube-face back">後</div>
+                                    <div class="cube-face right">右</div>
+                                    <div class="cube-face left">左</div>
+                                    <div class="cube-face top">上</div>
+                                    <div class="cube-face bottom">下</div>
+                                </div>
+                            </div>
+                            <div class="attitude-values mt-3">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <small class="text-secondary">ピッチ</small>
+                                        <div id="pitch-value" class="fw-bold">0°</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-secondary">ロール</small>
+                                        <div id="roll-value" class="fw-bold">0°</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-secondary">ヨー</small>
+                                        <div id="yaw-value" class="fw-bold">0°</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <!-- Motion Data -->
+                        <h6 class="text-secondary">運動データ</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>加速度 X:</td>
+                                <td id="accel-x">-- m/s²</td>
+                            </tr>
+                            <tr>
+                                <td>加速度 Y:</td>
+                                <td id="accel-y">-- m/s²</td>
+                            </tr>
+                            <tr>
+                                <td>加速度 Z:</td>
+                                <td id="accel-z">-- m/s²</td>
+                            </tr>
+                            <tr>
+                                <td>角速度 X:</td>
+                                <td id="gyro-x">-- °/s</td>
+                            </tr>
+                            <tr>
+                                <td>角速度 Y:</td>
+                                <td id="gyro-y">-- °/s</td>
+                            </tr>
+                            <tr>
+                                <td>角速度 Z:</td>
+                                <td id="gyro-z">-- °/s</td>
+                            </tr>
+                        </table>
+                        
+                        <!-- Environmental Data -->
+                        <h6 class="text-secondary mt-4">環境データ</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>気圧:</td>
+                                <td id="pressure-value">-- hPa</td>
+                            </tr>
+                            <tr>
+                                <td>湿度:</td>
+                                <td id="humidity-value">-- %</td>
+                            </tr>
+                            <tr>
+                                <td>飛行時間:</td>
+                                <td id="flight-time-total">-- 秒</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sensor Charts -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">センサーデータ履歴</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="sensor-chart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sensor Status & Controls -->
+    <div class="col-lg-4">
+        <!-- Sensor Status -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">センサー状態</h5>
+            </div>
+            <div class="card-body">
+                <div class="sensor-status-list">
+                    <div class="status-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>IMU センサー</span>
+                            <span class="badge bg-success" id="imu-status">正常</span>
+                        </div>
+                        <small class="text-secondary">加速度・ジャイロスコープ</small>
+                    </div>
+                    
+                    <div class="status-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>気圧センサー</span>
+                            <span class="badge bg-success" id="pressure-status">正常</span>
+                        </div>
+                        <small class="text-secondary">高度計算用</small>
+                    </div>
+                    
+                    <div class="status-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>温度センサー</span>
+                            <span class="badge bg-success" id="temp-status">正常</span>
+                        </div>
+                        <small class="text-secondary">内部温度監視</small>
+                    </div>
+                    
+                    <div class="status-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>バッテリー監視</span>
+                            <span class="badge bg-success" id="battery-status">正常</span>
+                        </div>
+                        <small class="text-secondary">電力管理</small>
+                    </div>
+                    
+                    <div class="status-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>通信品質</span>
+                            <span class="badge bg-warning" id="comm-status">良好</span>
+                        </div>
+                        <small class="text-secondary">WiFi接続状態</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Update Settings -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">データ更新設定</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">更新間隔</label>
+                    <select id="update-interval" class="form-control">
+                        <option value="500">0.5秒 (リアルタイム)</option>
+                        <option value="1000" selected>1秒 (標準)</option>
+                        <option value="2000">2秒 (低負荷)</option>
+                        <option value="5000">5秒 (省電力)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">表示する項目</label>
+                    <div class="form-check">
+                        <input type="checkbox" id="show-battery" class="form-check-input" checked>
+                        <label class="form-check-label" for="show-battery">バッテリー</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="show-attitude" class="form-check-input" checked>
+                        <label class="form-check-label" for="show-attitude">姿勢データ</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="show-motion" class="form-check-input" checked>
+                        <label class="form-check-label" for="show-motion">運動データ</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="show-environment" class="form-check-input" checked>
+                        <label class="form-check-label" for="show-environment">環境データ</label>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button id="start-monitoring" class="btn btn-success">監視開始</button>
+                    <button id="stop-monitoring" class="btn btn-warning">監視停止</button>
+                    <button id="reset-sensors" class="btn btn-outline">センサーリセット</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Alerts & Warnings -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">警告・アラート</h5>
+            </div>
+            <div class="card-body">
+                <div id="sensor-alerts">
+                    <div class="alert alert-info alert-sm">
+                        <strong>情報:</strong> センサー監視が正常に動作中
+                    </div>
+                </div>
+                
+                <!-- Alert Thresholds -->
+                <h6 class="text-secondary mt-3">警告しきい値</h6>
+                <div class="form-group">
+                    <label class="form-label">バッテリー低下警告 (%)</label>
+                    <input type="range" id="battery-threshold" class="form-range" min="10" max="50" value="20">
+                    <small class="text-secondary">現在: <span id="battery-threshold-value">20</span>%</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">温度警告 (°C)</label>
+                    <input type="range" id="temp-threshold" class="form-range" min="40" max="80" value="60">
+                    <small class="text-secondary">現在: <span id="temp-threshold-value">60</span>°C</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.sensor-card {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    transition: all 0.3s ease;
+    height: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.sensor-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.sensor-card.battery { border-left: 4px solid #10b981; }
+.sensor-card.altitude { border-left: 4px solid #3b82f6; }
+.sensor-card.temperature { border-left: 4px solid #f59e0b; }
+.sensor-card.speed { border-left: 4px solid #8b5cf6; }
+
+.sensor-icon {
+    color: #64748b;
+    margin-bottom: 0.5rem;
+}
+
+.sensor-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1;
+}
+
+.sensor-unit {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+}
+
+.sensor-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #475569;
+}
+
+.attitude-indicator {
+    text-align: center;
+}
+
+.attitude-display {
+    perspective: 1000px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.attitude-cube {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    transform-style: preserve-3d;
+    transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+    transition: transform 0.5s ease;
+}
+
+.cube-face {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    border: 2px solid #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #3b82f6;
+}
+
+.cube-face.front { transform: rotateY(0deg) translateZ(50px); }
+.cube-face.back { transform: rotateY(180deg) translateZ(50px); }
+.cube-face.right { transform: rotateY(90deg) translateZ(50px); }
+.cube-face.left { transform: rotateY(-90deg) translateZ(50px); }
+.cube-face.top { transform: rotateX(90deg) translateZ(50px); }
+.cube-face.bottom { transform: rotateX(-90deg) translateZ(50px); }
+
+.sensor-status-list .status-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.sensor-status-list .status-item:last-child {
+    border-bottom: none;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.chart-container {
+    height: 300px;
+    position: relative;
+}
+
+.alert-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+@keyframes pulse-warning {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.sensor-card.warning {
+    border-left-color: #f59e0b;
+    animation: pulse-warning 2s infinite;
+}
+
+.sensor-card.error {
+    border-left-color: #ef4444;
+    animation: pulse-warning 1s infinite;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let monitoringInterval = null;
+    let sensorChart = null;
+    let sensorData = {
+        battery: [],
+        altitude: [],
+        temperature: [],
+        speed: [],
+        timestamps: []
+    };
+    
+    const batteryThreshold = document.getElementById('battery-threshold');
+    const tempThreshold = document.getElementById('temp-threshold');
+    const batteryThresholdValue = document.getElementById('battery-threshold-value');
+    const tempThresholdValue = document.getElementById('temp-threshold-value');
+    
+    // Update threshold values
+    batteryThreshold.addEventListener('input', function() {
+        batteryThresholdValue.textContent = this.value;
+    });
+    
+    tempThreshold.addEventListener('input', function() {
+        tempThresholdValue.textContent = this.value;
+    });
+    
+    // Initialize chart
+    function initChart() {
+        const ctx = document.getElementById('sensor-chart').getContext('2d');
+        
+        // Simple chart implementation (in real app, use Chart.js)
+        sensorChart = {
+            ctx: ctx,
+            update: function(data) {
+                const canvas = ctx.canvas;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw battery data as example
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                const points = data.battery.slice(-20); // Last 20 points
+                const width = canvas.width;
+                const height = canvas.height;
+                
+                points.forEach((value, index) => {
+                    const x = (index / (points.length - 1)) * width;
+                    const y = height - (value / 100) * height;
+                    
+                    if (index === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                });
+                
+                ctx.stroke();
+                
+                // Add labels
+                ctx.fillStyle = '#64748b';
+                ctx.font = '12px sans-serif';
+                ctx.fillText('バッテリー (%)', 10, 20);
+                ctx.fillText('0', 10, height - 5);
+                ctx.fillText('100', 10, 15);
+            }
+        };
+    }
+    
+    // Update sensor data
+    function updateSensorData() {
+        // Simulate sensor data (in real app, fetch from API)
+        const battery = Math.floor(Math.random() * 20) + 70; // 70-90%
+        const altitude = Math.floor(Math.random() * 100) + 50; // 50-150cm
+        const temperature = Math.floor(Math.random() * 20) + 30; // 30-50°C
+        const speed = Math.floor(Math.random() * 50); // 0-50 cm/s
+        
+        // Update display
+        document.getElementById('battery-percentage').textContent = battery;
+        document.getElementById('altitude-value').textContent = altitude;
+        document.getElementById('temperature-value').textContent = temperature;
+        document.getElementById('speed-value').textContent = speed;
+        
+        // Update progress bar
+        const batteryProgress = document.getElementById('battery-progress');
+        batteryProgress.style.width = battery + '%';
+        batteryProgress.className = 'progress-bar ' + 
+            (battery > 50 ? 'bg-success' : battery > 20 ? 'bg-warning' : 'bg-danger');
+        
+        // Update attitude data
+        const pitch = Math.floor(Math.random() * 20) - 10; // -10 to 10 degrees
+        const roll = Math.floor(Math.random() * 20) - 10;
+        const yaw = Math.floor(Math.random() * 360);
+        
+        document.getElementById('pitch-value').textContent = pitch + '°';
+        document.getElementById('roll-value').textContent = roll + '°';
+        document.getElementById('yaw-value').textContent = yaw + '°';
+        
+        // Update 3D cube
+        const cube = document.getElementById('attitude-cube');
+        cube.style.transform = `rotateX(${pitch}deg) rotateY(${yaw}deg) rotateZ(${roll}deg)`;
+        
+        // Update motion data
+        document.getElementById('accel-x').textContent = (Math.random() * 2 - 1).toFixed(2) + ' m/s²';
+        document.getElementById('accel-y').textContent = (Math.random() * 2 - 1).toFixed(2) + ' m/s²';
+        document.getElementById('accel-z').textContent = (9.8 + Math.random() * 0.4 - 0.2).toFixed(2) + ' m/s²';
+        document.getElementById('gyro-x').textContent = (Math.random() * 10 - 5).toFixed(1) + ' °/s';
+        document.getElementById('gyro-y').textContent = (Math.random() * 10 - 5).toFixed(1) + ' °/s';
+        document.getElementById('gyro-z').textContent = (Math.random() * 10 - 5).toFixed(1) + ' °/s';
+        
+        // Update environmental data
+        document.getElementById('pressure-value').textContent = (1013 + Math.random() * 10 - 5).toFixed(1) + ' hPa';
+        document.getElementById('humidity-value').textContent = Math.floor(Math.random() * 30) + 40 + ' %';
+        
+        // Store data for chart
+        sensorData.battery.push(battery);
+        sensorData.altitude.push(altitude);
+        sensorData.temperature.push(temperature);
+        sensorData.speed.push(speed);
+        sensorData.timestamps.push(new Date());
+        
+        // Keep only last 50 data points
+        Object.keys(sensorData).forEach(key => {
+            if (sensorData[key].length > 50) {
+                sensorData[key] = sensorData[key].slice(-50);
+            }
+        });
+        
+        // Update chart
+        if (sensorChart) {
+            sensorChart.update(sensorData);
+        }
+        
+        // Check thresholds and create alerts
+        checkThresholds(battery, temperature);
+    }
+    
+    // Check alert thresholds
+    function checkThresholds(battery, temperature) {
+        const alertContainer = document.getElementById('sensor-alerts');
+        const batteryLimit = parseInt(batteryThreshold.value);
+        const tempLimit = parseInt(tempThreshold.value);
+        
+        // Clear existing alerts
+        alertContainer.innerHTML = '';
+        
+        // Battery check
+        if (battery <= batteryLimit) {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-warning alert-sm';
+            alert.innerHTML = `<strong>警告:</strong> バッテリー残量が${batteryLimit}%以下です (${battery}%)`;
+            alertContainer.appendChild(alert);
+            
+            // Add visual warning to sensor card
+            document.querySelector('.sensor-card.battery').classList.add('warning');
+        } else {
+            document.querySelector('.sensor-card.battery').classList.remove('warning');
+        }
+        
+        // Temperature check
+        if (temperature >= tempLimit) {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-danger alert-sm';
+            alert.innerHTML = `<strong>危険:</strong> 温度が${tempLimit}°C以上です (${temperature}°C)`;
+            alertContainer.appendChild(alert);
+            
+            document.querySelector('.sensor-card.temperature').classList.add('error');
+        } else {
+            document.querySelector('.sensor-card.temperature').classList.remove('error');
+        }
+        
+        // If no alerts, show info message
+        if (alertContainer.children.length === 0) {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-info alert-sm';
+            alert.innerHTML = '<strong>情報:</strong> すべてのセンサーが正常範囲内です';
+            alertContainer.appendChild(alert);
+        }
+    }
+    
+    // Monitoring controls
+    document.getElementById('start-monitoring').addEventListener('click', function() {
+        const interval = parseInt(document.getElementById('update-interval').value);
+        
+        if (monitoringInterval) {
+            clearInterval(monitoringInterval);
+        }
+        
+        monitoringInterval = setInterval(updateSensorData, interval);
+        
+        this.disabled = true;
+        document.getElementById('stop-monitoring').disabled = false;
+        
+        // Start immediate update
+        updateSensorData();
+    });
+    
+    document.getElementById('stop-monitoring').addEventListener('click', function() {
+        if (monitoringInterval) {
+            clearInterval(monitoringInterval);
+            monitoringInterval = null;
+        }
+        
+        this.disabled = true;
+        document.getElementById('start-monitoring').disabled = false;
+    });
+    
+    document.getElementById('reset-sensors').addEventListener('click', function() {
+        // Reset all sensor data
+        sensorData = {
+            battery: [],
+            altitude: [],
+            temperature: [],
+            speed: [],
+            timestamps: []
+        };
+        
+        // Clear chart
+        if (sensorChart) {
+            const ctx = sensorChart.ctx;
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        }
+        
+        // Reset displays
+        document.getElementById('battery-percentage').textContent = '--';
+        document.getElementById('altitude-value').textContent = '--';
+        document.getElementById('temperature-value').textContent = '--';
+        document.getElementById('speed-value').textContent = '--';
+        
+        // Reset attitude
+        document.getElementById('pitch-value').textContent = '0°';
+        document.getElementById('roll-value').textContent = '0°';
+        document.getElementById('yaw-value').textContent = '0°';
+        
+        document.getElementById('attitude-cube').style.transform = 'rotateX(0deg) rotateY(0deg) rotateZ(0deg)';
+    });
+    
+    // Initialize
+    initChart();
+    
+    // Start monitoring by default
+    setTimeout(() => {
+        document.getElementById('start-monitoring').click();
+    }, 1000);
+});
+</script>
+{% endblock %}
