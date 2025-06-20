@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFG Drone - 管理者画面 (Phase 5 完全版)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ヘッダー -->
+        <header class="app-header">
+            <div class="header-title">
+                🚁 MFG Drone - 管理者制御センター
+            </div>
+            <div class="header-status">
+                <div class="connection-status">
+                    <div class="status-indicator disconnected" id="status-indicator"></div>
+                    <span id="connection-status">切断中</span>
+                </div>
+                <button class="btn btn-danger btn-sm" id="emergency-stop">
+                    緊急停止 (ESC)
+                </button>
+            </div>
+        </header>
+
+        <!-- サイドバー -->
+        <aside class="app-sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-text">MFG Drone</div>
+                <div class="text-sm text-secondary">管理者制御パネル</div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <!-- システム監視 -->
+                <div class="nav-section">
+                    <h3 class="nav-section-title">システム監視</h3>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link active" data-page="dashboard">
+                                <span class="nav-icon">📊</span>
+                                ダッシュボード
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-page="connection">
+                                <span class="nav-icon">🔗</span>
+                                ドローン接続
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-page="sensors">
+                                <span class="nav-icon">📡</span>
+                                センサー監視
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- ドローン制御 -->
+                <div class="nav-section">
+                    <h3 class="nav-section-title">ドローン制御</h3>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-page="flight">
+                                <span class="nav-icon">✈️</span>
+                                飛行制御
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-page="movement">
+                                <span class="nav-icon">🎮</span>
+                                基本移動
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-page="advanced">
+                                <span class="nav-icon">🎯</span>
+                                高度制御
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-page="mission">
+                                <span class="nav-icon">🗺️</span>
+                                ミッションパッド
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- AI・追跡 -->
+                <div class="nav-section">
+                    <h3 class="nav-section-title">AI・追跡</h3>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-page="camera">
+                                <span class="nav-icon">📹</span>
+                                カメラ・映像
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-page="tracking">
+                                <span class="nav-icon">🎯</span>
+                                物体追跡
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-page="models">
+                                <span class="nav-icon">🧠</span>
+                                AIモデル管理
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- システム設定 -->
+                <div class="nav-section">
+                    <h3 class="nav-section-title">システム設定</h3>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-page="settings">
+                                <span class="nav-icon">⚙️</span>
+                                設定管理
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- メインコンテンツ -->
+        <main class="app-main">
+            <!-- アラートコンテナ -->
+            <div id="alert-container"></div>
+
+            <!-- ダッシュボード -->
+            <section id="page-dashboard" class="page-section active">
+                <div class="page-header">
+                    <h1 class="page-title">ダッシュボード</h1>
+                    <p class="page-subtitle">システム全体の状況をリアルタイム監視</p>
+                </div>
+
+                <div class="grid grid-4 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="sensor-meter">
+                                <div class="meter-icon battery-icon">🔋</div>
+                                <div class="meter-content">
+                                    <div class="meter-label">バッテリー残量</div>
+                                    <div class="meter-value" id="battery-level">---%</div>
+                                    <div class="progress meter-progress">
+                                        <div class="progress-bar" id="battery-progress" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="sensor-meter">
+                                <div class="meter-icon" style="background: #3b82f6;">📏</div>
+                                <div class="meter-content">
+                                    <div class="meter-label">高度</div>
+                                    <div class="meter-value" id="altitude-value">---cm</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="sensor-meter">
+                                <div class="meter-icon" style="background: #f59e0b;">🌡️</div>
+                                <div class="meter-content">
+                                    <div class="meter-label">温度</div>
+                                    <div class="meter-value" id="temperature-value">---°C</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="sensor-meter">
+                                <div class="meter-icon" style="background: #10b981;">🔗</div>
+                                <div class="meter-content">
+                                    <div class="meter-label">接続状態</div>
+                                    <div class="meter-value" id="connection-status-text">切断中</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">ライブ映像</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="aspect-ratio-16-9" style="background: #000; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; min-height: 240px;">
+                                <img id="live-video" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" alt="ライブ映像" />
+                                <div id="video-placeholder" style="text-align: center;">
+                                    <div style="font-size: 48px; margin-bottom: 16px;">📹</div>
+                                    <div>ライブ映像</div>
+                                    <div class="text-sm">ストリーミングを開始してください</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">クイックコントロール</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="grid grid-2 gap-4">
+                                <button class="btn btn-success btn-lg" id="quick-connect">
+                                    🔗 接続
+                                </button>
+                                <button class="btn btn-primary btn-lg" id="quick-takeoff">
+                                    🛫 離陸
+                                </button>
+                                <button class="btn btn-warning btn-lg" id="quick-land">
+                                    🛬 着陸
+                                </button>
+                                <button class="btn btn-danger btn-lg" id="emergency-stop">
+                                    🚨 緊急停止
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ドローン接続 -->
+            <section id="page-connection" class="page-section">
+                <div class="page-header">
+                    <h1 class="page-title">ドローン接続管理</h1>
+                    <p class="page-subtitle">Tello EDUドローンとの接続を管理</p>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">接続制御</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-4">
+                                <div class="connection-status">
+                                    <div class="status-indicator disconnected" id="connection-indicator"></div>
+                                    <span id="connection-status">切断中</span>
+                                </div>
+                            </div>
+                            <div class="grid grid-2 gap-4">
+                                <button class="btn btn-success" id="connect-btn">接続</button>
+                                <button class="btn btn-secondary" id="disconnect-btn">切断</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">ネットワーク情報</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">ドローンIP</label>
+                                <input type="text" class="form-input" value="192.168.10.1" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">制御ポート</label>
+                                <input type="text" class="form-input" value="8889" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">ビデオポート</label>
+                                <input type="text" class="form-input" value="11111" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 飛行制御 -->
+            <section id="page-flight" class="page-section">
+                <div class="page-header">
+                    <h1 class="page-title">飛行制御</h1>
+                    <p class="page-subtitle">基本的な飛行操作（離陸・着陸・緊急停止）</p>
+                </div>
+
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">離陸</h2>
+                        </div>
+                        <div class="card-body text-center">
+                            <div style="font-size: 64px; margin-bottom: 16px;">🛫</div>
+                            <button class="btn btn-primary btn-lg" id="takeoff-btn">離陸開始</button>
+                            <p class="text-sm mt-2">自動的に約80-120cmの高度まで上昇</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">着陸</h2>
+                        </div>
+                        <div class="card-body text-center">
+                            <div style="font-size: 64px; margin-bottom: 16px;">🛬</div>
+                            <button class="btn btn-warning btn-lg" id="land-btn">着陸開始</button>
+                            <p class="text-sm mt-2">現在位置から垂直に降下</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">緊急停止</h2>
+                        </div>
+                        <div class="card-body text-center">
+                            <div style="font-size: 64px; margin-bottom: 16px;">🚨</div>
+                            <button class="btn btn-danger btn-lg" id="emergency-btn">緊急停止</button>
+                            <p class="text-sm mt-2">即座にモーターを停止（ESCキー）</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 基本移動制御 -->
+            <section id="page-movement" class="page-section">
+                <div class="page-header">
+                    <h1 class="page-title">基本移動制御</h1>
+                    <p class="page-subtitle">6方向移動と回転制御（WASD + QE操作対応）</p>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">方向制御</h2>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 240px; margin: 0 auto;">
+                                <div></div>
+                                <button class="btn btn-primary" id="move-forward">⬆️ 前進 (W)</button>
+                                <div></div>
+                                <button class="btn btn-primary" id="move-left">⬅️ 左 (A)</button>
+                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                    <button class="btn btn-success btn-sm" id="move-up">🔺 上昇 (Q)</button>
+                                    <button class="btn btn-warning btn-sm" id="move-down">🔻 下降 (E)</button>
+                                </div>
+                                <button class="btn btn-primary" id="move-right">➡️ 右 (D)</button>
+                                <div></div>
+                                <button class="btn btn-primary" id="move-backward">⬇️ 後退 (S)</button>
+                                <div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">回転・設定</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">移動距離: <span id="distance-value">30</span>cm</label>
+                                <input type="range" class="form-input" id="movement-distance" min="20" max="500" value="30">
+                            </div>
+                            
+                            <div class="grid grid-2 gap-4 mt-4">
+                                <button class="btn btn-secondary" id="rotate-ccw">↺ 左回転</button>
+                                <button class="btn btn-secondary" id="rotate-cw">↻ 右回転</button>
+                            </div>
+
+                            <div class="alert alert-info mt-4">
+                                <strong>キーボード操作:</strong><br>
+                                Ctrl + WASD: 移動<br>
+                                Ctrl + QE: 上下<br>
+                                ESC: 緊急停止
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 高度制御（Phase 5） -->
+            <section id="page-advanced" class="page-section">
+                <div class="page-header">
+                    <h1 class="page-title">高度制御機能</h1>
+                    <p class="page-subtitle">3D座標移動・曲線飛行・リアルタイム制御・飛行軌跡可視化</p>
+                </div>
+
+                <div class="grid grid-2">
+                    <!-- 3D座標移動 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">3D座標移動</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="coordinate-input-group">
+                                <div class="coordinate-input">
+                                    <label>X座標 (cm)</label>
+                                    <input type="number" class="form-input" id="coord-x" min="-500" max="500" value="0">
+                                </div>
+                                <div class="coordinate-input">
+                                    <label>Y座標 (cm)</label>
+                                    <input type="number" class="form-input" id="coord-y" min="-500" max="500" value="0">
+                                </div>
+                                <div class="coordinate-input">
+                                    <label>Z座標 (cm)</label>
+                                    <input type="number" class="form-input" id="coord-z" min="-500" max="500" value="0">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">速度 (cm/s)</label>
+                                <input type="number" class="form-input" id="coord-speed" min="10" max="100" value="50">
+                            </div>
+                            <button class="btn btn-primary" id="goto-xyz-btn">座標に移動</button>
+                        </div>
+                    </div>
+
+                    <!-- 曲線飛行 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">曲線飛行</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">中間点X</label>
+                                    <input type="number" class="form-input" id="curve-x1" min="-500" max="500" value="50">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">中間点Y</label>
+                                    <input type="number" class="form-input" id="curve-y1" min="-500" max="500" value="50">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">中間点Z</label>
+                                    <input type="number" class="form-input" id="curve-z1" min="-500" max="500" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">終点X</label>
+                                    <input type="number" class="form-input" id="curve-x2" min="-500" max="500" value="100">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">終点Y</label>
+                                    <input type="number" class="form-input" id="curve-y2" min="-500" max="500" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">終点Z</label>
+                                    <input type="number" class="form-input" id="curve-z2" min="-500" max="500" value="0">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">速度 (cm/s)</label>
+                                <input type="number" class="form-input" id="curve-speed" min="10" max="60" value="30">
+                            </div>
+                            <button class="btn btn-primary" id="curve-flight-btn">曲線飛行開始</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- リアルタイム制御（ゲームパッド風） -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h2 class="card-title">リアルタイム制御</h2>
+                        <p class="card-subtitle">バーチャルスティック・ゲームパッド対応</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="gamepad-control">
+                            <!-- 左スティック（移動） -->
+                            <div class="text-center">
+                                <h3 class="mb-2">移動制御</h3>
+                                <div class="stick-container">
+                                    <div class="stick" id="left-stick"></div>
+                                </div>
+                                <p class="text-sm mt-2">前後・左右移動</p>
+                            </div>
+
+                            <!-- 中央ボタン -->
+                            <div class="gamepad-buttons">
+                                <button class="gamepad-button btn-success">🛫</button>
+                                <button class="gamepad-button btn-warning">🛬</button>
+                                <button class="gamepad-button btn-danger">🚨</button>
+                                <button class="gamepad-button btn-primary">📹</button>
+                            </div>
+
+                            <!-- 右スティック（高度・回転） -->
+                            <div class="text-center">
+                                <h3 class="mb-2">高度・回転</h3>
+                                <div class="stick-container">
+                                    <div class="stick" id="right-stick"></div>
+                                </div>
+                                <p class="text-sm mt-2">上下・回転</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 飛行軌跡可視化 -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h2 class="card-title">飛行軌跡可視化</h2>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="flight-path-canvas" class="flight-path-canvas" width="800" height="300"></canvas>
+                        <div class="mt-2 text-sm text-secondary">
+                            青線: 飛行軌跡 | 赤点: 現在位置
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ミッションパッド（Phase 5） -->
+            <section id="page-mission" class="page-section">
+                <div class="page-header">
+                    <h1 class="page-title">ミッションパッド制御</h1>
+                    <p class="page-subtitle">Tello EDU専用ミッションパッド検出・移動機能</p>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">パッド検出制御</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="grid grid-2 gap-4 mb-4">
+                                <button class="btn btn-success" id="enable-mission-pad">検出有効化</button>
+                                <button class="btn btn-secondary" id="disable-mission-pad">検出無効化</button>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">検出方向</label>
+                                <select class="form-select" id="detection-direction">
+                                    <option value="0">下向き</option>
+                                    <option value="1">前向き</option>
+                                    <option value="2">両方</option>
+                                </select>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <strong>ミッションパッド:</strong><br>
+                                Tello EDU専用のマーカーで正確な位置決めが可能
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">パッド基準移動</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">X座標 (cm)</label>
+                                    <input type="number" class="form-input" id="mission-x" min="-500" max="500" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Y座標 (cm)</label>
+                                    <input type="number" class="form-input" id="mission-y" min="-500" max="500" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Z座標 (cm)</label>
+                                    <input type="number" class="form-input" id="mission-z" min="-500" max="500" value="100">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">速度 (cm/s)</label>
+                                    <input type="number" class="form-input" id="mission-speed" min="10" max="100" value="50">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">パッドID</label>
+                                    <select class="form-select" id="mission-pad-id">
+                                        <option value="1">パッド 1</option>
+                                        <option value="2">パッド 2</option>
+                                        <option value="3">パッド 3</option>
+                                        <option value="4">パッド 4</option>
+                                        <option value="5">パッド 5</option>
+                                        <option value="6">パッド 6</option>
+                                        <option value="7">パッド 7</option>
+                                        <option value="8">パッド 8</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" id="mission-go-btn">パッド基準移動</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ミッションパッド状態表示 -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h2 class="card-title">ミッションパッド状態</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="mission-pad-grid">
+                            <div class="mission-pad" id="mission-pad-1">1</div>
+                            <div class="mission-pad" id="mission-pad-2">2</div>
+                            <div class="mission-pad" id="mission-pad-3">3</div>
+                            <div class="mission-pad" id="mission-pad-4">4</div>
+                            <div class="mission-pad" id="mission-pad-5">5</div>
+                            <div class="mission-pad" id="mission-pad-6">6</div>
+                            <div class="mission-pad" id="mission-pad-7">7</div>
+                            <div class="mission-pad" id="mission-pad-8">8</div>
+                        </div>
+                        <div class="mt-4 text-sm">
+                            <span class="badge badge-success">●</span> 検出中
+                            <span class="badge badge-primary ml-2">●</span> アクティブ
+                            <span class="badge badge-secondary ml-2">●</span> 未検出
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- カメラ・映像 -->
+            <section id="page-camera" class="page-section">
+                <div class="page-header">
+                    <h1 class="page-title">カメラ・映像制御</h1>
+                    <p class="page-subtitle">ライブストリーミング・撮影・録画・メディア管理</p>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">ライブ映像</h2>
+                        </div>
+                        <div class="card-body">
+                            <div style="background: #000; border-radius: 8px; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; color: white; margin-bottom: 16px;">
+                                <img id="live-video-feed" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" alt="ライブ映像" />
+                                <div id="video-loading" style="text-align: center;">
+                                    <div style="font-size: 48px; margin-bottom: 16px;">📹</div>
+                                    <div>ライブ映像待機中</div>
+                                </div>
+                            </div>
+                            <div class="grid grid-2 gap-4">
+                                <button class="btn btn-success" id="start-stream">配信開始</button>
+                                <button class="btn btn-secondary" id="stop-stream">配信停止</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">撮影・録画</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="grid grid-2 gap-4">
+                                <button class="btn btn-primary" id="take-photo">
+                                    📸 写真撮影
+                                </button>
+                                <button class="btn btn-warning" id="start-recording">
+                                    🎥 録画開始
+                                </button>
+                                <button class="btn btn-outline" id="stop-recording">
+                                    ⏹️ 録画停止
+                                </button>
+                                <button class="btn btn-outline">
+                                    📁 ギャラリー
+                                </button>
+                            </div>
+
+                            <div class="form-group mt-4">
+                                <label class="form-label">解像度</label>
+                                <select class="form-select">
+                                    <option>720p (1280x720)</option>
+                                    <option>480p (640x480)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">ビットレート</label>
+                                <select class="form-select">
+                                    <option>高品質</option>
+                                    <option>標準</option>
+                                    <option>低品質</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- センサー監視 -->
+            <section id="page-sensors" class="page-section">
+                <div class="page-header">
+                    <h1 class="page-title">センサー監視</h1>
+                    <p class="page-subtitle">バッテリー・姿勢・環境データのリアルタイム監視</p>
+                </div>
+
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">バッテリー</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center mb-4">
+                                <div style="font-size: 48px; margin-bottom: 8px;">🔋</div>
+                                <div class="meter-value" id="battery-value">---%</div>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar" id="battery-progress-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">高度・温度</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="sensor-meter mb-4">
+                                <div class="meter-icon" style="background: #3b82f6;">📏</div>
+                                <div class="meter-content">
+                                    <div class="meter-label">現在高度</div>
+                                    <div class="meter-value" id="altitude-display">---cm</div>
+                                </div>
+                            </div>
+                            <div class="sensor-meter">
+                                <div class="meter-icon" style="background: #f59e0b;">🌡️</div>
+                                <div class="meter-content">
+                                    <div class="meter-label">内部温度</div>
+                                    <div class="meter-value" id="temperature-display">---°C</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">3D姿勢</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">ピッチ (前後傾き)</label>
+                                <div class="meter-value" id="pitch-value">---°</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">ロール (左右傾き)</label>
+                                <div class="meter-value" id="roll-value">---°</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">ヨー (回転角)</label>
+                                <div class="meter-value" id="yaw-value">---°</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 物体追跡 -->
+            <section id="page-tracking" class="page-section">
+                <div class="page-header">
+                    <h1 class="page-title">物体追跡</h1>
+                    <p class="page-subtitle">AI物体認識による自動追跡機能</p>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">追跡制御</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">追跡対象</label>
+                                <select class="form-select" id="target-object">
+                                    <option value="">対象を選択</option>
+                                    <option value="person">人物</option>
+                                    <option value="car">車両</option>
+                                    <option value="ball">ボール</option>
+                                    <option value="custom">カスタム</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">追跡モード</label>
+                                <select class="form-select" id="tracking-mode">
+                                    <option value="center">中央維持</option>
+                                    <option value="follow">追従飛行</option>
+                                </select>
+                            </div>
+
+                            <div class="grid grid-2 gap-4 mt-4">
+                                <button class="btn btn-success" id="start-tracking">追跡開始</button>
+                                <button class="btn btn-danger" id="stop-tracking">追跡停止</button>
+                            </div>
+
+                            <div class="mt-4">
+                                <div class="form-label">追跡状態</div>
+                                <span class="badge badge-secondary" id="tracking-status">停止中</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">検出結果</h2>
+                        </div>
+                        <div class="card-body">
+                            <div style="background: #000; border-radius: 8px; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; color: white; margin-bottom: 16px; position: relative;">
+                                <div>検出映像表示エリア</div>
+                                <!-- 検出ボックスがここに描画される -->
+                            </div>
+                            
+                            <div class="grid grid-2 gap-4">
+                                <div>
+                                    <div class="form-label">検出信頼度</div>
+                                    <div class="progress">
+                                        <div class="progress-bar" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="form-label">追跡精度</div>
+                                    <div class="progress">
+                                        <div class="progress-bar success" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AIモデル管理 -->
+            <section id="page-models" class="page-section">
+                <div class="page-header">
+                    <h1 class="page-title">AIモデル管理</h1>
+                    <p class="page-subtitle">物体認識モデルの訓練・管理・選択</p>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">新規モデル訓練</h2>
+                        </div>
+                        <div class="card-body">
+                            <form id="model-upload-form">
+                                <div class="form-group">
+                                    <label class="form-label">オブジェクト名</label>
+                                    <input type="text" class="form-input" id="object-name" placeholder="例: マイカー" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">訓練画像</label>
+                                    <div id="upload-drop-zone" style="border: 2px dashed #ccc; border-radius: 8px; padding: 32px; text-align: center; cursor: pointer;">
+                                        <div style="font-size: 48px; margin-bottom: 16px;">📁</div>
+                                        <div>画像をドラッグ&ドロップ</div>
+                                        <div class="text-sm text-secondary">または クリックして選択</div>
+                                        <input type="file" id="model-file" accept="image/*" multiple style="display: none;">
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary">訓練開始</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">訓練のコツ</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <h4>効果的な訓練のために:</h4>
+                                <ul style="margin: 8px 0 0 20px;">
+                                    <li>様々な角度から10-20枚</li>
+                                    <li>異なる照明条件</li>
+                                    <li>背景の多様性</li>
+                                    <li>対象物のサイズ変化</li>
+                                </ul>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">推奨画像形式</label>
+                                <div class="text-sm">JPEG, PNG (1-5MB)</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">訓練時間目安</label>
+                                <div class="text-sm">10-20枚: 約2-5分</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 既存モデル一覧 -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h2 class="card-title">訓練済みモデル</h2>
+                    </div>
+                    <div class="card-body">
+                        <div id="model-list" class="grid grid-3 gap-4">
+                            <!-- モデル一覧がここに動的に表示される -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- システム設定（Phase 5） -->
+            <section id="page-settings" class="page-section">
+                <div class="page-header">
+                    <h1 class="page-title">システム設定</h1>
+                    <p class="page-subtitle">WiFi・飛行パラメータ・セキュリティ設定</p>
+                </div>
+
+                <div class="grid grid-2">
+                    <!-- WiFi設定 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">WiFi設定</h2>
+                        </div>
+                        <div class="card-body">
+                            <form id="wifi-form">
+                                <div class="form-group">
+                                    <label class="form-label">SSID</label>
+                                    <input type="text" class="form-input" id="wifi-ssid" placeholder="WiFi名称" maxlength="32" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">パスワード</label>
+                                    <input type="password" class="form-input" id="wifi-password" placeholder="WiFiパスワード" maxlength="64" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">WiFi設定更新</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- 飛行設定 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">飛行設定</h2>
+                        </div>
+                        <div class="card-body">
+                            <form id="speed-form">
+                                <div class="form-group">
+                                    <label class="form-label">飛行速度 (m/s)</label>
+                                    <input type="number" class="form-input" id="flight-speed" min="1.0" max="15.0" step="0.1" value="5.0" required>
+                                    <div class="text-sm text-secondary">推奨: 3.0-8.0 m/s</div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">速度設定更新</button>
+                            </form>
+
+                            <div class="alert alert-warning mt-4">
+                                <strong>注意:</strong> 飛行中は速度変更できません
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- カスタムコマンド -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h2 class="card-title">カスタムコマンド送信</h2>
+                        <p class="card-subtitle">Tello SDKコマンドの直接送信（上級者用）</p>
+                    </div>
+                    <div class="card-body">
+                        <form id="command-form">
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 3;">
+                                    <label class="form-label">コマンド</label>
+                                    <input type="text" class="form-input" id="custom-command" placeholder="例: battery?" required>
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label">タイムアウト (秒)</label>
+                                    <input type="number" class="form-input" id="command-timeout" min="1" max="30" value="7">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-warning">コマンド送信</button>
+                        </form>
+
+                        <div class="alert alert-danger mt-4">
+                            <strong>警告:</strong> 不正なコマンドはドローンを危険な状態にする可能性があります
+                        </div>
+
+                        <details class="mt-4">
+                            <summary class="font-semibold">よく使用されるコマンド例</summary>
+                            <div class="mt-2 text-sm">
+                                <code>battery?</code> - バッテリー残量確認<br>
+                                <code>speed?</code> - 現在速度確認<br>
+                                <code>time?</code> - 飛行時間確認<br>
+                                <code>height?</code> - 現在高度確認
+                            </div>
+                        </details>
+                    </div>
+                </div>
+
+                <!-- システム情報 -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h2 class="card-title">システム情報</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="grid grid-2 gap-4">
+                            <div>
+                                <div class="form-label">フロントエンドバージョン</div>
+                                <div class="text-lg">v1.0.0 (Phase 5)</div>
+                            </div>
+                            <div>
+                                <div class="form-label">バックエンドAPI</div>
+                                <div class="text-lg">MFG Drone Backend v1.0.0</div>
+                            </div>
+                            <div>
+                                <div class="form-label">対応ドローン</div>
+                                <div class="text-lg">Tello EDU</div>
+                            </div>
+                            <div>
+                                <div class="form-label">最終更新</div>
+                                <div class="text-lg">2025-06-20</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- フッター -->
+        <footer class="app-footer">
+            <div>© 2025 MFG Drone Team - 管理者制御システム Phase 5</div>
+            <div>Tello EDU ドローン自動追従撮影システム</div>
+        </footer>
+    </div>
+
+    <!-- JavaScriptアプリケーション -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
