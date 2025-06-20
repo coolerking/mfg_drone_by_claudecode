@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFG Drone - 管理者画面</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="description" content="MFG Drone自動追従撮影システム 管理者用フロントエンド">
+    <meta name="backend-api-url" content="{{ backend_api_url }}">
+    <meta name="timestamp" content="{{ timestamp }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- サイドバーナビゲーション -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="sidebar-title">🚁 MFG Drone</h1>
+                <p class="text-sm text-gray">管理者画面</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="nav-item active" data-page="dashboard">
+                    <i>📊</i>
+                    ダッシュボード
+                </a>
+                <a href="#connection" class="nav-item" data-page="connection">
+                    <i>🔗</i>
+                    ドローン接続
+                </a>
+                <a href="#camera" class="nav-item" data-page="camera">
+                    <i>📹</i>
+                    カメラ・映像
+                </a>
+                <a href="#media" class="nav-item" data-page="media">
+                    <i>🎬</i>
+                    メディア管理
+                </a>
+                <a href="#sensors" class="nav-item" data-page="sensors">
+                    <i>📡</i>
+                    センサー監視
+                </a>
+                <a href="#settings" class="nav-item" data-page="settings">
+                    <i>⚙️</i>
+                    システム設定
+                </a>
+            </nav>
+            
+            <div style="padding: 1rem; margin-top: auto; border-top: 1px solid var(--gray-200);">
+                <div class="text-sm text-gray mb-2">システム状態</div>
+                <div class="connection-status status-indicator disconnected">
+                    <span class="status-dot"></span>
+                    未接続
+                </div>
+            </div>
+        </aside>
+
+        <!-- メインコンテンツ -->
+        <main class="main-content">
+            <!-- ヘッダー -->
+            <header class="header">
+                <div class="header-title" id="page-title">ダッシュボード</div>
+                <div class="header-actions">
+                    <div class="streaming-status status-indicator disconnected">
+                        <span class="status-dot"></span>
+                        ストリーミング停止中
+                    </div>
+                    <div class="recording-status status-indicator disconnected">
+                        <span class="status-dot"></span>
+                        録画停止中
+                    </div>
+                    <button class="btn btn-danger btn-sm" data-action="emergency-stop" title="緊急停止">
+                        🛑 緊急停止
+                    </button>
+                </div>
+            </header>
+
+            <!-- メインコンテンツエリア -->
+            <div class="content" id="main-content">
+                <!-- 初期ロード中 -->
+                <div class="text-center" style="padding: 4rem;">
+                    <div class="loading" style="width: 3rem; height: 3rem; border: 4px solid var(--gray-200); border-top: 4px solid var(--primary-color); border-radius: 50%; margin: 0 auto 1rem;"></div>
+                    <p>システム初期化中...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- システム情報（開発用） -->
+    <div id="system-info" style="display: none;">
+        <div>Backend API: {{ backend_api_url }}</div>
+        <div>Timestamp: {{ timestamp }}</div>
+        <div>Frontend Version: 1.0.0</div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    
+    <!-- 設定注入 -->
+    <script>
+        // グローバル設定
+        window.MFG_DRONE_CONFIG = {
+            backendApiUrl: "{{ backend_api_url }}",
+            timestamp: "{{ timestamp }}",
+            version: "1.0.0",
+            debug: {{ 'true' if config.DEBUG else 'false' }},
+            features: {
+                cameraControl: true,
+                mediaManagement: true,
+                droneControl: true,
+                sensorMonitoring: true,
+                objectTracking: true,
+                modelTraining: true
+            }
+        };
+
+        // ページロード時の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('MFG Drone Admin Frontend loading...');
+            console.log('Backend API URL:', window.MFG_DRONE_CONFIG.backendApiUrl);
+            
+            // システム情報表示（開発環境の場合）
+            if (window.MFG_DRONE_CONFIG.debug) {
+                console.log('Development mode enabled');
+                document.getElementById('system-info').style.display = 'block';
+            }
+        });
+
+        // エラーハンドリング
+        window.addEventListener('error', function(e) {
+            console.error('JavaScript Error:', e.error);
+            
+            // エラー通知の表示
+            const errorAlert = document.createElement('div');
+            errorAlert.className = 'alert alert-danger fade-in';
+            errorAlert.style.cssText = 'position: fixed; top: 1rem; right: 1rem; z-index: 1000; min-width: 300px;';
+            errorAlert.innerHTML = `
+                <strong>エラーが発生しました:</strong><br>
+                ${e.error?.message || 'Unknown error'}
+                <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; color: inherit; font-size: 1.2em;">&times;</button>
+            `;
+            
+            document.body.appendChild(errorAlert);
+            
+            // 5秒後に自動削除
+            setTimeout(() => {
+                if (errorAlert.parentElement) {
+                    errorAlert.remove();
+                }
+            }, 5000);
+        });
+
+        // 未処理のPromise拒否をキャッチ
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled Promise Rejection:', e.reason);
+            
+            const errorAlert = document.createElement('div');
+            errorAlert.className = 'alert alert-warning fade-in';
+            errorAlert.style.cssText = 'position: fixed; top: 1rem; right: 1rem; z-index: 1000; min-width: 300px;';
+            errorAlert.innerHTML = `
+                <strong>接続エラー:</strong><br>
+                バックエンドAPIとの通信に失敗しました
+                <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; color: inherit; font-size: 1.2em;">&times;</button>
+            `;
+            
+            document.body.appendChild(errorAlert);
+            
+            setTimeout(() => {
+                if (errorAlert.parentElement) {
+                    errorAlert.remove();
+                }
+            }, 5000);
+        });
+    </script>
+
+    <!-- デバッグ用コンソール表示 -->
+    <script>
+        if (window.MFG_DRONE_CONFIG.debug) {
+            console.log('%c🚁 MFG Drone Admin Frontend', 'font-size: 20px; color: #2563eb; font-weight: bold;');
+            console.log('%cVersion: 1.0.0', 'color: #10b981;');
+            console.log('%cBackend API:', window.MFG_DRONE_CONFIG.backendApiUrl, 'color: #64748b;');
+            console.log('%cFeatures:', window.MFG_DRONE_CONFIG.features, 'color: #64748b;');
+            
+            // パフォーマンス監視
+            window.addEventListener('load', function() {
+                const loadTime = performance.now();
+                console.log(`%cPage load time: ${Math.round(loadTime)}ms`, 'color: #f59e0b;');
+            });
+        }
+    </script>
+
+    <!-- PWA対応（将来の機能拡張用） -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}" onerror="console.log('Manifest not found')">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="MFG Drone Admin">
+
+    <!-- セキュリティヘッダー -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    
+    <!-- OGP設定 -->
+    <meta property="og:title" content="MFG Drone - 管理者画面">
+    <meta property="og:description" content="Tello EDU ドローン自動追従撮影システム">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="ja_JP">
+</head>
+</html>

@@ -1,6 +1,44 @@
+# MFG Drone Admin Frontend Dependencies
+
+# Flask Web Framework
 Flask==3.0.0
+Werkzeug==2.3.7
+
+# HTTP Requests and API Communication
 requests==2.31.0
+
+# Image and Video Processing
 opencv-python==4.8.1.78
 numpy==1.24.3
 pillow==10.1.0
+
+# Real-time Communication
 python-socketio==5.10.0
+
+# Additional Flask Extensions
+Flask-CORS==4.0.0
+
+# Date and Time Handling
+python-dateutil==2.8.2
+
+# JSON Handling (faster JSON processing)
+orjson==3.9.7
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# File System Operations
+pathlib2==2.3.7
+
+# Development Dependencies
+pytest==7.4.2
+pytest-flask==1.2.0
+
+# Production Server (optional)
+gunicorn==21.2.0
+
+# Security
+cryptography==41.0.4
+
+# Logging
+colorlog==6.7.0
