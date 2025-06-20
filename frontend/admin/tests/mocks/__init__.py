@@ -1,0 +1,1 @@
+"""Unit test mocks for admin frontend"""
