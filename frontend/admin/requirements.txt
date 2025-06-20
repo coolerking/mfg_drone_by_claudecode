@@ -1,6 +1,45 @@
+# MFG Drone Admin Frontend - Phase 5 完全版
+# 管理者用フロントエンド依存関係
+
+# Web Framework
 Flask==3.0.0
+Werkzeug==3.0.1
+
+# Template Engine
+Jinja2==3.1.2
+
+# HTTP Client
 requests==2.31.0
+urllib3==2.1.0
+
+# Real-time Communication
+python-socketio==5.10.0
+
+# Image/Video Processing
 opencv-python==4.8.1.78
 numpy==1.24.3
 pillow==10.1.0
-python-socketio==5.10.0
+
+# JSON/Data Processing
+python-json-logger==2.0.7
+
+# Type Hints
+typing-extensions==4.8.0
+
+# Environment Configuration
+python-dotenv==1.0.0
+
+# WSGI Server (Production)
+gunicorn==21.2.0
+
+# Security
+itsdangerous==2.1.2
+
+# File Upload Handling
+python-multipart==0.0.6
+
+# Development Tools (Optional)
+pytest==7.4.3
+pytest-flask==1.3.0
+black==23.11.0
+flake8==6.1.0
