@@ -1,4 +1,4 @@
-# UI テスト専用依存関係
+# UI テスト・単体テスト依存関係
 # Core testing framework
 pytest==7.4.3
 pytest-html==4.1.1
@@ -30,6 +30,10 @@ pytest-memprof==0.2.0
 # Reporting and analysis
 allure-pytest==2.13.2
 pytest-json-report==1.5.0
+
+# Coverage reporting
+coverage==7.3.2
+coverage-badge==1.1.0
 
 # Environment and configuration
 python-dotenv==1.0.0
