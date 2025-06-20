@@ -7,9 +7,105 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h1>MFG Drone - 管理者画面</h1>
-        <p>物体認識モデルのトレーニング、ドローン制御、追跡開始/停止</p>
-    </div>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">MFG Drone 管理画面</div>
+        <div class="status-indicators">
+            <div id="connection-status" class="status-indicator disconnected">
+                <span class="status-dot"></span>
+                未接続
+            </div>
+            <div id="tracking-status" class="status-indicator disconnected">
+                <span class="status-dot"></span>
+                停止中
+            </div>
+            <div class="status-indicator">
+                バッテリー: <span id="battery-level">--</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="nav-section">
+            <div class="nav-section-title">システム監視</div>
+            <a href="#" class="nav-item active" data-page="dashboard">ダッシュボード</a>
+            <a href="#" class="nav-item" data-page="connection">ドローン接続</a>
+            <a href="#" class="nav-item" data-page="sensors">センサー監視</a>
+        </div>
+        
+        <div class="nav-section">
+            <div class="nav-section-title">ドローン制御</div>
+            <a href="#" class="nav-item" data-page="flight">飛行制御</a>
+            <a href="#" class="nav-item" data-page="camera">カメラ・映像</a>
+        </div>
+        
+        <div class="nav-section">
+            <div class="nav-section-title">AI・追跡</div>
+            <a href="#" class="nav-item" data-page="models">モデル管理</a>
+            <a href="#" class="nav-item" data-page="tracking">物体追跡</a>
+        </div>
+        
+        <div class="nav-section">
+            <div class="nav-section-title">設定</div>
+            <a href="#" class="nav-item" data-page="settings">システム設定</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div id="alert-container"></div>
+        <div id="main-content">
+            <!-- Page content will be loaded here -->
+            <div class="page-header">
+                <h1 class="page-title">ダッシュボード</h1>
+                <p class="page-description">MFG Drone 自動追従撮影システムの管理画面です</p>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="drone-status">未接続</div>
+                    <div class="stat-label">ドローン状態</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="tracking-mode">停止中</div>
+                    <div class="stat-label">追跡状態</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="model-count">--</div>
+                    <div class="stat-label">訓練済みモデル数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="flight-time">0分</div>
+                    <div class="stat-label">累積飛行時間</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">クイックアクション</h2>
+                </div>
+                <div class="flex gap-2">
+                    <button id="connect-btn" class="btn btn-primary">ドローン接続</button>
+                    <button id="takeoff-btn" class="btn btn-success">離陸</button>
+                    <button id="land-btn" class="btn btn-warning">着陸</button>
+                    <button id="emergency-btn" class="btn btn-danger">緊急停止</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">ライブ映像</h2>
+                </div>
+                <div class="video-feed" id="video-feed">
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #9ca3af;">
+                        映像ストリーミング開始前
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>

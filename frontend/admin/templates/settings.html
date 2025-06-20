@@ -1,0 +1,384 @@
+<div class="page-header">
+    <h1 class="page-title">システム設定</h1>
+    <p class="page-description">ドローンとシステムの各種設定を管理します</p>
+</div>
+
+<!-- Drone Settings -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">ドローン設定</h2>
+    </div>
+    
+    <div class="settings-grid">
+        <div class="setting-section">
+            <h4>飛行設定</h4>
+            <div class="form-group">
+                <label for="flight-speed" class="form-label">飛行速度</label>
+                <input type="range" id="flight-speed" min="1" max="15" value="5" step="0.5" class="slider">
+                <span id="speed-value" class="range-value">5.0 m/s</span>
+            </div>
+            
+            <div class="form-group">
+                <label for="max-altitude" class="form-label">最大高度制限</label>
+                <input type="number" id="max-altitude" value="300" min="50" max="500" class="form-input">
+                <span class="input-unit">cm</span>
+            </div>
+        </div>
+        
+        <div class="setting-section">
+            <h4>WiFi設定</h4>
+            <div class="form-group">
+                <label for="wifi-ssid" class="form-label">SSID</label>
+                <input type="text" id="wifi-ssid" placeholder="WiFiネットワーク名" class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label for="wifi-password" class="form-label">パスワード</label>
+                <input type="password" id="wifi-password" placeholder="WiFiパスワード" class="form-input">
+            </div>
+            
+            <button id="update-wifi-btn" class="btn btn-primary">WiFi設定更新</button>
+        </div>
+    </div>
+</div>
+
+<!-- System Settings -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">システム設定</h2>
+    </div>
+    
+    <div class="settings-grid">
+        <div class="setting-section">
+            <h4>バックエンドAPI</h4>
+            <div class="form-group">
+                <label for="api-url" class="form-label">API URL</label>
+                <input type="url" id="api-url" value="http://localhost:8000" class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label for="api-timeout" class="form-label">APIタイムアウト</label>
+                <input type="number" id="api-timeout" value="30" min="5" max="120" class="form-input">
+                <span class="input-unit">秒</span>
+            </div>
+        </div>
+        
+        <div class="setting-section">
+            <h4>UI設定</h4>
+            <div class="form-group">
+                <label for="update-interval" class="form-label">データ更新間隔</label>
+                <select id="update-interval" class="form-select">
+                    <option value="1000">1秒</option>
+                    <option value="2000" selected>2秒</option>
+                    <option value="5000">5秒</option>
+                    <option value="10000">10秒</option>
+                </select>
+            </div>
+            
+            <div class="checkbox-group">
+                <label class="checkbox-item">
+                    <input type="checkbox" id="auto-reconnect" checked>
+                    <span class="checkmark"></span>
+                    自動再接続
+                </label>
+                
+                <label class="checkbox-item">
+                    <input type="checkbox" id="sound-alerts" checked>
+                    <span class="checkmark"></span>
+                    音声アラート
+                </label>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Settings -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">高度な設定</h2>
+    </div>
+    
+    <div class="advanced-settings">
+        <div class="setting-section">
+            <h4>ミッションパッド (Tello EDU)</h4>
+            <div class="checkbox-group">
+                <label class="checkbox-item">
+                    <input type="checkbox" id="enable-mission-pad">
+                    <span class="checkmark"></span>
+                    ミッションパッド検出を有効化
+                </label>
+            </div>
+            
+            <div class="form-group">
+                <label for="detection-direction" class="form-label">検出方向</label>
+                <select id="detection-direction" class="form-select">
+                    <option value="0">下向きのみ</option>
+                    <option value="1">前向きのみ</option>
+                    <option value="2">両方</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="setting-section">
+            <h4>デバッグ設定</h4>
+            <div class="checkbox-group">
+                <label class="checkbox-item">
+                    <input type="checkbox" id="debug-mode">
+                    <span class="checkmark"></span>
+                    デバッグモード
+                </label>
+                
+                <label class="checkbox-item">
+                    <input type="checkbox" id="verbose-logging">
+                    <span class="checkmark"></span>
+                    詳細ログ
+                </label>
+            </div>
+            
+            <div class="form-group">
+                <label for="log-level" class="form-label">ログレベル</label>
+                <select id="log-level" class="form-select">
+                    <option value="ERROR">エラーのみ</option>
+                    <option value="WARNING">警告以上</option>
+                    <option value="INFO" selected>情報以上</option>
+                    <option value="DEBUG">デバッグ</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Information -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">システム情報</h2>
+    </div>
+    
+    <div class="system-info">
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">フロントエンドバージョン:</span>
+                <span class="info-value">v1.0.0</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">最終更新:</span>
+                <span class="info-value" id="last-update">--</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">バックエンド接続:</span>
+                <span class="info-value" id="backend-status">未確認</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">ドローン接続:</span>
+                <span class="info-value" id="drone-connection-status">未接続</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">設定管理</h2>
+    </div>
+    
+    <div class="action-buttons">
+        <button id="save-settings-btn" class="btn btn-primary btn-lg">設定を保存</button>
+        <button id="reset-settings-btn" class="btn btn-secondary btn-lg">デフォルトに戻す</button>
+        <button id="export-settings-btn" class="btn btn-secondary btn-lg">設定をエクスポート</button>
+        <button id="import-settings-btn" class="btn btn-secondary btn-lg">設定をインポート</button>
+    </div>
+</div>
+
+<style>
+.settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.advanced-settings {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.setting-section {
+    padding: 1rem;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    background: var(--gray-50);
+}
+
+.setting-section h4 {
+    margin-bottom: 1rem;
+    color: var(--gray-900);
+    font-weight: 600;
+}
+
+.slider {
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--gray-200);
+    outline: none;
+    margin: 0.5rem 0;
+}
+
+.range-value {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: var(--primary-color);
+    color: var(--white);
+    border-radius: var(--border-radius);
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+.input-unit {
+    margin-left: 0.5rem;
+    color: var(--gray-600);
+    font-size: 0.875rem;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.checkbox-item input[type="checkbox"] {
+    display: none;
+}
+
+.checkmark {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--gray-300);
+    border-radius: 4px;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.checkbox-item input[type="checkbox"]:checked + .checkmark {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.checkbox-item input[type="checkbox"]:checked + .checkmark::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.system-info {
+    padding: 1rem;
+    background: var(--gray-100);
+    border-radius: var(--border-radius);
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: var(--white);
+    border-radius: var(--border-radius);
+}
+
+.info-label {
+    font-weight: 500;
+    color: var(--gray-700);
+}
+
+.info-value {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-family: monospace;
+}
+
+.action-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .settings-grid,
+    .advanced-settings {
+        grid-template-columns: 1fr;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Flight speed slider
+    const speedSlider = document.getElementById('flight-speed');
+    const speedValue = document.getElementById('speed-value');
+    
+    if (speedSlider && speedValue) {
+        speedSlider.addEventListener('input', (e) => {
+            speedValue.textContent = `${e.target.value} m/s`;
+        });
+    }
+    
+    // Settings buttons
+    const saveBtn = document.getElementById('save-settings-btn');
+    const resetBtn = document.getElementById('reset-settings-btn');
+    const exportBtn = document.getElementById('export-settings-btn');
+    const importBtn = document.getElementById('import-settings-btn');
+    
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            if (window.app) {
+                window.app.saveSettings();
+            }
+        });
+    }
+    
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            if (confirm('設定をデフォルトに戻しますか？')) {
+                if (window.app) {
+                    window.app.resetSettings();
+                }
+            }
+        });
+    }
+    
+    // Update timestamp
+    const lastUpdate = document.getElementById('last-update');
+    if (lastUpdate) {
+        lastUpdate.textContent = new Date().toLocaleString();
+    }
+});
+</script>

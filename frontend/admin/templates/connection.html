@@ -1,0 +1,110 @@
+<div class="page-header">
+    <h1 class="page-title">ドローン接続</h1>
+    <p class="page-description">Tello EDUドローンとの接続を管理します</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">接続制御</h2>
+    </div>
+    
+    <div class="connection-controls">
+        <div class="connection-status-display">
+            <div class="status-indicator-large" id="connection-status-large">
+                <span class="status-dot-large"></span>
+                <span class="status-text">未接続</span>
+            </div>
+        </div>
+        
+        <div class="connection-actions">
+            <button id="connect-btn" class="btn btn-primary btn-lg">ドローン接続</button>
+            <button id="disconnect-btn" class="btn btn-secondary btn-lg">切断</button>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">接続情報</h2>
+    </div>
+    
+    <div class="connection-info">
+        <div class="info-row">
+            <span class="info-label">ドローンIP:</span>
+            <span class="info-value" id="drone-ip">192.168.10.1</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">制御ポート:</span>
+            <span class="info-value">8889</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">ストリームポート:</span>
+            <span class="info-value">11111</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">接続時間:</span>
+            <span class="info-value" id="connection-time">--</span>
+        </div>
+    </div>
+</div>
+
+<style>
+.connection-controls {
+    text-align: center;
+    padding: 2rem;
+}
+
+.connection-status-display {
+    margin-bottom: 2rem;
+}
+
+.status-indicator-large {
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 2rem;
+    border-radius: var(--border-radius);
+    font-size: 1.25rem;
+    font-weight: 600;
+    background: var(--gray-100);
+    border: 2px solid var(--gray-300);
+}
+
+.status-dot-large {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--gray-400);
+}
+
+.connection-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.connection-info {
+    display: grid;
+    gap: 1rem;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: var(--gray-100);
+    border-radius: var(--border-radius);
+}
+
+.info-label {
+    font-weight: 500;
+    color: var(--gray-700);
+}
+
+.info-value {
+    font-weight: 600;
+    color: var(--gray-900);
+    font-family: monospace;
+}
+</style>

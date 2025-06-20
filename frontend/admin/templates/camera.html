@@ -1,0 +1,337 @@
+<div class="page-header">
+    <h1 class="page-title">カメラ・映像</h1>
+    <p class="page-description">ドローンのカメラ制御とライブストリーミング</p>
+</div>
+
+<div class="camera-layout">
+    <!-- Live Video Feed -->
+    <div class="video-section">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">ライブ映像</h2>
+                <div class="card-actions">
+                    <button id="start-stream-btn" class="btn btn-success">ストリーミング開始</button>
+                    <button id="stop-stream-btn" class="btn btn-warning">ストリーミング停止</button>
+                </div>
+            </div>
+            <div class="video-feed" id="video-feed">
+                <div class="no-video">
+                    📹 映像ストリーミング開始前
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Controls -->
+    <div class="control-section">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">撮影制御</h2>
+            </div>
+            
+            <div class="capture-controls">
+                <button id="take-photo-btn" class="btn btn-primary btn-lg capture-btn">
+                    📸 写真撮影
+                </button>
+                <button id="start-recording-btn" class="btn btn-danger btn-lg capture-btn">
+                    🎥 録画開始
+                </button>
+                <button id="stop-recording-btn" class="btn btn-secondary btn-lg capture-btn">
+                    ⏹️ 録画停止
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">カメラ設定</h2>
+            </div>
+            
+            <div class="camera-settings">
+                <div class="form-group">
+                    <label for="resolution" class="form-label">解像度</label>
+                    <select id="resolution" class="form-select">
+                        <option value="high">高解像度</option>
+                        <option value="low">低解像度</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="fps" class="form-label">フレームレート</label>
+                    <select id="fps" class="form-select">
+                        <option value="high">高</option>
+                        <option value="middle">中</option>
+                        <option value="low">低</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="bitrate" class="form-label">ビットレート</label>
+                    <input type="range" id="bitrate" min="1" max="5" value="3" class="slider">
+                    <span id="bitrate-value" class="range-value">3</span>
+                </div>
+                
+                <button id="apply-settings-btn" class="btn btn-primary w-full">設定適用</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">ストリーム情報</h2>
+            </div>
+            
+            <div class="stream-info">
+                <div class="info-item">
+                    <span class="info-label">状態:</span>
+                    <span id="stream-status" class="info-value">停止中</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">解像度:</span>
+                    <span id="current-resolution" class="info-value">--</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">FPS:</span>
+                    <span id="current-fps" class="info-value">--</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">品質:</span>
+                    <span id="stream-quality" class="info-value">--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">撮影履歴</h2>
+        <div class="card-actions">
+            <button class="btn btn-secondary btn-sm">履歴更新</button>
+        </div>
+    </div>
+    
+    <div id="media-gallery" class="media-gallery">
+        <p class="text-center text-muted">撮影データがありません</p>
+    </div>
+</div>
+
+<style>
+.camera-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.video-section {
+    min-height: 400px;
+}
+
+.video-feed {
+    position: relative;
+    background: var(--gray-900);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    aspect-ratio: 16/9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.no-video {
+    color: var(--gray-400);
+    font-size: 1.125rem;
+    text-align: center;
+}
+
+.video-feed img,
+.video-feed video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.control-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.capture-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.capture-btn {
+    padding: 1rem;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.camera-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.slider {
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--gray-200);
+    outline: none;
+    margin: 0.5rem 0;
+}
+
+.range-value {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: var(--primary-color);
+    color: var(--white);
+    border-radius: var(--border-radius);
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+.stream-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: var(--gray-100);
+    border-radius: var(--border-radius);
+}
+
+.info-label {
+    font-weight: 500;
+    color: var(--gray-700);
+}
+
+.info-value {
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+.media-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--gray-100);
+    border-radius: var(--border-radius);
+    min-height: 120px;
+}
+
+.media-item {
+    aspect-ratio: 1;
+    background: var(--gray-200);
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.media-item:hover {
+    transform: scale(1.05);
+}
+
+.media-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.media-type {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+
+.text-muted {
+    color: var(--gray-600);
+    font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+    .camera-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .media-gallery {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Bitrate slider update
+    const bitrateSlider = document.getElementById('bitrate');
+    const bitrateValue = document.getElementById('bitrate-value');
+    
+    if (bitrateSlider && bitrateValue) {
+        bitrateSlider.addEventListener('input', (e) => {
+            bitrateValue.textContent = e.target.value;
+        });
+    }
+    
+    // Camera settings apply
+    const applyBtn = document.getElementById('apply-settings-btn');
+    if (applyBtn) {
+        applyBtn.addEventListener('click', () => {
+            if (window.app) {
+                window.app.applyCameraSettings();
+            }
+        });
+    }
+    
+    // Capture buttons
+    const photoBtn = document.getElementById('take-photo-btn');
+    const startRecBtn = document.getElementById('start-recording-btn');
+    const stopRecBtn = document.getElementById('stop-recording-btn');
+    
+    if (photoBtn) {
+        photoBtn.addEventListener('click', () => {
+            if (window.app) {
+                window.app.takePhoto();
+            }
+        });
+    }
+    
+    if (startRecBtn) {
+        startRecBtn.addEventListener('click', () => {
+            if (window.app) {
+                window.app.startRecording();
+            }
+        });
+    }
+    
+    if (stopRecBtn) {
+        stopRecBtn.addEventListener('click', () => {
+            if (window.app) {
+                window.app.stopRecording();
+            }
+        });
+    }
+});
+</script>

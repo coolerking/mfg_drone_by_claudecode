@@ -1,0 +1,227 @@
+<div class="page-header">
+    <h1 class="page-title">飛行制御</h1>
+    <p class="page-description">ドローンの基本的な飛行操作を行います</p>
+</div>
+
+<div class="flight-controls">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">基本飛行制御</h2>
+        </div>
+        
+        <div class="flight-buttons">
+            <button id="takeoff-btn" class="btn btn-success btn-lg flight-btn">
+                🛫 離陸
+            </button>
+            <button id="land-btn" class="btn btn-warning btn-lg flight-btn">
+                🛬 着陸
+            </button>
+            <button id="emergency-btn" class="btn btn-danger btn-lg flight-btn">
+                ⚠️ 緊急停止
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">移動制御</h2>
+        </div>
+        
+        <div class="movement-controls">
+            <!-- Directional Pad -->
+            <div class="directional-pad">
+                <button class="direction-btn up" data-direction="up">↑</button>
+                <button class="direction-btn left" data-direction="left">←</button>
+                <button class="direction-btn down" data-direction="down">↓</button>
+                <button class="direction-btn right" data-direction="right">→</button>
+                <button class="direction-btn forward" data-direction="forward">🔺</button>
+                <button class="direction-btn back" data-direction="back">🔻</button>
+            </div>
+            
+            <!-- Distance Control -->
+            <div class="distance-control">
+                <label for="distance-slider" class="form-label">移動距離</label>
+                <input type="range" id="distance-slider" min="20" max="500" value="100" class="slider">
+                <span id="distance-value" class="distance-display">100cm</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">飛行状態</h2>
+    </div>
+    
+    <div class="flight-status-grid">
+        <div class="status-item">
+            <div class="status-label">飛行状態</div>
+            <div class="status-value" id="flight-status">地上</div>
+        </div>
+        <div class="status-item">
+            <div class="status-label">高度</div>
+            <div class="status-value" id="altitude">0cm</div>
+        </div>
+        <div class="status-item">
+            <div class="status-label">バッテリー</div>
+            <div class="status-value" id="battery">--%</div>
+        </div>
+        <div class="status-item">
+            <div class="status-label">飛行時間</div>
+            <div class="status-value" id="flight-time">0秒</div>
+        </div>
+    </div>
+</div>
+
+<style>
+.flight-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.flight-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.flight-btn {
+    padding: 1.5rem;
+    font-size: 1.125rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.flight-buttons .flight-btn:nth-child(3) {
+    grid-column: 1 / -1;
+}
+
+.movement-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.directional-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 0.5rem;
+    max-width: 200px;
+    margin: 0 auto;
+}
+
+.direction-btn {
+    width: 60px;
+    height: 60px;
+    border: 2px solid var(--primary-color);
+    background: var(--white);
+    color: var(--primary-color);
+    border-radius: var(--border-radius);
+    font-size: 1.25rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.direction-btn:hover {
+    background: var(--primary-color);
+    color: var(--white);
+}
+
+.direction-btn:active {
+    transform: scale(0.95);
+}
+
+.direction-btn.up { grid-column: 2; grid-row: 1; }
+.direction-btn.left { grid-column: 1; grid-row: 2; }
+.direction-btn.right { grid-column: 3; grid-row: 2; }
+.direction-btn.down { grid-column: 2; grid-row: 3; }
+.direction-btn.forward { grid-column: 1; grid-row: 1; }
+.direction-btn.back { grid-column: 3; grid-row: 3; }
+
+.distance-control {
+    text-align: center;
+}
+
+.slider {
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--gray-200);
+    outline: none;
+    margin: 0.5rem 0;
+}
+
+.distance-display {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: var(--primary-color);
+    color: var(--white);
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.flight-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.status-item {
+    text-align: center;
+    padding: 1rem;
+    background: var(--gray-100);
+    border-radius: var(--border-radius);
+}
+
+.status-label {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    margin-bottom: 0.5rem;
+}
+
+.status-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+@media (max-width: 768px) {
+    .flight-controls {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+// Distance slider update
+document.addEventListener('DOMContentLoaded', () => {
+    const slider = document.getElementById('distance-slider');
+    const display = document.getElementById('distance-value');
+    
+    if (slider && display) {
+        slider.addEventListener('input', (e) => {
+            display.textContent = e.target.value + 'cm';
+        });
+    }
+    
+    // Direction button events
+    document.querySelectorAll('.direction-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const direction = e.target.getAttribute('data-direction');
+            const distance = document.getElementById('distance-slider')?.value || 100;
+            
+            if (window.app) {
+                window.app.moveDirection(direction, distance);
+            }
+        });
+    });
+});
+</script>

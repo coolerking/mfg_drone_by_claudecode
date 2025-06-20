@@ -1,0 +1,311 @@
+<div class="page-header">
+    <h1 class="page-title">物体追跡</h1>
+    <p class="page-description">AI物体認識を使用したドローンの自動追跡機能</p>
+</div>
+
+<!-- Tracking Status Alert -->
+<div id="tracking-alert" class="alert alert-info">
+    <strong>ℹ️ 追跡機能を使用する前に：</strong>
+    <ol>
+        <li>ドローンが接続されていることを確認</li>
+        <li>カメラストリーミングが開始されていることを確認</li>
+        <li>追跡対象のモデルが訓練済みであることを確認</li>
+    </ol>
+</div>
+
+<!-- Tracking Controls -->
+<div class="tracking-controls">
+    <!-- Live Video Feed -->
+    <div class="video-section">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">ライブ映像</h2>
+                <div class="card-actions">
+                    <button id="start-stream-btn" class="btn btn-success btn-sm">ストリーミング開始</button>
+                    <button id="stop-stream-btn" class="btn btn-warning btn-sm">ストリーミング停止</button>
+                </div>
+            </div>
+            <div class="video-feed" id="video-feed">
+                <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #9ca3af;">
+                    映像ストリーミング開始前
+                </div>
+                <div id="detection-overlay" class="detection-overlay"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tracking Control Panel -->
+    <div class="control-panel">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">追跡設定</h2>
+            </div>
+            
+            <div class="form-group">
+                <label for="target-object" class="form-label">追跡対象</label>
+                <select id="target-object" class="form-select">
+                    <option value="">追跡対象を選択...</option>
+                    <!-- Options will be populated dynamically -->
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="tracking-mode" class="form-label">追跡モード</label>
+                <select id="tracking-mode" class="form-select">
+                    <option value="center">中央維持</option>
+                    <option value="follow">追従飛行</option>
+                </select>
+                <small class="text-muted">
+                    中央維持: 対象物を画面中央に保持<br>
+                    追従飛行: 対象物に追従して移動
+                </small>
+            </div>
+
+            <div class="tracking-actions">
+                <button id="start-tracking-btn" class="btn btn-success btn-lg w-full mb-2">追跡開始</button>
+                <button id="stop-tracking-btn" class="btn btn-danger btn-lg w-full">追跡停止</button>
+            </div>
+        </div>
+
+        <!-- Tracking Status -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">追跡状態</h2>
+            </div>
+            
+            <div id="tracking-status-panel" class="tracking-status inactive">
+                <div class="status-item">
+                    <span class="status-label">状態:</span>
+                    <span id="tracking-state" class="status-value">停止中</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">対象物:</span>
+                    <span id="current-target" class="status-value">未選択</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">検出状態:</span>
+                    <span id="detection-state" class="status-value">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">信頼度:</span>
+                    <span id="confidence-score" class="status-value">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detection Metrics -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">検出メトリクス</h2>
+            </div>
+            
+            <div class="metrics-grid">
+                <div class="metric">
+                    <div class="metric-value" id="detection-count">0</div>
+                    <div class="metric-label">検出回数</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="tracking-accuracy">--%</div>
+                    <div class="metric-label">追跡精度</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="position-x">--</div>
+                    <div class="metric-label">X座標</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="position-y">--</div>
+                    <div class="metric-label">Y座標</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tracking History -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">追跡ログ</h2>
+        <div class="card-actions">
+            <button class="btn btn-secondary btn-sm" onclick="clearTrackingLog()">ログクリア</button>
+        </div>
+    </div>
+    
+    <div id="tracking-log" class="tracking-log">
+        <p class="text-center text-muted">追跡開始後にログが表示されます</p>
+    </div>
+</div>
+
+<style>
+.tracking-controls {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.video-section {
+    min-height: 400px;
+}
+
+.control-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.tracking-actions {
+    margin-top: 1rem;
+}
+
+.tracking-status {
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--gray-200);
+}
+
+.tracking-status.active {
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.tracking-status.inactive {
+    border-color: var(--gray-300);
+    background: var(--gray-100);
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.status-item:last-child {
+    border-bottom: none;
+}
+
+.status-label {
+    font-weight: 500;
+    color: var(--gray-700);
+}
+
+.status-value {
+    font-weight: 600;
+    color: var(--gray-900);
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.metric {
+    text-align: center;
+    padding: 1rem;
+    background: var(--gray-100);
+    border-radius: var(--border-radius);
+}
+
+.metric-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+}
+
+.metric-label {
+    font-size: 0.8125rem;
+    color: var(--gray-600);
+}
+
+.tracking-log {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 1rem;
+    background: var(--gray-100);
+    border-radius: var(--border-radius);
+    font-family: monospace;
+    font-size: 0.875rem;
+}
+
+.log-entry {
+    margin-bottom: 0.5rem;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.log-timestamp {
+    color: var(--gray-600);
+    margin-right: 0.5rem;
+}
+
+.log-message {
+    color: var(--gray-900);
+}
+
+.detection-box {
+    position: absolute;
+    border: 2px solid var(--success-color);
+    border-radius: 4px;
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3);
+}
+
+.detection-label {
+    position: absolute;
+    top: -24px;
+    left: 0;
+    background: var(--success-color);
+    color: var(--white);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.text-muted {
+    color: var(--gray-600);
+    font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+    .tracking-controls {
+        grid-template-columns: 1fr;
+    }
+    
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+function clearTrackingLog() {
+    const logContainer = document.getElementById('tracking-log');
+    if (logContainer) {
+        logContainer.innerHTML = '<p class="text-center text-muted">ログがクリアされました</p>';
+    }
+}
+
+function addTrackingLogEntry(message, type = 'info') {
+    const logContainer = document.getElementById('tracking-log');
+    if (!logContainer) return;
+    
+    const timestamp = new Date().toLocaleTimeString();
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.innerHTML = `
+        <span class="log-timestamp">[${timestamp}]</span>
+        <span class="log-message">${message}</span>
+    `;
+    
+    if (logContainer.children.length === 1 && logContainer.children[0].classList.contains('text-center')) {
+        logContainer.innerHTML = '';
+    }
+    
+    logContainer.appendChild(entry);
+    logContainer.scrollTop = logContainer.scrollHeight;
+}
+</script>

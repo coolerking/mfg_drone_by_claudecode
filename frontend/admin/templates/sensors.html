@@ -1,0 +1,379 @@
+<div class="page-header">
+    <h1 class="page-title">センサー監視</h1>
+    <p class="page-description">ドローンの各種センサーデータをリアルタイム監視</p>
+</div>
+
+<!-- Main Sensor Cards -->
+<div class="sensor-grid">
+    <div class="sensor-card">
+        <div class="sensor-header">
+            <h3 class="sensor-title">🔋 バッテリー</h3>
+        </div>
+        <div class="sensor-value" id="battery-percent">--%</div>
+        <div class="progress">
+            <div id="battery-progress" class="progress-bar" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <div class="sensor-card">
+        <div class="sensor-header">
+            <h3 class="sensor-title">📏 高度</h3>
+        </div>
+        <div class="sensor-value" id="altitude-value">--cm</div>
+        <div class="sensor-unit">地上からの高さ</div>
+    </div>
+
+    <div class="sensor-card">
+        <div class="sensor-header">
+            <h3 class="sensor-title">🌡️ 温度</h3>
+        </div>
+        <div class="sensor-value" id="temperature-value">--°C</div>
+        <div class="sensor-unit">ドローン内部温度</div>
+    </div>
+
+    <div class="sensor-card">
+        <div class="sensor-header">
+            <h3 class="sensor-title">⏱️ 飛行時間</h3>
+        </div>
+        <div class="sensor-value" id="flight-time-value">--秒</div>
+        <div class="sensor-unit">累積飛行時間</div>
+    </div>
+</div>
+
+<!-- Detailed Sensor Data -->
+<div class="sensor-details">
+    <!-- Attitude/Orientation -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">姿勢・方向</h2>
+        </div>
+        
+        <div class="attitude-display">
+            <div class="attitude-item">
+                <div class="attitude-label">ピッチ (Pitch)</div>
+                <div class="attitude-value" id="pitch-value">0°</div>
+                <div class="attitude-bar">
+                    <div id="pitch-indicator" class="attitude-indicator"></div>
+                </div>
+            </div>
+            
+            <div class="attitude-item">
+                <div class="attitude-label">ロール (Roll)</div>
+                <div class="attitude-value" id="roll-value">0°</div>
+                <div class="attitude-bar">
+                    <div id="roll-indicator" class="attitude-indicator"></div>
+                </div>
+            </div>
+            
+            <div class="attitude-item">
+                <div class="attitude-label">ヨー (Yaw)</div>
+                <div class="attitude-value" id="yaw-value">0°</div>
+                <div class="attitude-bar">
+                    <div id="yaw-indicator" class="attitude-indicator"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Motion Data -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">運動データ</h2>
+        </div>
+        
+        <div class="motion-grid">
+            <div class="motion-section">
+                <h4>速度 (cm/s)</h4>
+                <div class="motion-values">
+                    <div class="motion-item">
+                        <span class="motion-label">X:</span>
+                        <span id="velocity-x" class="motion-value">0</span>
+                    </div>
+                    <div class="motion-item">
+                        <span class="motion-label">Y:</span>
+                        <span id="velocity-y" class="motion-value">0</span>
+                    </div>
+                    <div class="motion-item">
+                        <span class="motion-label">Z:</span>
+                        <span id="velocity-z" class="motion-value">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="motion-section">
+                <h4>加速度 (g)</h4>
+                <div class="motion-values">
+                    <div class="motion-item">
+                        <span class="motion-label">X:</span>
+                        <span id="acceleration-x" class="motion-value">0.0</span>
+                    </div>
+                    <div class="motion-item">
+                        <span class="motion-label">Y:</span>
+                        <span id="acceleration-y" class="motion-value">0.0</span>
+                    </div>
+                    <div class="motion-item">
+                        <span class="motion-label">Z:</span>
+                        <span id="acceleration-z" class="motion-value">0.0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Environmental Data -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">環境データ</h2>
+        </div>
+        
+        <div class="env-grid">
+            <div class="env-item">
+                <div class="env-label">気圧</div>
+                <div class="env-value" id="barometer-value">-- hPa</div>
+            </div>
+            <div class="env-item">
+                <div class="env-label">ToF距離</div>
+                <div class="env-value" id="tof-distance">-- mm</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sensor Settings -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">監視設定</h2>
+    </div>
+    
+    <div class="sensor-settings">
+        <div class="form-group">
+            <label for="update-interval" class="form-label">更新間隔</label>
+            <select id="update-interval" class="form-select">
+                <option value="500">0.5秒</option>
+                <option value="1000">1秒</option>
+                <option value="2000" selected>2秒</option>
+                <option value="5000">5秒</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">警告しきい値</label>
+            <div class="threshold-settings">
+                <div class="threshold-item">
+                    <label for="battery-threshold">バッテリー低下:</label>
+                    <input type="number" id="battery-threshold" value="20" min="10" max="50" class="form-input">
+                    <span>%</span>
+                </div>
+                <div class="threshold-item">
+                    <label for="temp-threshold">高温警告:</label>
+                    <input type="number" id="temp-threshold" value="70" min="50" max="90" class="form-input">
+                    <span>°C</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.sensor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.sensor-card {
+    background: var(--white);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    text-align: center;
+}
+
+.sensor-header {
+    margin-bottom: 1rem;
+}
+
+.sensor-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin: 0;
+}
+
+.sensor-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.sensor-unit {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+}
+
+.sensor-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.attitude-display {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.attitude-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.attitude-label {
+    min-width: 100px;
+    font-weight: 500;
+    color: var(--gray-700);
+}
+
+.attitude-value {
+    min-width: 60px;
+    font-weight: 600;
+    color: var(--primary-color);
+    text-align: center;
+}
+
+.attitude-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--gray-200);
+    border-radius: 4px;
+    position: relative;
+}
+
+.attitude-indicator {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 4px;
+    height: 100%;
+    background: var(--primary-color);
+    border-radius: 2px;
+    transform: translateX(-50%);
+    transition: transform 0.3s ease;
+}
+
+.motion-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.motion-section h4 {
+    margin-bottom: 0.75rem;
+    color: var(--gray-900);
+}
+
+.motion-values {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.motion-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: var(--gray-100);
+    border-radius: var(--border-radius);
+}
+
+.motion-label {
+    font-weight: 500;
+    color: var(--gray-700);
+}
+
+.motion-value {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-family: monospace;
+}
+
+.env-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.env-item {
+    text-align: center;
+    padding: 1rem;
+    background: var(--gray-100);
+    border-radius: var(--border-radius);
+}
+
+.env-label {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    margin-bottom: 0.5rem;
+}
+
+.env-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.sensor-settings {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.threshold-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.threshold-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.threshold-item label {
+    min-width: 100px;
+    font-size: 0.875rem;
+}
+
+.threshold-item input {
+    width: 80px;
+}
+
+.threshold-item span {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+}
+
+@media (max-width: 768px) {
+    .sensor-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .motion-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .env-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .sensor-settings {
+        grid-template-columns: 1fr;
+    }
+}
+</style>

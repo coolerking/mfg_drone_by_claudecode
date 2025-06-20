@@ -1,0 +1,112 @@
+<div class="page-header">
+    <h1 class="page-title">モデル管理</h1>
+    <p class="page-description">物体認識モデルの訓練・管理を行います</p>
+</div>
+
+<!-- Model Training Section -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">新しいモデルを訓練</h2>
+    </div>
+    
+    <div class="form-group">
+        <label for="object-name" class="form-label">オブジェクト名</label>
+        <input type="text" id="object-name" class="form-input" placeholder="例: person, car, ball">
+        <small class="text-muted">追跡対象となるオブジェクトの名前を入力してください</small>
+    </div>
+
+    <!-- File Upload Area -->
+    <div class="form-group">
+        <label class="form-label">訓練用画像</label>
+        <div class="file-upload" onclick="document.getElementById('image-files').click()">
+            <div class="file-upload-icon">📷</div>
+            <div class="file-upload-text">画像ファイルをドラッグ&ドロップ、またはクリックして選択</div>
+            <div class="file-upload-hint">JPG, PNG形式対応 / 最大10MB / 複数ファイル選択可能</div>
+        </div>
+        <input type="file" id="image-files" accept="image/*" multiple style="display: none;">
+    </div>
+
+    <!-- File List -->
+    <div id="file-list" class="file-list"></div>
+
+    <div class="card-actions">
+        <button id="train-model-btn" class="btn btn-primary btn-lg">モデル訓練開始</button>
+    </div>
+</div>
+
+<!-- Existing Models Section -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">既存のモデル</h2>
+        <div class="card-actions">
+            <button class="btn btn-secondary" onclick="app.loadModels()">更新</button>
+        </div>
+    </div>
+    
+    <div id="model-list" class="model-grid">
+        <!-- Models will be loaded here -->
+        <div class="text-center" style="grid-column: 1 / -1;">
+            <div class="loading">
+                <span class="spinner"></span>
+                モデルを読み込み中...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Training Tips -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">💡 訓練のコツ</h2>
+    </div>
+    
+    <div class="training-tips">
+        <h4>良い結果を得るために:</h4>
+        <ul>
+            <li><strong>多様な角度:</strong> 対象物をさまざまな角度から撮影した画像を使用</li>
+            <li><strong>異なる照明:</strong> 明るい場所・暗い場所での写真を含める</li>
+            <li><strong>背景の変化:</strong> 異なる背景での画像を用意</li>
+            <li><strong>画像数:</strong> 最低20枚、できれば50枚以上の画像を使用</li>
+            <li><strong>画質:</strong> 鮮明でブレのない画像を選択</li>
+            <li><strong>対象物のサイズ:</strong> さまざまなサイズの対象物を含める</li>
+        </ul>
+        
+        <h4>避けるべきこと:</h4>
+        <ul>
+            <li>ブレた画像や暗すぎる画像</li>
+            <li>対象物が小さすぎる画像</li>
+            <li>同じ角度・照明の画像ばかり</li>
+            <li>画質の低い画像</li>
+        </ul>
+    </div>
+</div>
+
+<style>
+.training-tips {
+    line-height: 1.6;
+}
+
+.training-tips h4 {
+    color: var(--gray-900);
+    margin-bottom: 0.75rem;
+    margin-top: 1rem;
+}
+
+.training-tips h4:first-child {
+    margin-top: 0;
+}
+
+.training-tips ul {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.training-tips li {
+    margin-bottom: 0.5rem;
+}
+
+.text-muted {
+    color: var(--gray-600);
+    font-size: 0.875rem;
+}
+</style>
