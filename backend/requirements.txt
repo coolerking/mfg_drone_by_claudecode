@@ -1,0 +1,13 @@
+# Phase 2: Dynamic Camera Stream Generation Dependencies
+opencv-python>=4.8.0
+numpy>=1.24.0
+pillow>=10.0.0
+threading2>=0.1.4
+
+# Additional dependencies for dynamic content
+matplotlib>=3.7.0
+scipy>=1.10.0
+
+# Future phases
+# djitellopy>=2.5.0  # For Phase 1 compatibility
+# pyyaml>=6.0        # For configuration files
