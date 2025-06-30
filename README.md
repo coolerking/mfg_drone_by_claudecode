@@ -5,7 +5,7 @@ Tello EDU ドローンを使って移動する対象物を自動的に追跡・�
 ## 機能
 
 1. 手動運転機能
-  - ユーザが指示したとおりにドローンを操作する
+    - ユーザが指示したとおりにドローンを操作する
 
 2. 物体追随機能
     1. 追随物体学習データ管理
@@ -17,15 +17,15 @@ Tello EDU ドローンを使って移動する対象物を自動的に追跡・�
     - 学習済みのモデルを管理する
 
 3. 自動運転機能（物体追随）
-  - ユーザが指示したモデルを使って物体を正面に捉えるように自動的に移動する
-  - ユーザが指示したら手動運転に戻る
-  - 追随物体がみあたらないなどの問題が発生したら安全に緊急停止する
-  - 緊急停止したらユーザの指示で再度手動運転できるようにする
+    - ユーザが指示したモデルを使って物体を正面に捉えるように自動的に移動する
+    - ユーザが指示したら手動運転に戻る
+    - 追随物体がみあたらないなどの問題が発生したら安全に緊急停止する
+    - 緊急停止したらユーザの指示で再度手動運転できるようにする
 
 4. ドローン管理機能
-  - 複数のドローンを登録できるようにする
-  - 登録ドローンがない場合はダミードローンシステムに接続される
-  - 現在の動作状態を確認するダッシュボード画面
+    - 複数のドローンを登録できるようにする
+    - 登録ドローンがない場合はダミードローンシステムに接続される
+    - 現在の動作状態を確認するダッシュボード画面
 
 ## システム構成
 
@@ -54,28 +54,28 @@ Tello EDU ドローンを使って移動する対象物を自動的に追跡・�
 ## 非機能要件
 
 - ネットワーク
-  - 家庭用ルータに接続するものとする
-  - インターネット接続可能
-  - 一般ユーザのデバイスは同一ネットワーク上に存在するものとする
+    - 家庭用ルータに接続するものとする
+    - インターネット接続可能
+    - 一般ユーザのデバイスは同一ネットワーク上に存在するものとする
 
 - 対象とするドローン
-  - [Tello EDU](https://www.ryzerobotics.com/jp/tello-edu)
+    - [Tello EDU](https://www.ryzerobotics.com/jp/tello-edu)
 
 - ドローンからの画像を受信し、AIモデルをもとに次の行動を決定、指示をドローンに送信するバックエンドシステム（APIサーバ）
-  - [Raspberry Pi 5 8MB](https://www.raspberrypi.com/products/raspberry-pi-5/)
-    - [Raspberry Pi OS Lite 64bit May 6th 2025](https://www.raspberrypi.com/software/operating-systems/)
-      - [Python 3.11](https://www.python.org/downloads/release/python-3110/)
-        - [FastAPI](https://fastapi.tiangolo.com/ja/)
-        - [djitellopy](https://github.com/damiafuentes/DJITelloPy)
+    - [Raspberry Pi 5 8MB](https://www.raspberrypi.com/products/raspberry-pi-5/)
+        - [Raspberry Pi OS Lite 64bit May 6th 2025](https://www.raspberrypi.com/software/operating-systems/)
+            - [Python 3.11](https://www.python.org/downloads/release/python-3110/)
+            - [FastAPI](https://fastapi.tiangolo.com/ja/)
+            - [djitellopy](https://github.com/damiafuentes/DJITelloPy)
 
 - フロントエンドシステム
-  - Windows11 Pro 64bit
-    - NodeでもPythonでもよい
+    - Windows11 Pro 64bit
+        - NodeでもPythonでもよい
 
 - 一般ユーザクライアント
-  - iPad Air 13インチ第5世代
-    - iOS 17.0.3
-      - Safari
+    - iPad Air 13インチ第5世代
+        - iOS 17.0.3
+          - Safari
 
 ## 開発方針
 
@@ -83,15 +83,15 @@ Tello EDU ドローンを使って移動する対象物を自動的に追跡・�
 - 作業は完了したら必ずレビューを行う
 - APIサーバはかならずOpenAPI定義を設計してから行うこと
 - 単体テストは必ず実施
-  - パブリック関数を極値・異常値すべてのケースを実施
-  - カバレッジテストも別途行う
+    - パブリック関数を極値・異常値すべてのケースを実施
+    - カバレッジテストも別途行う
 - 結合テストも必ず実施
-  - すべての機能を全網羅
-  - 画面操作の場合は、極値・異常値すべてのケースを実施
-  - ドローンなしテストとする
-    - 基本ドローンがなくてもテストできるようにモック・ドライバを作成する
+    - すべての機能を全網羅
+    - 画面操作の場合は、極値・異常値すべてのケースを実施
+    - ドローンなしテストとする
+        - 基本ドローンがなくてもテストできるようにモック・ドライバを作成する
 - システムテストは簡単に実施できるような状態にしておく
-  - ドローンを繋いだ状態でのテスト
-  - 結合テストとおなじシナリオ、ケースを実施する
+    - ドローンを繋いだ状態でのテスト
+    - 結合テストとおなじシナリオ、ケースを実施する
 
 <p align="right">以上</p>
