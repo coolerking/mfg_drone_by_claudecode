@@ -1,0 +1,1266 @@
+openapi: 3.0.3
+info:
+  title: MFG Drone Backend API
+  description: |
+    Tello EDU ドローンを使った自動追従撮影システムのバックエンドAPI仕様。
+    ドローン制御、物体認識・追跡、モデル管理、ダッシュボード機能を提供します。
+  version: 1.0.0
+  contact:
+    name: MFG Drone Project
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8000
+    description: 開発環境
+  - url: http://raspberrypi.local:8000
+    description: Raspberry Pi環境
+
+tags:
+  - name: drones
+    description: ドローン制御API
+  - name: vision
+    description: 物体認識・追跡API
+  - name: models
+    description: モデル管理API
+  - name: dashboard
+    description: ダッシュボードAPI
+
+paths:
+  # ドローン制御API
+  /api/drones:
+    get:
+      tags: [drones]
+      summary: ドローン一覧取得
+      description: 接続可能なドローンの一覧を取得
+      responses:
+        '200':
+          description: ドローン一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Drone'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/drones/{droneId}/connect:
+    post:
+      tags: [drones]
+      summary: ドローン接続
+      description: 指定されたドローンに接続
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+        '409':
+          $ref: '#/components/responses/DroneAlreadyConnected'
+        '503':
+          $ref: '#/components/responses/DroneUnavailable'
+
+  /api/drones/{droneId}/disconnect:
+    post:
+      tags: [drones]
+      summary: ドローン切断
+      description: 指定されたドローンから切断
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+
+  /api/drones/{droneId}/takeoff:
+    post:
+      tags: [drones]
+      summary: 離陸
+      description: ドローンを離陸させる
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/DroneNotReady'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+        '503':
+          $ref: '#/components/responses/DroneUnavailable'
+
+  /api/drones/{droneId}/land:
+    post:
+      tags: [drones]
+      summary: 着陸
+      description: ドローンを着陸させる
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+        '503':
+          $ref: '#/components/responses/DroneUnavailable'
+
+  /api/drones/{droneId}/move:
+    post:
+      tags: [drones]
+      summary: 移動
+      description: ドローンを指定方向に移動
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveCommand'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/InvalidCommand'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+        '503':
+          $ref: '#/components/responses/DroneUnavailable'
+
+  /api/drones/{droneId}/rotate:
+    post:
+      tags: [drones]
+      summary: 回転
+      description: ドローンを回転させる
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RotateCommand'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/InvalidCommand'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+        '503':
+          $ref: '#/components/responses/DroneUnavailable'
+
+  /api/drones/{droneId}/emergency:
+    post:
+      tags: [drones]
+      summary: 緊急停止
+      description: ドローンを緊急停止させる
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+
+  /api/drones/{droneId}/status:
+    get:
+      tags: [drones]
+      summary: ドローン状態取得
+      description: ドローンの現在状態を取得
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      responses:
+        '200':
+          description: ドローン状態
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DroneStatus'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+        '503':
+          $ref: '#/components/responses/DroneUnavailable'
+
+  /api/drones/{droneId}/camera/stream/start:
+    post:
+      tags: [drones]
+      summary: カメラストリーミング開始
+      description: ドローンのカメラストリーミングを開始
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+        '503':
+          $ref: '#/components/responses/DroneUnavailable'
+
+  /api/drones/{droneId}/camera/stream/stop:
+    post:
+      tags: [drones]
+      summary: カメラストリーミング停止
+      description: ドローンのカメラストリーミングを停止
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+
+  /api/drones/{droneId}/camera/photo:
+    post:
+      tags: [drones]
+      summary: 写真撮影
+      description: ドローンで写真を撮影
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      responses:
+        '200':
+          description: 撮影成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Photo'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+        '503':
+          $ref: '#/components/responses/DroneUnavailable'
+
+  # ビジョンAPI
+  /api/vision/datasets:
+    get:
+      tags: [vision]
+      summary: データセット一覧取得
+      description: 学習データセットの一覧を取得
+      responses:
+        '200':
+          description: データセット一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Dataset'
+
+    post:
+      tags: [vision]
+      summary: データセット作成
+      description: 新しい学習データセットを作成
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDatasetRequest'
+      responses:
+        '201':
+          description: データセット作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dataset'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+
+  /api/vision/datasets/{datasetId}:
+    get:
+      tags: [vision]
+      summary: データセット詳細取得
+      description: 指定されたデータセットの詳細を取得
+      parameters:
+        - $ref: '#/components/parameters/DatasetId'
+      responses:
+        '200':
+          description: データセット詳細
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dataset'
+        '404':
+          $ref: '#/components/responses/DatasetNotFound'
+
+    delete:
+      tags: [vision]
+      summary: データセット削除
+      description: 指定されたデータセットを削除
+      parameters:
+        - $ref: '#/components/parameters/DatasetId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '404':
+          $ref: '#/components/responses/DatasetNotFound'
+
+  /api/vision/datasets/{datasetId}/images:
+    post:
+      tags: [vision]
+      summary: 画像追加
+      description: データセットに画像を追加
+      parameters:
+        - $ref: '#/components/parameters/DatasetId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: アップロードする画像ファイル
+                label:
+                  type: string
+                  description: 画像のラベル
+      responses:
+        '201':
+          description: 画像追加成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasetImage'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/DatasetNotFound'
+
+  /api/vision/detection:
+    post:
+      tags: [vision]
+      summary: 物体検出
+      description: 画像から物体を検出
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DetectionRequest'
+      responses:
+        '200':
+          description: 検出結果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetectionResult'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/ModelNotFound'
+
+  /api/vision/tracking/start:
+    post:
+      tags: [vision]
+      summary: 追跡開始
+      description: 指定されたモデルで物体追跡を開始
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartTrackingRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/ModelNotFound'
+        '409':
+          $ref: '#/components/responses/TrackingAlreadyActive'
+
+  /api/vision/tracking/stop:
+    post:
+      tags: [vision]
+      summary: 追跡停止
+      description: 物体追跡を停止
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+
+  /api/vision/tracking/status:
+    get:
+      tags: [vision]
+      summary: 追跡状態取得
+      description: 現在の追跡状態を取得
+      responses:
+        '200':
+          description: 追跡状態
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackingStatus'
+
+  # モデル管理API
+  /api/models:
+    get:
+      tags: [models]
+      summary: モデル一覧取得
+      description: 学習済みモデルの一覧を取得
+      responses:
+        '200':
+          description: モデル一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Model'
+
+    post:
+      tags: [models]
+      summary: モデル学習開始
+      description: データセットを使用してモデル学習を開始
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainModelRequest'
+      responses:
+        '202':
+          description: 学習開始
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingJob'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/DatasetNotFound'
+
+  /api/models/{modelId}:
+    get:
+      tags: [models]
+      summary: モデル詳細取得
+      description: 指定されたモデルの詳細を取得
+      parameters:
+        - $ref: '#/components/parameters/ModelId'
+      responses:
+        '200':
+          description: モデル詳細
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Model'
+        '404':
+          $ref: '#/components/responses/ModelNotFound'
+
+    delete:
+      tags: [models]
+      summary: モデル削除
+      description: 指定されたモデルを削除
+      parameters:
+        - $ref: '#/components/parameters/ModelId'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '404':
+          $ref: '#/components/responses/ModelNotFound'
+
+  /api/models/training/{jobId}:
+    get:
+      tags: [models]
+      summary: 学習状況取得
+      description: 学習ジョブの状況を取得
+      parameters:
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: 学習状況
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingJob'
+        '404':
+          $ref: '#/components/responses/JobNotFound'
+
+  # ダッシュボードAPI
+  /api/dashboard/system:
+    get:
+      tags: [dashboard]
+      summary: システム状態取得
+      description: システム全体の状態を取得
+      responses:
+        '200':
+          description: システム状態
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatus'
+
+  /api/dashboard/drones:
+    get:
+      tags: [dashboard]
+      summary: ドローン群状態取得
+      description: 全ドローンの状態を取得
+      responses:
+        '200':
+          description: ドローン群状態
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DroneStatus'
+
+components:
+  parameters:
+    DroneId:
+      name: droneId
+      in: path
+      required: true
+      description: ドローンID
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9_-]+$'
+
+    DatasetId:
+      name: datasetId
+      in: path
+      required: true
+      description: データセットID
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9_-]+$'
+
+    ModelId:
+      name: modelId
+      in: path
+      required: true
+      description: モデルID
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9_-]+$'
+
+    JobId:
+      name: jobId
+      in: path
+      required: true
+      description: ジョブID
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9_-]+$'
+
+  schemas:
+    # ドローン関連スキーマ
+    Drone:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ドローンID
+        name:
+          type: string
+          description: ドローン名
+        type:
+          type: string
+          enum: [real, dummy]
+          description: ドローンタイプ
+        ip_address:
+          type: string
+          format: ipv4
+          description: IPアドレス
+        status:
+          type: string
+          enum: [disconnected, connected, flying, landed, error]
+          description: 接続状態
+        last_seen:
+          type: string
+          format: date-time
+          description: 最終通信時刻
+      required: [id, name, type, status]
+
+    DroneStatus:
+      type: object
+      properties:
+        drone_id:
+          type: string
+          description: ドローンID
+        connection_status:
+          type: string
+          enum: [disconnected, connected, error]
+          description: 接続状態
+        flight_status:
+          type: string
+          enum: [landed, flying, hovering, landing, taking_off]
+          description: 飛行状態
+        battery_level:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: バッテリーレベル（%）
+        flight_time:
+          type: integer
+          minimum: 0
+          description: 飛行時間（秒）
+        height:
+          type: integer
+          minimum: 0
+          description: 高度（cm）
+        temperature:
+          type: number
+          description: 温度（℃）
+        speed:
+          type: number
+          minimum: 0
+          description: 速度（cm/s）
+        wifi_signal:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: WiFi信号強度（%）
+        attitude:
+          $ref: '#/components/schemas/Attitude'
+        last_updated:
+          type: string
+          format: date-time
+          description: 最終更新時刻
+      required: [drone_id, connection_status, flight_status, battery_level]
+
+    Attitude:
+      type: object
+      properties:
+        pitch:
+          type: number
+          minimum: -180
+          maximum: 180
+          description: ピッチ角（度）
+        roll:
+          type: number
+          minimum: -180
+          maximum: 180
+          description: ロール角（度）
+        yaw:
+          type: number
+          minimum: -180
+          maximum: 180
+          description: ヨー角（度）
+      required: [pitch, roll, yaw]
+
+    MoveCommand:
+      type: object
+      properties:
+        direction:
+          type: string
+          enum: [up, down, left, right, forward, back]
+          description: 移動方向
+        distance:
+          type: integer
+          minimum: 20
+          maximum: 500
+          description: 移動距離（cm）
+      required: [direction, distance]
+
+    RotateCommand:
+      type: object
+      properties:
+        direction:
+          type: string
+          enum: [clockwise, counter_clockwise]
+          description: 回転方向
+        angle:
+          type: integer
+          minimum: 1
+          maximum: 360
+          description: 回転角度（度）
+      required: [direction, angle]
+
+    Photo:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 写真ID
+        filename:
+          type: string
+          description: ファイル名
+        path:
+          type: string
+          description: ファイルパス
+        timestamp:
+          type: string
+          format: date-time
+          description: 撮影時刻
+        drone_id:
+          type: string
+          description: 撮影したドローンID
+        metadata:
+          type: object
+          description: 写真のメタデータ
+      required: [id, filename, path, timestamp, drone_id]
+
+    # ビジョン関連スキーマ
+    Dataset:
+      type: object
+      properties:
+        id:
+          type: string
+          description: データセットID
+        name:
+          type: string
+          description: データセット名
+        description:
+          type: string
+          description: データセット説明
+        image_count:
+          type: integer
+          minimum: 0
+          description: 画像数
+        labels:
+          type: array
+          items:
+            type: string
+          description: ラベル一覧
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新日時
+      required: [id, name, image_count, created_at]
+
+    CreateDatasetRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: データセット名
+        description:
+          type: string
+          maxLength: 500
+          description: データセット説明
+      required: [name]
+
+    DatasetImage:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 画像ID
+        filename:
+          type: string
+          description: ファイル名
+        path:
+          type: string
+          description: ファイルパス
+        label:
+          type: string
+          description: 画像ラベル
+        dataset_id:
+          type: string
+          description: データセットID
+        uploaded_at:
+          type: string
+          format: date-time
+          description: アップロード日時
+      required: [id, filename, path, dataset_id, uploaded_at]
+
+    DetectionRequest:
+      type: object
+      properties:
+        image:
+          type: string
+          format: byte
+          description: Base64エンコードされた画像データ
+        model_id:
+          type: string
+          description: 使用するモデルID
+        confidence_threshold:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.5
+          description: 信頼度閾値
+      required: [image, model_id]
+
+    DetectionResult:
+      type: object
+      properties:
+        detections:
+          type: array
+          items:
+            $ref: '#/components/schemas/Detection'
+          description: 検出結果一覧
+        processing_time:
+          type: number
+          description: 処理時間（秒）
+        model_id:
+          type: string
+          description: 使用したモデルID
+      required: [detections, processing_time, model_id]
+
+    Detection:
+      type: object
+      properties:
+        label:
+          type: string
+          description: 検出されたオブジェクトのラベル
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: 信頼度
+        bbox:
+          $ref: '#/components/schemas/BoundingBox'
+      required: [label, confidence, bbox]
+
+    BoundingBox:
+      type: object
+      properties:
+        x:
+          type: number
+          description: X座標
+        y:
+          type: number
+          description: Y座標
+        width:
+          type: number
+          description: 幅
+        height:
+          type: number
+          description: 高さ
+      required: [x, y, width, height]
+
+    StartTrackingRequest:
+      type: object
+      properties:
+        model_id:
+          type: string
+          description: 使用するモデルID
+        drone_id:
+          type: string
+          description: 対象ドローンID
+        confidence_threshold:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.5
+          description: 信頼度閾値
+        follow_distance:
+          type: integer
+          minimum: 50
+          maximum: 500
+          default: 200
+          description: 追従距離（cm）
+      required: [model_id, drone_id]
+
+    TrackingStatus:
+      type: object
+      properties:
+        is_active:
+          type: boolean
+          description: 追跡アクティブ状態
+        model_id:
+          type: string
+          description: 使用中のモデルID
+        drone_id:
+          type: string
+          description: 対象ドローンID
+        target_detected:
+          type: boolean
+          description: ターゲット検出状態
+        target_position:
+          $ref: '#/components/schemas/BoundingBox'
+        follow_distance:
+          type: integer
+          description: 追従距離（cm）
+        last_detection_time:
+          type: string
+          format: date-time
+          description: 最終検出時刻
+        started_at:
+          type: string
+          format: date-time
+          description: 追跡開始時刻
+      required: [is_active, target_detected]
+
+    # モデル関連スキーマ
+    Model:
+      type: object
+      properties:
+        id:
+          type: string
+          description: モデルID
+        name:
+          type: string
+          description: モデル名
+        description:
+          type: string
+          description: モデル説明
+        dataset_id:
+          type: string
+          description: 学習に使用したデータセットID
+        model_type:
+          type: string
+          enum: [yolo, ssd, faster_rcnn]
+          description: モデルタイプ
+        status:
+          type: string
+          enum: [training, completed, failed]
+          description: モデル状態
+        accuracy:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: モデル精度
+        file_path:
+          type: string
+          description: モデルファイルパス
+        created_at:
+          type: string
+          format: date-time
+          description: 作成日時
+        trained_at:
+          type: string
+          format: date-time
+          description: 学習完了日時
+      required: [id, name, dataset_id, model_type, status, created_at]
+
+    TrainModelRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: モデル名
+        description:
+          type: string
+          maxLength: 500
+          description: モデル説明
+        dataset_id:
+          type: string
+          description: 学習データセットID
+        model_type:
+          type: string
+          enum: [yolo, ssd, faster_rcnn]
+          default: yolo
+          description: モデルタイプ
+        training_params:
+          $ref: '#/components/schemas/TrainingParams'
+      required: [name, dataset_id]
+
+    TrainingParams:
+      type: object
+      properties:
+        epochs:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 100
+          description: エポック数
+        batch_size:
+          type: integer
+          minimum: 1
+          maximum: 64
+          default: 16
+          description: バッチサイズ
+        learning_rate:
+          type: number
+          minimum: 0.00001
+          maximum: 1
+          default: 0.001
+          description: 学習率
+        validation_split:
+          type: number
+          minimum: 0.1
+          maximum: 0.5
+          default: 0.2
+          description: 検証データ分割比率
+      required: []
+
+    TrainingJob:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ジョブID
+        model_name:
+          type: string
+          description: モデル名
+        dataset_id:
+          type: string
+          description: データセットID
+        status:
+          type: string
+          enum: [queued, running, completed, failed, cancelled]
+          description: ジョブ状態
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: 進捗率（%）
+        current_epoch:
+          type: integer
+          minimum: 0
+          description: 現在のエポック
+        total_epochs:
+          type: integer
+          minimum: 1
+          description: 総エポック数
+        loss:
+          type: number
+          minimum: 0
+          description: 現在の損失値
+        accuracy:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: 現在の精度
+        estimated_remaining_time:
+          type: integer
+          minimum: 0
+          description: 推定残り時間（秒）
+        started_at:
+          type: string
+          format: date-time
+          description: 開始日時
+        completed_at:
+          type: string
+          format: date-time
+          description: 完了日時
+        error_message:
+          type: string
+          description: エラーメッセージ
+      required: [id, model_name, dataset_id, status, progress]
+
+    # ダッシュボード関連スキーマ
+    SystemStatus:
+      type: object
+      properties:
+        cpu_usage:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: CPU使用率（%）
+        memory_usage:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: メモリ使用率（%）
+        disk_usage:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: ディスク使用率（%）
+        temperature:
+          type: number
+          description: システム温度（℃）
+        connected_drones:
+          type: integer
+          minimum: 0
+          description: 接続中ドローン数
+        active_tracking:
+          type: integer
+          minimum: 0
+          description: アクティブな追跡数
+        running_training_jobs:
+          type: integer
+          minimum: 0
+          description: 実行中の学習ジョブ数
+        uptime:
+          type: integer
+          minimum: 0
+          description: 稼働時間（秒）
+        last_updated:
+          type: string
+          format: date-time
+          description: 最終更新時刻
+      required: [cpu_usage, memory_usage, disk_usage, connected_drones, active_tracking, running_training_jobs, uptime, last_updated]
+
+    # 共通スキーマ
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          default: true
+        message:
+          type: string
+          description: 成功メッセージ
+        timestamp:
+          type: string
+          format: date-time
+          description: レスポンス時刻
+      required: [success, timestamp]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+          default: true
+        error_code:
+          type: string
+          description: エラーコード
+        message:
+          type: string
+          description: エラーメッセージ
+        details:
+          type: string
+          description: エラー詳細
+        timestamp:
+          type: string
+          format: date-time
+          description: エラー発生時刻
+      required: [error, error_code, message, timestamp]
+
+  responses:
+    Success:
+      description: 操作成功
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SuccessResponse'
+
+    InvalidRequest:
+      description: 無効なリクエスト
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: true
+            error_code: INVALID_REQUEST
+            message: リクエストパラメータが無効です
+            timestamp: '2023-01-01T12:00:00Z'
+
+    InvalidCommand:
+      description: 無効なコマンド
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: true
+            error_code: INVALID_COMMAND
+            message: 指定されたコマンドは無効です
+            timestamp: '2023-01-01T12:00:00Z'
+
+    DroneNotFound:
+      description: ドローンが見つかりません
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: true
+            error_code: DRONE_NOT_FOUND
+            message: 指定されたドローンが見つかりません
+            timestamp: '2023-01-01T12:00:00Z'
+
+    DroneNotReady:
+      description: ドローンが操作可能な状態ではありません
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: true
+            error_code: DRONE_NOT_READY
+            message: ドローンが操作可能な状態ではありません（バッテリー不足など）
+            timestamp: '2023-01-01T12:00:00Z'
+
+    DroneAlreadyConnected:
+      description: ドローンは既に接続されています
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: true
+            error_code: DRONE_ALREADY_CONNECTED
+            message: ドローンは既に接続されています
+            timestamp: '2023-01-01T12:00:00Z'
+
+    DroneUnavailable:
+      description: ドローンが利用できません
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: true
+            error_code: DRONE_UNAVAILABLE
+            message: ドローンが利用できません（接続エラー、ハードウェア障害など）
+            timestamp: '2023-01-01T12:00:00Z'
+
+    DatasetNotFound:
+      description: データセットが見つかりません
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: true
+            error_code: DATASET_NOT_FOUND
+            message: 指定されたデータセットが見つかりません
+            timestamp: '2023-01-01T12:00:00Z'
+
+    ModelNotFound:
+      description: モデルが見つかりません
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: true
+            error_code: MODEL_NOT_FOUND
+            message: 指定されたモデルが見つかりません
+            timestamp: '2023-01-01T12:00:00Z'
+
+    JobNotFound:
+      description: ジョブが見つかりません
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: true
+            error_code: JOB_NOT_FOUND
+            message: 指定されたジョブが見つかりません
+            timestamp: '2023-01-01T12:00:00Z'
+
+    TrackingAlreadyActive:
+      description: 追跡は既にアクティブです
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: true
+            error_code: TRACKING_ALREADY_ACTIVE
+            message: 物体追跡は既にアクティブです
+            timestamp: '2023-01-01T12:00:00Z'
+
+    InternalServerError:
+      description: 内部サーバーエラー
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: true
+            error_code: INTERNAL_SERVER_ERROR
+            message: 内部サーバーエラーが発生しました
+            timestamp: '2023-01-01T12:00:00Z'
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API認証キー
+
+security:
+  - ApiKeyAuth: []
