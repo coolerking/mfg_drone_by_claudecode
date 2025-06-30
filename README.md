@@ -1,0 +1,2 @@
+# mfg_drone_by_claudecode
+Tello EDU を使ったMFGにでてきた自動追従撮影ドローンみたいな動作をするシステム
