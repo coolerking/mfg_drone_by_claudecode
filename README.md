@@ -51,6 +51,140 @@ Tello EDU ドローンを使って移動する対象物を自動的に追跡・�
   - 同じネットワーク上にIPアドレス指定で呼び出せる状態とする
   - 複数台の可能性あり、ゼロの場合もあり
 
+## ディレクトリ構成
+
+このリポジトリは以下のディレクトリ構成で管理されています：
+
+```
+/
+├── backend/                    # バックエンドAPI (Raspberry Pi)
+│   ├── src/
+│   │   ├── api/               # FastAPI ルート定義
+│   │   │   ├── __init__.py
+│   │   │   ├── drone.py       # ドローン操作API (飛行制御、カメラ制御)
+│   │   │   ├── vision.py      # 物体認識・追跡API (学習データ管理、推論)
+│   │   │   ├── models.py      # モデル管理API (学習、保存、読み込み)
+│   │   │   └── dashboard.py   # ダッシュボードAPI (状態監視、制御)
+│   │   ├── core/              # コアロジック
+│   │   │   ├── drone_control.py   # ドローン制御機能 (djitellopy制御)
+│   │   │   ├── vision_engine.py  # 映像処理・物体認識エンジン
+│   │   │   ├── model_manager.py  # モデル管理機能 (学習、保存、読み込み)
+│   │   │   └── dummy_drone.py    # ダミードローンシステム (テスト用)
+│   │   ├── models/            # データモデル
+│   │   │   ├── drone.py      # ドローン関連データモデル
+│   │   │   ├── tracking.py   # 追跡関連データモデル
+│   │   │   └── training.py   # 学習関連データモデル
+│   │   ├── utils/             # ユーティリティ関数
+│   │   └── config/            # 設定ファイル管理
+│   ├── tests/                 # バックエンド単体テスト
+│   │   ├── unit/             # 単体テストケース
+│   │   ├── fixtures/         # テストデータ・フィクスチャ
+│   │   └── conftest.py       # pytest設定
+│   ├── requirements.txt       # Python依存関係
+│   ├── Dockerfile            # Docker設定
+│   └── README.md             # バックエンド開発ガイド
+│
+├── frontend/                   # 管理者用フロントエンド
+│   ├── src/
+│   │   ├── components/        # UIコンポーネント (React/Vue等)
+│   │   ├── pages/             # ページコンポーネント
+│   │   ├── services/          # API呼び出しサービス
+│   │   ├── utils/            # フロントエンドユーティリティ
+│   │   └── config/           # フロントエンド設定
+│   ├── tests/                 # フロントエンド単体テスト
+│   ├── public/                # 静的ファイル (HTML、画像等)
+│   ├── package.json           # Node.js依存関係 (Node.jsの場合)
+│   ├── requirements.txt       # Python依存関係 (Pythonの場合)
+│   └── README.md             # フロントエンド開発ガイド
+│
+├── mcp-server/                # MCPサーバ
+│   ├── src/
+│   │   ├── server.py          # MCPサーバメイン処理
+│   │   ├── handlers/          # MCP要求ハンドラ
+│   │   ├── clients/           # バックエンドAPIクライアント
+│   │   └── config/           # MCP設定管理
+│   ├── tests/                # MCPサーバテスト
+│   ├── requirements.txt      # Python依存関係
+│   └── README.md            # MCPサーバ開発ガイド
+│
+├── shared/                    # 共有リソース
+│   ├── api-specs/             # OpenAPI定義
+│   │   ├── backend-api.yaml  # バックエンドAPI仕様
+│   │   └── mcp-api.yaml      # MCP API仕様
+│   ├── config/                # 共通設定ファイル
+│   │   ├── development.yaml  # 開発環境設定
+│   │   ├── production.yaml   # 本番環境設定
+│   │   └── test.yaml         # テスト環境設定
+│   ├── schemas/               # データスキーマ定義
+│   └── utils/                 # 共通ユーティリティ
+│
+├── tests/                     # 結合・システムテスト
+│   ├── integration/           # 結合テスト
+│   │   ├── api_integration/  # API結合テスト
+│   │   ├── ui_integration/   # UI結合テスト
+│   │   └── mcp_integration/  # MCP結合テスト
+│   ├── system/                # システムテスト
+│   │   ├── with_drone/        # ドローン接続テスト
+│   │   └── without_drone/     # ドローンなしテスト
+│   ├── fixtures/              # テストデータ・フィクスチャ
+│   └── utils/                 # テストユーティリティ
+│
+├── docs/                      # ドキュメント
+│   ├── api/                   # API仕様書・ドキュメント
+│   ├── architecture/          # アーキテクチャ設計書
+│   ├── deployment/            # デプロイ手順書
+│   └── development/           # 開発手順書
+│
+├── deployment/                # デプロイ設定
+│   ├── raspberry-pi/          # Raspberry Pi用設定
+│   ├── windows/               # Windows用設定
+│   ├── docker/                # Docker設定ファイル
+│   └── kubernetes/            # Kubernetes設定（将来用）
+│
+├── scripts/                   # ビルド・デプロイスクリプト
+│   ├── build.sh              # ビルドスクリプト
+│   ├── deploy.sh             # デプロイスクリプト
+│   ├── test.sh               # テストスクリプト
+│   └── setup/                 # 環境セットアップスクリプト
+│
+├── .github/                   # GitHub Actions
+│   └── workflows/
+│       ├── ci.yml            # CI/CDワークフロー
+│       ├── deploy-backend.yml # バックエンドデプロイ
+│       └── deploy-frontend.yml # フロントエンドデプロイ
+│
+├── README.md                  # プロジェクト概要（このファイル）
+├── CONTRIBUTING.md            # 開発ガイドライン
+├── .gitignore                # Git除外設定
+└── LICENSE                   # ライセンス
+```
+
+### ディレクトリ構成の特徴
+
+1. **明確な分離**: 各コンポーネント（backend, frontend, mcp-server）を独立したディレクトリに配置し、それぞれが独立して開発・デプロイできる構成
+
+2. **テスト階層**: 
+   - 単体テストは各コンポーネント内に配置
+   - 結合・システムテストは専用ディレクトリで管理
+   - ドローンあり/なしテストの両方に対応
+
+3. **共有リソース**: 
+   - OpenAPI定義や共通設定を `shared/` で一元管理
+   - 各コンポーネント間での重複を排除
+
+4. **開発要件対応**: 
+   - OpenAPI定義を `shared/api-specs/` で管理
+   - 包括的テスト構造（単体・結合・システム）
+   - ドローンなしテスト環境の構築
+
+5. **デプロイ対応**: 
+   - プラットフォーム別（Raspberry Pi, Windows）デプロイ設定
+   - Docker/Kubernetes対応
+
+6. **ドキュメント管理**: 
+   - API仕様書、アーキテクチャ、デプロイ手順を体系的に管理
+   - 各コンポーネントごとのREADMEで詳細な開発ガイドを提供
+
 ## 非機能要件
 
 - ネットワーク
