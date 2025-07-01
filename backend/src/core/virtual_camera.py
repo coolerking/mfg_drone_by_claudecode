@@ -62,6 +62,71 @@ class VirtualCameraStream:
             width: 画像幅
             height: 画像高さ
             fps: フレームレート
+=======
+from typing import List, Tuple, Dict, Optional, Any
+from dataclasses import dataclass
+from enum import Enum
+import random
+import math
+
+logger = logging.getLogger(__name__)
+
+
+class TrackingObjectType(Enum):
+    """Types of tracking objects that can be generated"""
+    PERSON = "person"
+    VEHICLE = "vehicle"
+    BALL = "ball"
+    BOX = "box"
+    ANIMAL = "animal"
+
+
+class MovementPattern(Enum):
+    """Movement patterns for tracking objects"""
+    STATIC = "static"
+    LINEAR = "linear"
+    CIRCULAR = "circular"
+    RANDOM_WALK = "random_walk"
+    SINE_WAVE = "sine_wave"
+
+
+@dataclass
+class TrackingObject:
+    """Configuration for a tracking object in the virtual scene"""
+    object_type: TrackingObjectType
+    position: Tuple[float, float]  # x, y in pixels
+    size: Tuple[int, int]  # width, height in pixels
+    color: Tuple[int, int, int]  # BGR color
+    movement_pattern: MovementPattern
+    movement_speed: float = 1.0
+    movement_params: Dict[str, Any] = None  # Pattern-specific parameters
+    
+    def __post_init__(self):
+        if self.movement_params is None:
+            self.movement_params = {}
+
+
+class VirtualCameraStream:
+    """
+    Dynamic camera stream generator for Tello EDU dummy system.
+    
+    Creates real-time video streams with dynamic tracking objects,
+    simulating realistic drone camera footage for testing and development.
+    """
+    
+    def __init__(self, 
+                 width: int = 640,
+                 height: int = 480,
+                 fps: int = 30,
+                 background_color: Tuple[int, int, int] = (50, 100, 50)):
+        """
+        Initialize virtual camera stream.
+        
+        Args:
+            width: Frame width in pixels
+            height: Frame height in pixels  
+            fps: Target frames per second
+            background_color: Background color (BGR)
         """
         self.width = width
         self.height = height
@@ -322,3 +387,4 @@ class VirtualCameraStreamManager:
     def get_all_statistics(self) -> Dict[str, Dict[str, Union[int, float]]]:
         """全ストリームの統計情報を取得"""
         return {name: stream.get_statistics() for name, stream in self.streams.items()}
+
