@@ -4,6 +4,11 @@ numpy==1.24.3
 Pillow==10.0.1
 psutil==5.9.5
 
+# FastAPI Backend Dependencies (Phase 1)
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+
 # Phase 3: Drone Simulation Dependencies
 scipy==1.11.3
 matplotlib==3.7.2
