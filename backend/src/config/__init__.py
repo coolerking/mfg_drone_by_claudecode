@@ -1,6 +1,5 @@
-"""
-Configuration modules for Tello EDU Dummy System
-"""
+# Phase 3: Tello EDU ダミーシステム
+# 設定モジュールパッケージの初期化ファイル
 
 from .camera_config import (
     CameraScenarioConfig,

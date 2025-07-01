@@ -1,8 +1,5 @@
-"""
-Core modules for Tello EDU Dummy System
-
-Phase 2: Dynamic Camera Stream Generation
-"""
+# Phase 3: Tello EDU ダミーシステム
+# コアモジュールパッケージの初期化ファイル
 
 from .virtual_camera import (
     VirtualCameraStream,
