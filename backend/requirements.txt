@@ -4,6 +4,14 @@ numpy==1.24.3
 Pillow==10.0.1
 psutil==5.9.5
 
+# Phase 3: Vision and ML Dependencies
+scikit-learn==1.3.0         # Machine learning utilities
+ultralytics==8.0.196        # YOLOv8 for object detection
+torch==2.0.1                # PyTorch for deep learning
+torchvision==0.15.2         # Computer vision transforms
+onnx==1.14.1                 # ONNX model format support
+onnxruntime==1.15.1         # ONNX runtime for inference
+
 # FastAPI Backend Dependencies (Phase 1 & Phase 2)
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
