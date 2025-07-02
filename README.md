@@ -93,6 +93,9 @@ Tello EDU ドローンを使って移動する対象物を自動的に追跡・�
 │   │   └── config/           # フロントエンド設定
 │   ├── tests/                 # フロントエンド単体テスト
 │   ├── public/                # 静的ファイル (HTML、画像等)
+│   ├── doc/                   # フロントエンド設計ドキュメント
+│   │   └── sample/            # サンプルHTML/CSS
+│   │       └── README.md      # 画面設計提案書
 │   ├── package.json           # Node.js依存関係 (Node.jsの場合)
 │   ├── requirements.txt       # Python依存関係 (Pythonの場合)
 │   └── README.md             # フロントエンド開発ガイド
