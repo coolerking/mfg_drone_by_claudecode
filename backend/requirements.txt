@@ -20,6 +20,13 @@ websockets==12.0
 python-multipart==0.0.6
 aiofiles==23.2.1
 
+# Phase 4: Security & Authentication Dependencies
+python-jose[cryptography]==3.3.0    # JWT token handling
+passlib[bcrypt]==1.7.4              # Password hashing
+python-multipart==0.0.6             # Form data parsing
+slowapi==0.1.9                      # Rate limiting middleware
+redis==5.0.1                        # Session/cache storage (optional)
+
 # Phase 3: Drone Simulation Dependencies
 scipy==1.11.3
 matplotlib==3.7.2

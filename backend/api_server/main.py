@@ -17,15 +17,25 @@ from .core.vision_service import VisionService
 from .core.dataset_service import DatasetService
 from .core.model_service import ModelService
 from .core.system_service import SystemService
+from .core.alert_service import AlertService
+from .core.performance_service import PerformanceService
 
 from .api.drones import router as drones_router
 from .api.vision import router as vision_router, initialize_vision_router
 from .api.models import router as models_router, initialize_models_router
 from .api.dashboard import router as dashboard_router, initialize_dashboard_router
+from .api.phase4 import router as phase4_router, initialize_phase4_router
 from .api.websocket import (
     manager as websocket_manager, 
     WebSocketHandler, 
     start_status_broadcaster
+)
+from .security import (
+    limiter, 
+    get_rate_limiter, 
+    SECURITY_HEADERS, 
+    security_middleware,
+    api_key_manager
 )
 
 # ロギング設定
@@ -41,12 +51,14 @@ vision_service: VisionService = None
 dataset_service: DatasetService = None
 model_service: ModelService = None
 system_service: SystemService = None
+alert_service: AlertService = None
+performance_service: PerformanceService = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """アプリケーションライフサイクル管理"""
-    global drone_manager, vision_service, dataset_service, model_service, system_service
+    global drone_manager, vision_service, dataset_service, model_service, system_service, alert_service, performance_service
     
     # 起動時処理
     logger.info("Starting MFG Drone Backend API Server...")
@@ -67,15 +79,28 @@ async def lifespan(app: FastAPI):
     system_service = SystemService()
     logger.info("System Service initialized")
     
+    # Phase 4: Initialize new services
+    alert_service = AlertService()
+    logger.info("Alert Service initialized")
+    
+    performance_service = PerformanceService()
+    logger.info("Performance Service initialized")
+    
     # Initialize API routers with service instances
     initialize_vision_router(vision_service, dataset_service)
     initialize_models_router(model_service, dataset_service)
     initialize_dashboard_router(system_service, drone_manager, vision_service, model_service, dataset_service)
+    initialize_phase4_router(alert_service, performance_service)
     logger.info("API routers initialized")
     
     # WebSocket状態ブロードキャスターを開始
     status_broadcaster_task = asyncio.create_task(start_status_broadcaster(drone_manager))
     logger.info("WebSocket status broadcaster started")
+    
+    # Phase 4: Start monitoring services
+    alert_monitoring_task = asyncio.create_task(alert_service.start_monitoring(30))
+    performance_monitoring_task = asyncio.create_task(performance_service.start_monitoring(60))
+    logger.info("Phase 4 monitoring services started")
     
     yield
     
@@ -89,7 +114,20 @@ async def lifespan(app: FastAPI):
     except asyncio.CancelledError:
         pass
     
+    # Phase 4: Stop monitoring services
+    alert_monitoring_task.cancel()
+    performance_monitoring_task.cancel()
+    try:
+        await alert_monitoring_task
+        await performance_monitoring_task
+    except asyncio.CancelledError:
+        pass
+    
     # Shutdown all services
+    if alert_service:
+        await alert_service.shutdown()
+    if performance_service:
+        await performance_service.shutdown()
     if vision_service:
         await vision_service.shutdown()
     if dataset_service:
@@ -136,17 +174,39 @@ app = FastAPI(
 # CORS設定
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:8080"],
+    allow_origins=["http://localhost:3000", "http://localhost:8080", "https://localhost:3000", "https://localhost:8080"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["X-API-Key"]
 )
+
+# Phase 4: Security middleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
+# Security headers middleware
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    
+    # Add security headers
+    for header, value in SECURITY_HEADERS.items():
+        response.headers[header] = value
+    
+    return response
 
 # APIルーター登録
 app.include_router(drones_router, prefix="/api", tags=["drones"])
 app.include_router(vision_router, prefix="/api", tags=["vision"])
 app.include_router(models_router, prefix="/api", tags=["models"])
 app.include_router(dashboard_router, prefix="/api", tags=["dashboard"])
+app.include_router(phase4_router, prefix="/api", tags=["phase4"])
 
 # WebSocketエンドポイント
 @app.websocket("/ws")
@@ -190,26 +250,35 @@ async def websocket_endpoint(websocket: WebSocket):
 
 # 基本ヘルスチェックエンドポイント
 @app.get("/")
-async def root():
+@limiter.limit("100/minute")
+async def root(request):
     """ルートエンドポイント"""
     return {
         "message": "MFG Drone Backend API Server",
         "version": "1.0.0",
-        "status": "running"
+        "status": "running",
+        "security": "API Key authentication enabled",
+        "features": ["drones", "vision", "models", "dashboard", "alerts", "performance"]
     }
 
 
 @app.get("/health")
-async def health_check():
+@limiter.limit("200/minute")
+async def health_check(request):
     """ヘルスチェックエンドポイント"""
-    global drone_manager
+    global drone_manager, alert_service, performance_service
     
     health_status = {
         "status": "healthy",
         "timestamp": drone_manager.get_current_timestamp() if drone_manager else None,
         "services": {
-            "drone_manager": drone_manager is not None
-        }
+            "drone_manager": drone_manager is not None,
+            "alert_service": alert_service is not None,
+            "performance_service": performance_service is not None,
+            "monitoring_active": alert_service.monitoring_active if alert_service else False
+        },
+        "phase": "Phase 4 - Production Ready",
+        "security_enabled": True
     }
     
     return health_status
