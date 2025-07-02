@@ -1,0 +1,84 @@
+# Docker Compose Development Override
+# Phase 5: Development environment configuration
+
+version: '3.8'
+
+services:
+  mfg-drone-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder  # Use builder stage for development
+    image: mfg-drone-api:dev
+    container_name: mfg-drone-api-dev
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      
+      # Development-specific settings
+      - RELOAD=true
+      - DEBUG=true
+      
+      # Relaxed security for development
+      - RATE_LIMIT_ENABLED=false
+      - MAX_FAILED_ATTEMPTS=100
+      
+    volumes:
+      # Mount source code for hot reloading
+      - .:/app
+      - /app/__pycache__  # Exclude pycache
+      - /app/.pytest_cache  # Exclude pytest cache
+      
+    ports:
+      - "8000:8000"
+      - "8001:8001"  # Additional debug port
+      
+    command: >
+      bash -c "
+        echo 'Starting development server with hot reload...'
+        python -m uvicorn api_server.main:app 
+          --host 0.0.0.0 
+          --port 8000 
+          --reload 
+          --reload-dir /app/api_server 
+          --log-level debug
+      "
+    
+    # Remove resource limits for development
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+
+  # Development database (SQLite for simplicity)
+  # For production, consider PostgreSQL
+  
+  redis:
+    # Use smaller memory limits for development
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+
+# Development-specific volumes
+volumes:
+  datasets_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/dev_data/datasets
+      o: bind
+  
+  models_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/dev_data/models
+      o: bind
+      
+  logs_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/dev_data/logs
+      o: bind

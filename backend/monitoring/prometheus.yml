@@ -1,0 +1,128 @@
+# Prometheus Configuration for MFG Drone Backend API
+# Phase 5: Production monitoring and metrics collection
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'mfg-drone'
+    replica: 'prometheus-1'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Rules configuration
+rule_files:
+  - "alert_rules.yml"
+  - "recording_rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 5s
+    metrics_path: /metrics
+
+  # MFG Drone API Server
+  - job_name: 'mfg-drone-api'
+    static_configs:
+      - targets: ['mfg-drone-api:8000']
+    scrape_interval: 10s
+    metrics_path: /metrics
+    honor_labels: true
+    params:
+      format: ['prometheus']
+    scheme: http
+    
+    # Add authentication if needed
+    # basic_auth:
+    #   username: 'monitoring'
+    #   password: 'password'
+    
+    # Custom headers for API key authentication
+    # authorization:
+    #   type: Bearer
+    #   credentials: 'mfg-drone-monitoring-token'
+
+  # Nginx metrics (if nginx-prometheus-exporter is used)
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:9113']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Redis metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:9121']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Node exporter for system metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Docker metrics (if docker daemon metrics enabled)
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['host.docker.internal:9323']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Custom application metrics endpoint
+  - job_name: 'mfg-drone-custom-metrics'
+    static_configs:
+      - targets: ['mfg-drone-api:8000']
+    scrape_interval: 15s
+    metrics_path: /api/performance/metrics
+    params:
+      format: ['prometheus']
+    honor_labels: true
+    
+    # Add API key for authentication
+    params:
+      'X-API-Key': ['mfg-drone-monitoring-key-2024']
+
+  # Health check monitoring
+  - job_name: 'mfg-drone-health'
+    static_configs:
+      - targets: ['mfg-drone-api:8000']
+    scrape_interval: 30s
+    metrics_path: /health
+    params:
+      format: ['prometheus']
+
+# Remote write configuration for long-term storage
+# remote_write:
+#   - url: "https://prometheus-remote-write-endpoint"
+#     basic_auth:
+#       username: "username"
+#       password: "password"
+
+# Remote read configuration
+# remote_read:
+#   - url: "https://prometheus-remote-read-endpoint"
+#     basic_auth:
+#       username: "username"
+#       password: "password"
+
+# Storage configuration
+storage:
+  tsdb:
+    retention.time: 15d
+    retention.size: 10GB
+    wal-compression: true
+
+# Feature flags
+# --enable-feature=expand-external-labels
+# --enable-feature=memory-snapshot-on-shutdown
+# --enable-feature=exemplar-storage
