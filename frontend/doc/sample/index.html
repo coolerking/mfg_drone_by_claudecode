@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFGドローン管理システム</title>
+    <meta http-equiv="refresh" content="0; url=login.html">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+            color: white;
+        }
+        .loading-container {
+            text-align: center;
+        }
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top: 5px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-container">
+        <div class="logo">🚁</div>
+        <h1>MFGドローン管理システム</h1>
+        <p>システムを読み込んでいます...</p>
+        <div class="spinner"></div>
+        <p><a href="login.html" style="color: white;">ここをクリックして手動で進む</a></p>
+    </div>
+    
+    <script>
+        // If redirect doesn't work, manually redirect after 3 seconds
+        setTimeout(() => {
+            if (window.location.href.includes('index.html')) {
+                window.location.href = 'login.html';
+            }
+        }, 3000);
+    </script>
+</body>
+</html>

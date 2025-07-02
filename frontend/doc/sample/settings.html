@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>設定 - MFGドローン管理システム</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>🚁 MFGドローン</h2>
+                <p style="font-size: 12px; color: #adb5bd; margin: 0;">管理システム v1.0</p>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link">
+                        <i>📊</i> ダッシュボード
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="drone-management.html" class="nav-link">
+                        <i>🚁</i> ドローン管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="dataset-management.html" class="nav-link">
+                        <i>📁</i> データセット管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="model-management.html" class="nav-link">
+                        <i>🧠</i> モデル管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="tracking-control.html" class="nav-link">
+                        <i>🎯</i> 追跡制御
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="system-monitoring.html" class="nav-link">
+                        <i>⚙️</i> システム監視
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="settings.html" class="nav-link active">
+                        <i>🔧</i> 設定
+                    </a>
+                </li>
+                <li class="nav-item" style="border-top: 1px solid #495057; margin-top: 20px; padding-top: 20px;">
+                    <a href="login.html" class="nav-link">
+                        <i>🚪</i> ログアウト
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="d-flex align-center gap-20">
+                    <button class="btn btn-secondary mobile-toggle" style="display: none;">☰</button>
+                    <h1 style="margin: 0; font-size: 24px;">設定</h1>
+                </div>
+                
+                <div class="d-flex align-center gap-20">
+                    <button class="btn btn-success" onclick="saveSettings()">
+                        💾 設定保存
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetSettings()">
+                        🔄 リセット
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <main class="content">
+                <!-- System Settings -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 style="margin: 0;">システム設定</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                            <div>
+                                <div class="form-group">
+                                    <label class="form-label">システム名</label>
+                                    <input type="text" class="form-control" id="system-name" 
+                                           value="MFGドローン管理システム">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">管理者メールアドレス</label>
+                                    <input type="email" class="form-control" id="admin-email" 
+                                           value="admin@mfg-drone.com">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">自動バックアップ間隔</label>
+                                    <select class="form-control" id="backup-interval">
+                                        <option value="1">1時間</option>
+                                        <option value="6" selected>6時間</option>
+                                        <option value="12">12時間</option>
+                                        <option value="24">24時間</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="form-group">
+                                    <label class="form-label">ログレベル</label>
+                                    <select class="form-control" id="log-level">
+                                        <option value="debug">DEBUG</option>
+                                        <option value="info" selected>INFO</option>
+                                        <option value="warning">WARNING</option>
+                                        <option value="error">ERROR</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">APIタイムアウト (秒)</label>
+                                    <input type="number" class="form-control" id="api-timeout" 
+                                           value="30" min="5" max="300">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                        <input type="checkbox" id="enable-notifications" checked>
+                                        <span>システム通知を有効にする</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drone Settings -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 style="margin: 0;">ドローン設定</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                            <div>
+                                <div class="form-group">
+                                    <label class="form-label">デフォルト飛行高度 (m)</label>
+                                    <input type="number" class="form-control" id="default-altitude" 
+                                           value="1.5" min="0.5" max="10" step="0.1">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">最大飛行距離 (m)</label>
+                                    <input type="number" class="form-control" id="max-distance" 
+                                           value="50" min="10" max="100">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">バッテリー警告レベル (%)</label>
+                                    <input type="number" class="form-control" id="battery-warning" 
+                                           value="20" min="10" max="50">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="form-group">
+                                    <label class="form-label">接続タイムアウト (秒)</label>
+                                    <input type="number" class="form-control" id="connection-timeout" 
+                                           value="10" min="5" max="60">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                        <input type="checkbox" id="auto-land" checked>
+                                        <span>バッテリー低下時の自動着陸</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                        <input type="checkbox" id="emergency-land" checked>
+                                        <span>緊急時自動着陸</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Model Settings -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 style="margin: 0;">AIモデル設定</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                            <div>
+                                <div class="form-group">
+                                    <label class="form-label">デフォルト信頼度閾値</label>
+                                    <div class="d-flex align-center gap-10">
+                                        <input type="range" class="form-control" id="default-confidence" 
+                                               min="0.1" max="1.0" step="0.05" value="0.7" 
+                                               oninput="updateConfidenceDisplay(this.value)">
+                                        <span id="confidence-display">0.7</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">学習時GPU使用</label>
+                                    <select class="form-control" id="gpu-usage">
+                                        <option value="auto" selected>自動</option>
+                                        <option value="enabled">有効</option>
+                                        <option value="disabled">無効</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="form-group">
+                                    <label class="form-label">最大学習エポック数</label>
+                                    <input type="number" class="form-control" id="max-epochs" 
+                                           value="1000" min="10" max="5000">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                        <input type="checkbox" id="auto-save-model" checked>
+                                        <span>モデル自動保存</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- About -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 style="margin: 0;">システム情報</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                            <div>
+                                <table class="table">
+                                    <tr>
+                                        <td><strong>システムバージョン</strong></td>
+                                        <td>v1.0.0</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ビルド日時</strong></td>
+                                        <td>2025-07-02 23:41:00</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>プラットフォーム</strong></td>
+                                        <td>Raspberry Pi 5</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Python バージョン</strong></td>
+                                        <td>3.11.2</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            
+                            <div>
+                                <table class="table">
+                                    <tr>
+                                        <td><strong>データベース</strong></td>
+                                        <td>SQLite 3.40.1</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>フレームワーク</strong></td>
+                                        <td>FastAPI 0.104.1</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>AI ライブラリ</strong></td>
+                                        <td>OpenCV 4.8.1</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ライセンス</strong></td>
+                                        <td>MIT License</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 20px; text-align: center; color: #6c757d;">
+                            <p>© 2025 MFG Drone System. Sample Frontend Implementation.</p>
+                            <p>このシステムはデモンストレーション用途で作成されています。</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            updateConfidenceDisplay(0.7);
+            loadUserSettings();
+        });
+        
+        function updateConfidenceDisplay(value) {
+            document.getElementById('confidence-display').textContent = parseFloat(value).toFixed(1);
+        }
+        
+        function loadUserSettings() {
+            // In a real app, would load from server or localStorage
+            console.log('Loading user settings...');
+        }
+        
+        function saveSettings() {
+            // Collect all form values
+            const settings = {
+                systemName: document.getElementById('system-name').value,
+                adminEmail: document.getElementById('admin-email').value,
+                backupInterval: document.getElementById('backup-interval').value,
+                logLevel: document.getElementById('log-level').value,
+                apiTimeout: document.getElementById('api-timeout').value,
+                enableNotifications: document.getElementById('enable-notifications').checked,
+                defaultAltitude: document.getElementById('default-altitude').value,
+                maxDistance: document.getElementById('max-distance').value,
+                batteryWarning: document.getElementById('battery-warning').value,
+                connectionTimeout: document.getElementById('connection-timeout').value,
+                autoLand: document.getElementById('auto-land').checked,
+                emergencyLand: document.getElementById('emergency-land').checked,
+                defaultConfidence: document.getElementById('default-confidence').value,
+                gpuUsage: document.getElementById('gpu-usage').value,
+                maxEpochs: document.getElementById('max-epochs').value,
+                autoSaveModel: document.getElementById('auto-save-model').checked
+            };
+            
+            // Validate required fields
+            if (!settings.systemName || !settings.adminEmail) {
+                showNotification('システム名とメールアドレスは必須です', 'danger');
+                return;
+            }
+            
+            // Email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(settings.adminEmail)) {
+                showNotification('有効なメールアドレスを入力してください', 'danger');
+                return;
+            }
+            
+            // Save settings (in real app, would send to server)
+            console.log('Saving settings:', settings);
+            
+            showNotification('設定が保存されました', 'success');
+            
+            // Simulate applying settings
+            setTimeout(() => {
+                showNotification('設定が適用されました', 'info');
+            }, 1500);
+        }
+        
+        function resetSettings() {
+            if (confirm('設定をデフォルト値にリセットしますか？')) {
+                // Reset all form fields to default values
+                document.getElementById('system-name').value = 'MFGドローン管理システム';
+                document.getElementById('admin-email').value = 'admin@mfg-drone.com';
+                document.getElementById('backup-interval').value = '6';
+                document.getElementById('log-level').value = 'info';
+                document.getElementById('api-timeout').value = '30';
+                document.getElementById('enable-notifications').checked = true;
+                document.getElementById('default-altitude').value = '1.5';
+                document.getElementById('max-distance').value = '50';
+                document.getElementById('battery-warning').value = '20';
+                document.getElementById('connection-timeout').value = '10';
+                document.getElementById('auto-land').checked = true;
+                document.getElementById('emergency-land').checked = true;
+                document.getElementById('default-confidence').value = '0.7';
+                document.getElementById('gpu-usage').value = 'auto';
+                document.getElementById('max-epochs').value = '1000';
+                document.getElementById('auto-save-model').checked = true;
+                
+                updateConfidenceDisplay(0.7);
+                
+                showNotification('設定がリセットされました', 'info');
+            }
+        }
+    </script>
+    
+    <style>
+        .table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .form-control[type="range"] {
+            padding: 0;
+            height: 8px;
+            background: #dee2e6;
+            border-radius: 4px;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        
+        .form-control[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+        }
+        
+        .form-control[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            border: none;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-toggle {
+                display: block !important;
+            }
+            
+            .card-body > div[style*="grid-template-columns"] {
+                grid-template-columns: 1fr !important;
+            }
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>モデル管理 - MFGドローン管理システム</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>🚁 MFGドローン</h2>
+                <p style="font-size: 12px; color: #adb5bd; margin: 0;">管理システム v1.0</p>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link">
+                        <i>📊</i> ダッシュボード
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="drone-management.html" class="nav-link">
+                        <i>🚁</i> ドローン管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="dataset-management.html" class="nav-link">
+                        <i>📁</i> データセット管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="model-management.html" class="nav-link active">
+                        <i>🧠</i> モデル管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="tracking-control.html" class="nav-link">
+                        <i>🎯</i> 追跡制御
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="system-monitoring.html" class="nav-link">
+                        <i>⚙️</i> システム監視
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="settings.html" class="nav-link">
+                        <i>🔧</i> 設定
+                    </a>
+                </li>
+                <li class="nav-item" style="border-top: 1px solid #495057; margin-top: 20px; padding-top: 20px;">
+                    <a href="login.html" class="nav-link">
+                        <i>🚪</i> ログアウト
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="d-flex align-center gap-20">
+                    <button class="btn btn-secondary mobile-toggle" style="display: none;">☰</button>
+                    <h1 style="margin: 0; font-size: 24px;">モデル管理</h1>
+                </div>
+                
+                <div class="d-flex align-center gap-20">
+                    <button class="btn btn-success" onclick="startTraining()">
+                        🚀 学習開始
+                    </button>
+                    <button class="btn btn-info" onclick="importModel()">
+                        📥 モデルインポート
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <main class="content">
+                <!-- Model Statistics -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 style="margin: 0;">モデル統計</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number">3</div>
+                                <div class="stat-label">総モデル数</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" style="color: #198754;">2</div>
+                                <div class="stat-label">学習済み</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" style="color: #ffc107;">1</div>
+                                <div class="stat-label">学習中</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">92.8%</div>
+                                <div class="stat-label">平均精度</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Training -->
+                <div class="card" id="training-card" style="display: none;">
+                    <div class="card-header">
+                        <h3 style="margin: 0;">🔄 学習中のモデル</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="training-status">
+                            <div class="d-flex justify-between align-center mb-10">
+                                <strong id="training-model-name">VehicleDetector_v1.1</strong>
+                                <span id="training-progress-text">エポック 15/100</span>
+                            </div>
+                            <div class="progress mb-10">
+                                <div class="progress-bar" id="training-progress" style="width: 15%"></div>
+                            </div>
+                            <div class="training-metrics">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                                    <div>
+                                        <small>学習時間</small>
+                                        <div id="training-time">1時間 25分</div>
+                                    </div>
+                                    <div>
+                                        <small>現在の精度</small>
+                                        <div id="current-accuracy">78.3%</div>
+                                    </div>
+                                    <div>
+                                        <small>推定残り時間</small>
+                                        <div id="eta">45分</div>
+                                    </div>
+                                    <div>
+                                        <small>学習率</small>
+                                        <div id="learning-rate">0.001</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 15px;">
+                                <button class="btn btn-warning btn-sm" onclick="pauseTraining()">一時停止</button>
+                                <button class="btn btn-danger btn-sm" onclick="stopTraining()">学習停止</button>
+                                <a href="model-training.html?id=model_002" class="btn btn-info btn-sm">詳細表示</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Model List -->
+                <div class="card">
+                    <div class="card-header d-flex justify-between align-center">
+                        <h3 style="margin: 0;">学習済みモデル一覧</h3>
+                        <div class="d-flex align-center gap-10">
+                            <input type="text" placeholder="モデル名で検索..." class="form-control" 
+                                   style="width: 200px;" id="model-search">
+                            <select class="form-control" style="width: 120px;" id="status-filter">
+                                <option value="">全て</option>
+                                <option value="trained">学習済み</option>
+                                <option value="training">学習中</option>
+                                <option value="failed">失敗</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>モデル名</th>
+                                        <th>データセット</th>
+                                        <th>精度</th>
+                                        <th>学習時間</th>
+                                        <th>ステータス</th>
+                                        <th>作成日</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="model-list">
+                                    <!-- Populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Model Performance Chart -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 style="margin: 0;">モデル性能比較</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="performance-chart" style="height: 300px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border-radius: 8px;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
+                                <h4>モデル性能チャート</h4>
+                                <p style="color: #6c757d;">各モデルの精度とパフォーマンスを比較表示</p>
+                                <div style="margin-top: 20px;">
+                                    <div class="chart-placeholder">
+                                        <div class="chart-bar" style="height: 94%; background: #198754;">
+                                            <span>PersonTracker v2.3<br>94.2%</span>
+                                        </div>
+                                        <div class="chart-bar" style="height: 78%; background: #ffc107;">
+                                            <span>VehicleDetector v1.1<br>78.3%</span>
+                                        </div>
+                                        <div class="chart-bar" style="height: 92%; background: #0dcaf0;">
+                                            <span>PetFollower v1.0<br>91.8%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Start Training Modal -->
+    <div id="start-training-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>モデル学習開始</h3>
+                <button class="modal-close" onclick="closeModal('start-training-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="training-form">
+                    <div class="form-group">
+                        <label class="form-label">モデル名</label>
+                        <input type="text" class="form-control" id="training-model-name-input" 
+                               placeholder="例: PersonDetector_v2.0" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">データセット選択</label>
+                        <select class="form-control" id="training-dataset" required>
+                            <option value="">選択してください</option>
+                            <option value="dataset_001">Person Detection v1.0 (1,250枚)</option>
+                            <option value="dataset_002">Vehicle Detection (850枚)</option>
+                            <option value="dataset_003">Pet Detection (2,100枚)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">学習エポック数</label>
+                        <input type="number" class="form-control" id="training-epochs" 
+                               value="100" min="10" max="1000" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">学習率</label>
+                        <select class="form-control" id="training-lr">
+                            <option value="0.001">0.001 (推奨)</option>
+                            <option value="0.01">0.01</option>
+                            <option value="0.0001">0.0001</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">バッチサイズ</label>
+                        <select class="form-control" id="training-batch">
+                            <option value="16">16</option>
+                            <option value="32" selected>32 (推奨)</option>
+                            <option value="64">64</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="auto-stop" checked>
+                            <span>早期停止を有効にする</span>
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('start-training-modal')">キャンセル</button>
+                <button class="btn btn-primary" onclick="submitTraining()">学習開始</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        let trainingActive = false;
+        let trainingProgress = 15;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            populateModelList();
+            setupFilters();
+            updateModelStats();
+            checkTrainingStatus();
+            
+            // Auto-refresh every 10 seconds
+            setInterval(() => {
+                refreshModelData();
+                updateTrainingProgress();
+            }, 10000);
+        });
+        
+        function setupFilters() {
+            const searchInput = document.getElementById('model-search');
+            const statusFilter = document.getElementById('status-filter');
+            
+            searchInput.addEventListener('input', filterModels);
+            statusFilter.addEventListener('change', filterModels);
+        }
+        
+        function filterModels() {
+            const searchTerm = document.getElementById('model-search').value.toLowerCase();
+            const statusFilter = document.getElementById('status-filter').value;
+            
+            const filteredModels = window.MFGDroneApp.models.filter(model => {
+                const matchesSearch = model.name.toLowerCase().includes(searchTerm);
+                const matchesStatus = !statusFilter || model.status === statusFilter;
+                return matchesSearch && matchesStatus;
+            });
+            
+            populateFilteredModelList(filteredModels);
+        }
+        
+        function populateFilteredModelList(models) {
+            const modelList = document.querySelector('#model-list');
+            if (!modelList) return;
+            
+            const modelsToShow = models || window.MFGDroneApp.models;
+            modelList.innerHTML = modelsToShow.map(model => createModelRow(model)).join('');
+        }
+        
+        function createModelRow(model) {
+            const statusClass = model.status === 'trained' ? 'success' : 
+                               model.status === 'training' ? 'warning' : 'danger';
+            
+            const accuracyDisplay = model.accuracy > 0 ? `${model.accuracy}%` : '学習中...';
+            
+            return `
+                <tr>
+                    <td>
+                        <div class="d-flex align-center gap-10">
+                            <div class="model-icon">🧠</div>
+                            <strong>${model.name}</strong>
+                        </div>
+                    </td>
+                    <td>${model.dataset}</td>
+                    <td>
+                        <div class="d-flex align-center gap-10">
+                            <span>${accuracyDisplay}</span>
+                            ${model.accuracy > 0 ? `
+                                <div class="progress" style="width: 60px; height: 8px;">
+                                    <div class="progress-bar" style="width: ${model.accuracy}%; background: ${getAccuracyColor(model.accuracy)};"></div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </td>
+                    <td>${model.trainingTime}</td>
+                    <td><span class="status status-${statusClass}">${getStatusText(model.status)}</span></td>
+                    <td style="font-size: 12px;">${model.created}</td>
+                    <td>
+                        <div class="btn-group">
+                            ${model.status === 'trained' ? `
+                                <button class="btn btn-primary btn-sm" onclick="useModel('${model.id}')">使用</button>
+                                <button class="btn btn-info btn-sm" onclick="testModel('${model.id}')">テスト</button>
+                            ` : ''}
+                            ${model.status === 'training' ? `
+                                <a href="model-training.html?id=${model.id}" class="btn btn-warning btn-sm">進捗</a>
+                            ` : ''}
+                            <button class="btn btn-secondary btn-sm" onclick="exportModel('${model.id}')">エクスポート</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteModel('${model.id}')">削除</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+        
+        function getAccuracyColor(accuracy) {
+            if (accuracy >= 90) return '#198754';
+            if (accuracy >= 70) return '#ffc107';
+            return '#dc3545';
+        }
+        
+        function getStatusText(status) {
+            const statusMap = {
+                'trained': '学習済み',
+                'training': '学習中',
+                'failed': '失敗'
+            };
+            return statusMap[status] || status.toUpperCase();
+        }
+        
+        function checkTrainingStatus() {
+            const trainingModel = window.MFGDroneApp.models.find(m => m.status === 'training');
+            if (trainingModel) {
+                trainingActive = true;
+                document.getElementById('training-card').style.display = 'block';
+                updateTrainingDisplay(trainingModel);
+            }
+        }
+        
+        function updateTrainingDisplay(model) {
+            document.getElementById('training-model-name').textContent = model.name;
+            const progress = Math.min(trainingProgress, 100);
+            document.getElementById('training-progress').style.width = progress + '%';
+            document.getElementById('training-progress-text').textContent = `エポック ${Math.floor(progress)}/100`;
+            
+            // Update training metrics
+            const hours = Math.floor(trainingProgress * 0.02);
+            const minutes = Math.floor((trainingProgress * 0.02 - hours) * 60);
+            document.getElementById('training-time').textContent = `${hours}時間 ${minutes}分`;
+            
+            const currentAccuracy = Math.min(50 + trainingProgress * 0.5, 95);
+            document.getElementById('current-accuracy').textContent = currentAccuracy.toFixed(1) + '%';
+            
+            const etaMinutes = Math.max(0, Math.floor((100 - trainingProgress) * 0.8));
+            document.getElementById('eta').textContent = etaMinutes > 60 ? 
+                `${Math.floor(etaMinutes / 60)}時間 ${etaMinutes % 60}分` : 
+                `${etaMinutes}分`;
+        }
+        
+        function updateTrainingProgress() {
+            if (trainingActive && trainingProgress < 100) {
+                trainingProgress += Math.random() * 2; // Random progress increment
+                const trainingModel = window.MFGDroneApp.models.find(m => m.status === 'training');
+                if (trainingModel) {
+                    updateTrainingDisplay(trainingModel);
+                    
+                    // Complete training at 100%
+                    if (trainingProgress >= 100) {
+                        completeTraining(trainingModel);
+                    }
+                }
+            }
+        }
+        
+        function completeTraining(model) {
+            trainingActive = false;
+            model.status = 'trained';
+            model.accuracy = 85 + Math.random() * 10; // Random final accuracy
+            model.trainingTime = document.getElementById('training-time').textContent;
+            
+            document.getElementById('training-card').style.display = 'none';
+            populateModelList();
+            updateModelStats();
+            
+            showNotification(`モデル "${model.name}" の学習が完了しました！精度: ${model.accuracy.toFixed(1)}%`, 'success');
+        }
+        
+        function startTraining() {
+            document.getElementById('start-training-modal').style.display = 'flex';
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        function submitTraining() {
+            const modelName = document.getElementById('training-model-name-input').value;
+            const dataset = document.getElementById('training-dataset').value;
+            const epochs = document.getElementById('training-epochs').value;
+            const lr = document.getElementById('training-lr').value;
+            const batchSize = document.getElementById('training-batch').value;
+            
+            if (!modelName || !dataset) {
+                showNotification('モデル名とデータセットは必須です', 'danger');
+                return;
+            }
+            
+            if (trainingActive) {
+                showNotification('既に学習中のモデルがあります', 'warning');
+                return;
+            }
+            
+            const datasetName = document.querySelector(`#training-dataset option[value="${dataset}"]`).textContent;
+            
+            const newModel = {
+                id: 'model_' + Math.random().toString(36).substr(2, 9),
+                name: modelName,
+                dataset: datasetName.split(' (')[0],
+                accuracy: 0,
+                trainingTime: '0分',
+                status: 'training',
+                created: new Date().toLocaleDateString('ja-JP'),
+                epochs: epochs,
+                learningRate: lr,
+                batchSize: batchSize
+            };
+            
+            window.MFGDroneApp.models.push(newModel);
+            trainingActive = true;
+            trainingProgress = 0;
+            
+            document.getElementById('training-card').style.display = 'block';
+            updateTrainingDisplay(newModel);
+            
+            populateModelList();
+            closeModal('start-training-modal');
+            document.getElementById('training-form').reset();
+            
+            showNotification(`モデル "${modelName}" の学習を開始しました`, 'success');
+        }
+        
+        function pauseTraining() {
+            showNotification('学習を一時停止しました', 'warning');
+            // In real app, would pause training
+        }
+        
+        function stopTraining() {
+            if (confirm('学習を停止しますか？進捗は失われます。')) {
+                const trainingModel = window.MFGDroneApp.models.find(m => m.status === 'training');
+                if (trainingModel) {
+                    trainingModel.status = 'failed';
+                    trainingActive = false;
+                    document.getElementById('training-card').style.display = 'none';
+                    populateModelList();
+                    showNotification('学習を停止しました', 'info');
+                }
+            }
+        }
+        
+        function useModel(modelId) {
+            const model = window.MFGDroneApp.models.find(m => m.id === modelId);
+            if (model) {
+                showNotification(`モデル "${model.name}" を使用モードに設定しました`, 'success');
+                // Would redirect to tracking control
+                setTimeout(() => {
+                    window.location.href = 'tracking-control.html?model=' + modelId;
+                }, 1500);
+            }
+        }
+        
+        function testModel(modelId) {
+            const model = window.MFGDroneApp.models.find(m => m.id === modelId);
+            if (model) {
+                showNotification(`モデル "${model.name}" のテストを開始します...`, 'info');
+                // Simulate test
+                setTimeout(() => {
+                    showNotification('テスト完了。精度が確認されました。', 'success');
+                }, 3000);
+            }
+        }
+        
+        function exportModel(modelId) {
+            const model = window.MFGDroneApp.models.find(m => m.id === modelId);
+            if (model) {
+                showNotification(`モデル "${model.name}" をエクスポートしています...`, 'info');
+                setTimeout(() => {
+                    showNotification('エクスポートが完了しました', 'success');
+                }, 2000);
+            }
+        }
+        
+        function deleteModel(modelId) {
+            const model = window.MFGDroneApp.models.find(m => m.id === modelId);
+            if (model && confirm(`モデル "${model.name}" を削除しますか？`)) {
+                const index = window.MFGDroneApp.models.findIndex(m => m.id === modelId);
+                window.MFGDroneApp.models.splice(index, 1);
+                populateModelList();
+                updateModelStats();
+                showNotification(`モデル "${model.name}" が削除されました`, 'info');
+            }
+        }
+        
+        function importModel() {
+            showNotification('モデルインポート機能は開発中です', 'info');
+        }
+        
+        function updateModelStats() {
+            const totalModels = window.MFGDroneApp.models.length;
+            const trainedModels = window.MFGDroneApp.models.filter(m => m.status === 'trained').length;
+            const trainingModels = window.MFGDroneApp.models.filter(m => m.status === 'training').length;
+            
+            const avgAccuracy = window.MFGDroneApp.models
+                .filter(m => m.accuracy > 0)
+                .reduce((sum, m, _, arr) => sum + m.accuracy / arr.length, 0);
+            
+            // Update stat cards
+            const statCards = document.querySelectorAll('.stat-number');
+            if (statCards.length >= 4) {
+                statCards[0].textContent = totalModels;
+                statCards[1].textContent = trainedModels;
+                statCards[2].textContent = trainingModels;
+                statCards[3].textContent = avgAccuracy > 0 ? avgAccuracy.toFixed(1) + '%' : 'N/A';
+            }
+        }
+        
+        function refreshModelData() {
+            updateModelStats();
+            populateModelList();
+        }
+    </script>
+    
+    <style>
+        .model-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        
+        .training-status {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--warning-color);
+        }
+        
+        .training-metrics {
+            margin-top: 15px;
+        }
+        
+        .training-metrics > div > div {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .training-metrics small {
+            color: #6c757d;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .chart-placeholder {
+            display: flex;
+            align-items: end;
+            justify-content: center;
+            gap: 20px;
+            height: 150px;
+            margin-top: 20px;
+        }
+        
+        .chart-bar {
+            width: 80px;
+            background: var(--primary-color);
+            border-radius: 4px 4px 0 0;
+            display: flex;
+            align-items: end;
+            justify-content: center;
+            color: white;
+            font-size: 11px;
+            text-align: center;
+            padding: 5px;
+            position: relative;
+        }
+        
+        .chart-bar span {
+            position: absolute;
+            bottom: 5px;
+            white-space: nowrap;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-toggle {
+                display: block !important;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .btn-group .btn {
+                width: 100%;
+                margin: 2px 0;
+            }
+            
+            .training-metrics > div {
+                grid-template-columns: 1fr 1fr !important;
+            }
+            
+            .chart-placeholder {
+                height: 100px;
+                gap: 10px;
+            }
+            
+            .chart-bar {
+                width: 60px;
+            }
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン - MFGドローン管理システム</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Additional login-specific styles */
+        .login-container {
+            background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .logo-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+        
+        .version-info {
+            text-align: center;
+            margin-top: 20px;
+            color: #6c757d;
+            font-size: 12px;
+        }
+        
+        .demo-credentials {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .demo-credentials h4 {
+            margin-bottom: 10px;
+            color: #1976d2;
+            font-size: 14px;
+        }
+        
+        .demo-credentials p {
+            margin: 5px 0;
+            font-size: 13px;
+            color: #424242;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card fade-in">
+            <div class="login-header">
+                <div class="logo-icon">🚁</div>
+                <h1 class="logo">MFGドローン</h1>
+                <p style="color: #6c757d; margin: 0;">自動追従撮影管理システム</p>
+            </div>
+            
+            <!-- Demo Credentials Info -->
+            <div class="demo-credentials">
+                <h4>📋 デモ用認証情報</h4>
+                <p><strong>ユーザー名:</strong> admin または任意の文字</p>
+                <p><strong>パスワード:</strong> password または任意の文字</p>
+                <p style="font-style: italic; margin-top: 10px;">※これはサンプル画面です。実際の認証は行われません。</p>
+            </div>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username" class="form-label">ユーザー名</label>
+                    <input type="text" id="username" name="username" class="form-control" 
+                           placeholder="ユーザー名を入力" value="admin" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" class="form-label">パスワード</label>
+                    <input type="password" id="password" name="password" class="form-control" 
+                           placeholder="パスワードを入力" value="password" required>
+                </div>
+                
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="remember-me" name="remember" checked>
+                        <span>ログイン状態を保持する</span>
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100">
+                    🔓 システムにログイン
+                </button>
+            </form>
+            
+            <div class="version-info">
+                <p>Version 1.0.0 | Build 2025.07.02</p>
+                <p>© 2025 MFG Drone System. Sample Frontend.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status overlay for demo -->
+    <div id="loading-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+         background: rgba(0, 0, 0, 0.8); z-index: 10000; color: white; 
+         display: flex; align-items: center; justify-content: center; flex-direction: column;">
+        <div style="text-align: center;">
+            <div style="font-size: 2rem; margin-bottom: 20px;">🔄</div>
+            <h2>ログイン中...</h2>
+            <p>システムに接続しています</p>
+            <div class="progress" style="width: 300px; margin-top: 20px;">
+                <div class="progress-bar" id="login-progress" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        // Enhanced login handling with visual feedback
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                showNotification('ユーザー名とパスワードを入力してください', 'warning');
+                return;
+            }
+            
+            // Show loading overlay
+            const overlay = document.getElementById('loading-overlay');
+            const progressBar = document.getElementById('login-progress');
+            overlay.style.display = 'flex';
+            
+            // Simulate login progress
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 20;
+                if (progress > 100) progress = 100;
+                
+                progressBar.style.width = progress + '%';
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        showNotification('ログイン成功！ダッシュボードに移動します...', 'success');
+                        setTimeout(() => {
+                            window.location.href = 'dashboard.html';
+                        }, 1500);
+                    }, 500);
+                }
+            }, 100);
+        });
+        
+        // Auto-focus username field
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('username').focus();
+            
+            // Add enter key handling
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('login-form').dispatchEvent(new Event('submit'));
+                }
+            });
+        });
+        
+        // Quick login buttons for demo
+        function quickLogin(role) {
+            document.getElementById('username').value = role;
+            document.getElementById('password').value = 'password';
+            document.getElementById('login-form').dispatchEvent(new Event('submit'));
+        }
+        
+        // Add demo quick login buttons
+        setTimeout(() => {
+            const demoCredentials = document.querySelector('.demo-credentials');
+            const quickButtons = document.createElement('div');
+            quickButtons.style.marginTop = '10px';
+            quickButtons.innerHTML = `
+                <div style="display: flex; gap: 5px; justify-content: center;">
+                    <button type="button" class="btn btn-info btn-sm" onclick="quickLogin('admin')">
+                        管理者でログイン
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="quickLogin('operator')">
+                        操作者でログイン
+                    </button>
+                </div>
+            `;
+            demoCredentials.appendChild(quickButtons);
+        }, 100);
+    </script>
+</body>
+</html>

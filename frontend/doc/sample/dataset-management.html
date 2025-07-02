@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>データセット管理 - MFGドローン管理システム</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>🚁 MFGドローン</h2>
+                <p style="font-size: 12px; color: #adb5bd; margin: 0;">管理システム v1.0</p>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link">
+                        <i>📊</i> ダッシュボード
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="drone-management.html" class="nav-link">
+                        <i>🚁</i> ドローン管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="dataset-management.html" class="nav-link active">
+                        <i>📁</i> データセット管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="model-management.html" class="nav-link">
+                        <i>🧠</i> モデル管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="tracking-control.html" class="nav-link">
+                        <i>🎯</i> 追跡制御
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="system-monitoring.html" class="nav-link">
+                        <i>⚙️</i> システム監視
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="settings.html" class="nav-link">
+                        <i>🔧</i> 設定
+                    </a>
+                </li>
+                <li class="nav-item" style="border-top: 1px solid #495057; margin-top: 20px; padding-top: 20px;">
+                    <a href="login.html" class="nav-link">
+                        <i>🚪</i> ログアウト
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="d-flex align-center gap-20">
+                    <button class="btn btn-secondary mobile-toggle" style="display: none;">☰</button>
+                    <h1 style="margin: 0; font-size: 24px;">データセット管理</h1>
+                </div>
+                
+                <div class="d-flex align-center gap-20">
+                    <button class="btn btn-success" onclick="createDataset()">
+                        ➕ 新規データセット
+                    </button>
+                    <button class="btn btn-info" onclick="importDataset()">
+                        📥 インポート
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <main class="content">
+                <!-- Dataset Statistics -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 style="margin: 0;">データセット統計</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number">3</div>
+                                <div class="stat-label">データセット数</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">4,200</div>
+                                <div class="stat-label">総画像数</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">2</div>
+                                <div class="stat-label">完了</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">1</div>
+                                <div class="stat-label">進行中</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dataset List -->
+                <div class="card">
+                    <div class="card-header d-flex justify-between align-center">
+                        <h3 style="margin: 0;">データセット一覧</h3>
+                        <div class="d-flex align-center gap-10">
+                            <input type="text" placeholder="データセット名で検索..." class="form-control" 
+                                   style="width: 200px;" id="dataset-search">
+                            <select class="form-control" style="width: 120px;" id="status-filter">
+                                <option value="">全て</option>
+                                <option value="completed">完了</option>
+                                <option value="in_progress">進行中</option>
+                                <option value="draft">下書き</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>データセット名</th>
+                                        <th>説明</th>
+                                        <th>画像数</th>
+                                        <th>ラベル</th>
+                                        <th>ステータス</th>
+                                        <th>作成日</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dataset-list">
+                                    <!-- Populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activities -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 style="margin: 0;">最近のアクティビティ</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="dataset-activities">
+                            <div class="activity-item">
+                                <div class="d-flex justify-between align-center">
+                                    <div>
+                                        <strong>Person Detection v1.0</strong> に50枚の画像が追加されました
+                                    </div>
+                                    <div style="color: #6c757d; font-size: 12px;">
+                                        5分前
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="d-flex justify-between align-center">
+                                    <div>
+                                        <strong>Vehicle Detection</strong> のラベリングが更新されました
+                                    </div>
+                                    <div style="color: #6c757d; font-size: 12px;">
+                                        15分前
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="d-flex justify-between align-center">
+                                    <div>
+                                        <strong>Pet Detection</strong> データセットが完了しました
+                                    </div>
+                                    <div style="color: #6c757d; font-size: 12px;">
+                                        1時間前
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Create Dataset Modal -->
+    <div id="create-dataset-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>新規データセット作成</h3>
+                <button class="modal-close" onclick="closeModal('create-dataset-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="create-dataset-form">
+                    <div class="form-group">
+                        <label class="form-label">データセット名</label>
+                        <input type="text" class="form-control" id="dataset-name" 
+                               placeholder="例: 人物検出 v1.0" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">説明</label>
+                        <textarea class="form-control" id="dataset-description" rows="3" 
+                                  placeholder="データセットの詳細説明..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">対象ラベル（カンマ区切り）</label>
+                        <input type="text" class="form-control" id="dataset-labels" 
+                               placeholder="例: person, car, background" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">カテゴリ</label>
+                        <select class="form-control" id="dataset-category" required>
+                            <option value="">選択してください</option>
+                            <option value="object_detection">物体検出</option>
+                            <option value="classification">分類</option>
+                            <option value="tracking">追跡</option>
+                            <option value="segmentation">セグメンテーション</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('create-dataset-modal')">キャンセル</button>
+                <button class="btn btn-primary" onclick="submitCreateDataset()">作成</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Dataset Modal -->
+    <div id="import-dataset-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>データセットインポート</h3>
+                <button class="modal-close" onclick="closeModal('import-dataset-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="import-options">
+                    <div class="import-option" onclick="selectImportType('file')">
+                        <div class="import-icon">📁</div>
+                        <h4>ファイルから</h4>
+                        <p>ZIP形式のデータセットファイルをアップロード</p>
+                    </div>
+                    <div class="import-option" onclick="selectImportType('folder')">
+                        <div class="import-icon">📂</div>
+                        <h4>フォルダから</h4>
+                        <p>ローカルフォルダからまとめてインポート</p>
+                    </div>
+                    <div class="import-option" onclick="selectImportType('url')">
+                        <div class="import-icon">🌐</div>
+                        <h4>URLから</h4>
+                        <p>外部URLからデータセットをダウンロード</p>
+                    </div>
+                </div>
+                
+                <div id="import-details" style="display: none; margin-top: 20px;">
+                    <div class="form-group">
+                        <label class="form-label">データセット名</label>
+                        <input type="text" class="form-control" id="import-dataset-name" 
+                               placeholder="インポートするデータセット名">
+                    </div>
+                    <div id="file-import" style="display: none;">
+                        <div class="form-group">
+                            <label class="form-label">ファイル選択</label>
+                            <input type="file" class="form-control" accept=".zip,.tar,.tar.gz">
+                        </div>
+                    </div>
+                    <div id="url-import" style="display: none;">
+                        <div class="form-group">
+                            <label class="form-label">データセットURL</label>
+                            <input type="url" class="form-control" placeholder="https://example.com/dataset.zip">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('import-dataset-modal')">キャンセル</button>
+                <button class="btn btn-primary" id="import-submit" style="display: none;" onclick="submitImport()">インポート</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        let filteredDatasets = [];
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            populateDatasetList();
+            setupFilters();
+            updateDatasetStats();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(() => {
+                refreshDatasetData();
+                populateDatasetList();
+            }, 30000);
+        });
+        
+        function setupFilters() {
+            const searchInput = document.getElementById('dataset-search');
+            const statusFilter = document.getElementById('status-filter');
+            
+            searchInput.addEventListener('input', filterDatasets);
+            statusFilter.addEventListener('change', filterDatasets);
+        }
+        
+        function filterDatasets() {
+            const searchTerm = document.getElementById('dataset-search').value.toLowerCase();
+            const statusFilter = document.getElementById('status-filter').value;
+            
+            filteredDatasets = window.MFGDroneApp.datasets.filter(dataset => {
+                const matchesSearch = dataset.name.toLowerCase().includes(searchTerm) ||
+                                    dataset.description.toLowerCase().includes(searchTerm);
+                const matchesStatus = !statusFilter || dataset.status === statusFilter;
+                return matchesSearch && matchesStatus;
+            });
+            
+            populateFilteredDatasetList();
+        }
+        
+        function populateFilteredDatasetList() {
+            const datasetList = document.querySelector('#dataset-list');
+            if (!datasetList) return;
+            
+            const datasetsToShow = filteredDatasets.length > 0 || 
+                                 document.getElementById('dataset-search').value ||
+                                 document.getElementById('status-filter').value ? 
+                                 filteredDatasets : window.MFGDroneApp.datasets;
+            
+            datasetList.innerHTML = datasetsToShow.map(dataset => createDatasetRow(dataset)).join('');
+        }
+        
+        function createDatasetRow(dataset) {
+            const statusClass = dataset.status === 'completed' ? 'success' : 
+                               dataset.status === 'in_progress' ? 'warning' : 'secondary';
+            
+            return `
+                <tr>
+                    <td>
+                        <div class="d-flex align-center gap-10">
+                            <div class="dataset-icon">📁</div>
+                            <strong>${dataset.name}</strong>
+                        </div>
+                    </td>
+                    <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">
+                        ${dataset.description}
+                    </td>
+                    <td>
+                        <div class="d-flex align-center gap-10">
+                            <span>${dataset.imageCount.toLocaleString()}</span>
+                            <span style="font-size: 12px; color: #6c757d;">枚</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="label-tags">
+                            ${dataset.labels.slice(0, 3).map(label => 
+                                `<span class="label-tag">${label}</span>`
+                            ).join('')}
+                            ${dataset.labels.length > 3 ? `<span class="label-tag">+${dataset.labels.length - 3}</span>` : ''}
+                        </div>
+                    </td>
+                    <td><span class="status status-${statusClass}">${getStatusText(dataset.status)}</span></td>
+                    <td style="font-size: 12px;">${dataset.created}</td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="dataset-detail.html?id=${dataset.id}" class="btn btn-primary btn-sm">編集</a>
+                            <button class="btn btn-info btn-sm" onclick="viewDataset('${dataset.id}')">表示</button>
+                            <button class="btn btn-secondary btn-sm" onclick="exportDataset('${dataset.id}')">エクスポート</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteDataset('${dataset.id}')">削除</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+        
+        function getStatusText(status) {
+            const statusMap = {
+                'completed': '完了',
+                'in_progress': '進行中',
+                'draft': '下書き'
+            };
+            return statusMap[status] || status.toUpperCase();
+        }
+        
+        function createDataset() {
+            document.getElementById('create-dataset-modal').style.display = 'flex';
+        }
+        
+        function importDataset() {
+            document.getElementById('import-dataset-modal').style.display = 'flex';
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            // Reset import modal
+            if (modalId === 'import-dataset-modal') {
+                document.getElementById('import-details').style.display = 'none';
+                document.getElementById('import-submit').style.display = 'none';
+            }
+        }
+        
+        function submitCreateDataset() {
+            const name = document.getElementById('dataset-name').value;
+            const description = document.getElementById('dataset-description').value;
+            const labels = document.getElementById('dataset-labels').value;
+            const category = document.getElementById('dataset-category').value;
+            
+            if (!name || !description || !labels || !category) {
+                showNotification('すべての項目を入力してください', 'danger');
+                return;
+            }
+            
+            const newDataset = {
+                id: 'dataset_' + Math.random().toString(36).substr(2, 9),
+                name: name,
+                description: description,
+                imageCount: 0,
+                labels: labels.split(',').map(l => l.trim()),
+                category: category,
+                status: 'draft',
+                created: new Date().toLocaleDateString('ja-JP')
+            };
+            
+            window.MFGDroneApp.datasets.push(newDataset);
+            populateDatasetList();
+            closeModal('create-dataset-modal');
+            
+            // Clear form
+            document.getElementById('create-dataset-form').reset();
+            
+            showNotification(`データセット "${name}" が作成されました`, 'success');
+        }
+        
+        function selectImportType(type) {
+            document.getElementById('import-details').style.display = 'block';
+            document.getElementById('import-submit').style.display = 'block';
+            
+            // Hide all import type specific sections
+            document.getElementById('file-import').style.display = 'none';
+            document.getElementById('url-import').style.display = 'none';
+            
+            // Show selected type
+            if (type === 'file') {
+                document.getElementById('file-import').style.display = 'block';
+            } else if (type === 'url') {
+                document.getElementById('url-import').style.display = 'block';
+            }
+            
+            // Update option appearance
+            document.querySelectorAll('.import-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+        }
+        
+        function submitImport() {
+            const name = document.getElementById('import-dataset-name').value;
+            
+            if (!name) {
+                showNotification('データセット名を入力してください', 'danger');
+                return;
+            }
+            
+            showNotification('データセットインポートを開始しました...', 'info');
+            closeModal('import-dataset-modal');
+            
+            // Simulate import process
+            setTimeout(() => {
+                const importedDataset = {
+                    id: 'dataset_' + Math.random().toString(36).substr(2, 9),
+                    name: name,
+                    description: 'インポートされたデータセット',
+                    imageCount: Math.floor(Math.random() * 1000) + 500,
+                    labels: ['imported_object', 'background'],
+                    status: 'completed',
+                    created: new Date().toLocaleDateString('ja-JP')
+                };
+                
+                window.MFGDroneApp.datasets.push(importedDataset);
+                populateDatasetList();
+                showNotification(`データセット "${name}" のインポートが完了しました`, 'success');
+            }, 3000);
+        }
+        
+        function viewDataset(datasetId) {
+            const dataset = window.MFGDroneApp.datasets.find(d => d.id === datasetId);
+            if (dataset) {
+                showNotification(`データセット "${dataset.name}" を表示します`, 'info');
+                // In real app, would open dataset viewer
+            }
+        }
+        
+        function exportDataset(datasetId) {
+            const dataset = window.MFGDroneApp.datasets.find(d => d.id === datasetId);
+            if (dataset) {
+                showNotification(`データセット "${dataset.name}" をエクスポートしています...`, 'info');
+                // Simulate export
+                setTimeout(() => {
+                    showNotification('エクスポートが完了しました', 'success');
+                }, 2000);
+            }
+        }
+        
+        function deleteDataset(datasetId) {
+            const dataset = window.MFGDroneApp.datasets.find(d => d.id === datasetId);
+            if (dataset && confirm(`データセット "${dataset.name}" を削除しますか？`)) {
+                const index = window.MFGDroneApp.datasets.findIndex(d => d.id === datasetId);
+                window.MFGDroneApp.datasets.splice(index, 1);
+                populateDatasetList();
+                showNotification(`データセット "${dataset.name}" が削除されました`, 'info');
+            }
+        }
+        
+        function updateDatasetStats() {
+            const totalImages = window.MFGDroneApp.datasets.reduce((sum, d) => sum + d.imageCount, 0);
+            const completed = window.MFGDroneApp.datasets.filter(d => d.status === 'completed').length;
+            const inProgress = window.MFGDroneApp.datasets.filter(d => d.status === 'in_progress').length;
+            
+            // Update stat cards if they exist
+            const statCards = document.querySelectorAll('.stat-number');
+            if (statCards.length >= 4) {
+                statCards[0].textContent = window.MFGDroneApp.datasets.length;
+                statCards[1].textContent = totalImages.toLocaleString();
+                statCards[2].textContent = completed;
+                statCards[3].textContent = inProgress;
+            }
+        }
+        
+        function refreshDatasetData() {
+            // Simulate dataset updates
+            window.MFGDroneApp.datasets.forEach(dataset => {
+                if (dataset.status === 'in_progress' && Math.random() < 0.3) {
+                    dataset.imageCount += Math.floor(Math.random() * 10) + 1;
+                }
+            });
+            updateDatasetStats();
+        }
+    </script>
+    
+    <style>
+        .label-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        
+        .label-tag {
+            background: #e9ecef;
+            color: #495057;
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+        
+        .dataset-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        
+        .import-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .import-option {
+            text-align: center;
+            padding: 20px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .import-option:hover,
+        .import-option.selected {
+            border-color: var(--primary-color);
+            background: #f8f9ff;
+        }
+        
+        .import-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .import-option h4 {
+            margin: 10px 0 5px 0;
+            font-size: 16px;
+        }
+        
+        .import-option p {
+            margin: 0;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .activity-item {
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-toggle {
+                display: block !important;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .btn-group .btn {
+                width: 100%;
+                margin: 2px 0;
+            }
+            
+            .import-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .label-tags {
+                max-width: 150px;
+            }
+        }
+    </style>
+</body>
+</html>
