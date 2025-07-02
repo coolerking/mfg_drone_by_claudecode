@@ -8,9 +8,11 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Dict, Any
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+import os
 
 from .core.drone_manager import DroneManager
 from .core.vision_service import VisionService
@@ -171,15 +173,30 @@ app = FastAPI(
     ]
 )
 
-# CORS設定
+# CORS設定 - Phase 5: Enhanced for dashboard
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:8080", "https://localhost:3000", "https://localhost:8080"],
+    allow_origins=[
+        "http://localhost:3000", 
+        "http://localhost:8080", 
+        "https://localhost:3000", 
+        "https://localhost:8080",
+        "http://localhost:8000",  # For dashboard
+        "https://localhost:8000"   # For secure dashboard
+    ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["X-API-Key"]
 )
+
+# Phase 5: Static files for dashboard
+dashboard_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "web_dashboard")
+if os.path.exists(dashboard_path):
+    app.mount("/static", StaticFiles(directory=dashboard_path), name="static")
+    logger.info(f"Dashboard static files mounted from: {dashboard_path}")
+else:
+    logger.warning(f"Dashboard directory not found: {dashboard_path}")
 
 # Phase 4: Security middleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -277,11 +294,33 @@ async def health_check(request):
             "performance_service": performance_service is not None,
             "monitoring_active": alert_service.monitoring_active if alert_service else False
         },
-        "phase": "Phase 4 - Production Ready",
+        "phase": "Phase 5 - Web Dashboard Ready",
         "security_enabled": True
     }
     
     return health_status
+
+
+# Phase 5: Dashboard routes
+@app.get("/dashboard", response_class=HTMLResponse)
+@limiter.limit("50/minute")
+async def dashboard(request: Request):
+    """ダッシュボードHTMLページを提供"""
+    dashboard_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "web_dashboard", "index.html")
+    
+    if os.path.exists(dashboard_file):
+        with open(dashboard_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return HTMLResponse(content=content)
+    else:
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+
+
+@app.get("/ui", response_class=HTMLResponse)
+@limiter.limit("50/minute") 
+async def dashboard_ui(request: Request):
+    """ダッシュボードUI（/dashboardのエイリアス）"""
+    return await dashboard(request)
 
 
 # エラーハンドラー
