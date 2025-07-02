@@ -13,7 +13,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .core.drone_manager import DroneManager
+from .core.vision_service import VisionService
+from .core.dataset_service import DatasetService
+from .core.model_service import ModelService
+from .core.system_service import SystemService
+
 from .api.drones import router as drones_router
+from .api.vision import router as vision_router, initialize_vision_router
+from .api.models import router as models_router, initialize_models_router
+from .api.dashboard import router as dashboard_router, initialize_dashboard_router
 from .api.websocket import (
     manager as websocket_manager, 
     WebSocketHandler, 
@@ -29,17 +37,41 @@ logger = logging.getLogger(__name__)
 
 # グローバル管理インスタンス
 drone_manager: DroneManager = None
+vision_service: VisionService = None
+dataset_service: DatasetService = None
+model_service: ModelService = None
+system_service: SystemService = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """アプリケーションライフサイクル管理"""
-    global drone_manager
+    global drone_manager, vision_service, dataset_service, model_service, system_service
     
     # 起動時処理
     logger.info("Starting MFG Drone Backend API Server...")
+    
+    # Initialize all services
     drone_manager = DroneManager()
     logger.info("Drone Manager initialized")
+    
+    vision_service = VisionService()
+    logger.info("Vision Service initialized")
+    
+    dataset_service = DatasetService()
+    logger.info("Dataset Service initialized")
+    
+    model_service = ModelService()
+    logger.info("Model Service initialized")
+    
+    system_service = SystemService()
+    logger.info("System Service initialized")
+    
+    # Initialize API routers with service instances
+    initialize_vision_router(vision_service, dataset_service)
+    initialize_models_router(model_service, dataset_service)
+    initialize_dashboard_router(system_service, drone_manager, vision_service, model_service, dataset_service)
+    logger.info("API routers initialized")
     
     # WebSocket状態ブロードキャスターを開始
     status_broadcaster_task = asyncio.create_task(start_status_broadcaster(drone_manager))
@@ -57,8 +89,18 @@ async def lifespan(app: FastAPI):
     except asyncio.CancelledError:
         pass
     
+    # Shutdown all services
+    if vision_service:
+        await vision_service.shutdown()
+    if dataset_service:
+        await dataset_service.shutdown()
+    if model_service:
+        await model_service.shutdown()
+    if system_service:
+        await system_service.shutdown()
     if drone_manager:
         await drone_manager.shutdown()
+    
     logger.info("Server shutdown complete")
 
 
@@ -102,6 +144,9 @@ app.add_middleware(
 
 # APIルーター登録
 app.include_router(drones_router, prefix="/api", tags=["drones"])
+app.include_router(vision_router, prefix="/api", tags=["vision"])
+app.include_router(models_router, prefix="/api", tags=["models"])
+app.include_router(dashboard_router, prefix="/api", tags=["dashboard"])
 
 # WebSocketエンドポイント
 @app.websocket("/ws")
