@@ -257,7 +257,7 @@ async def get_drone_status(
         raise HTTPException(status_code=500, detail="ドローン状態の取得に失敗しました")
 
 
-# カメラ関連エンドポイント（基本実装のみ）
+# カメラ関連エンドポイント（完全実装）
 @router.post("/drones/{drone_id}/camera/stream/start", response_model=SuccessResponse)
 async def start_camera_stream(
     drone_id: str = Path(..., description="ドローンID", regex="^[a-zA-Z0-9_-]+$"),
@@ -269,11 +269,17 @@ async def start_camera_stream(
     ドローンのカメラストリーミングを開始します。
     """
     try:
-        # 基本実装（将来のフェーズで拡張）
-        logger.info(f"Camera stream start requested for drone {drone_id}")
-        return SuccessResponse(
-            message=f"ドローン {drone_id} のカメラストリーミングを開始しました"
-        )
+        result = await drone_manager.start_camera_stream(drone_id)
+        logger.info(f"Camera stream started for drone {drone_id}")
+        return result
+    except ValueError as e:
+        error_msg = str(e)
+        if "not found" in error_msg:
+            raise HTTPException(status_code=404, detail="指定されたドローンが見つかりません")
+        elif "not connected" in error_msg:
+            raise HTTPException(status_code=400, detail="ドローンが接続されていません")
+        else:
+            raise HTTPException(status_code=503, detail=error_msg)
     except Exception as e:
         logger.error(f"Error starting camera stream for drone {drone_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="カメラストリーミング開始に失敗しました")
@@ -290,11 +296,17 @@ async def stop_camera_stream(
     ドローンのカメラストリーミングを停止します。
     """
     try:
-        # 基本実装（将来のフェーズで拡張）
-        logger.info(f"Camera stream stop requested for drone {drone_id}")
-        return SuccessResponse(
-            message=f"ドローン {drone_id} のカメラストリーミングを停止しました"
-        )
+        result = await drone_manager.stop_camera_stream(drone_id)
+        logger.info(f"Camera stream stopped for drone {drone_id}")
+        return result
+    except ValueError as e:
+        error_msg = str(e)
+        if "not found" in error_msg:
+            raise HTTPException(status_code=404, detail="指定されたドローンが見つかりません")
+        elif "not connected" in error_msg:
+            raise HTTPException(status_code=400, detail="ドローンが接続されていません")
+        else:
+            raise HTTPException(status_code=503, detail=error_msg)
     except Exception as e:
         logger.error(f"Error stopping camera stream for drone {drone_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="カメラストリーミング停止に失敗しました")
@@ -311,30 +323,17 @@ async def take_photo(
     ドローンで写真を撮影します。
     """
     try:
-        # 基本実装（将来のフェーズで拡張）
-        from datetime import datetime
-        from uuid import uuid4
-        
-        photo_id = str(uuid4())
-        timestamp = datetime.now()
-        filename = f"drone_photo_{timestamp.strftime('%Y%m%d_%H%M%S')}.jpg"
-        
-        photo = Photo(
-            id=photo_id,
-            filename=filename,
-            path=f"/photos/{filename}",
-            timestamp=timestamp,
-            drone_id=drone_id,
-            metadata={
-                "resolution": "1280x720",
-                "format": "JPEG",
-                "size_bytes": 245760
-            }
-        )
-        
-        logger.info(f"Photo taken for drone {drone_id}: {photo_id}")
+        photo = await drone_manager.capture_photo(drone_id)
+        logger.info(f"Photo captured for drone {drone_id}: {photo.id}")
         return photo
-        
+    except ValueError as e:
+        error_msg = str(e)
+        if "not found" in error_msg:
+            raise HTTPException(status_code=404, detail="指定されたドローンが見つかりません")
+        elif "not connected" in error_msg:
+            raise HTTPException(status_code=400, detail="ドローンが接続されていません")
+        else:
+            raise HTTPException(status_code=503, detail=error_msg)
     except Exception as e:
-        logger.error(f"Error taking photo for drone {drone_id}: {str(e)}")
+        logger.error(f"Error capturing photo for drone {drone_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="写真撮影に失敗しました")

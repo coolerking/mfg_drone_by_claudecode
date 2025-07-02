@@ -13,8 +13,9 @@ from uuid import uuid4
 from ...src.core.drone_simulator import (
     DroneSimulator, MultiDroneSimulator, DroneState, Vector3D
 )
-from ..models.drone_models import Drone, DroneStatus, Attitude
+from ..models.drone_models import Drone, DroneStatus, Attitude, Photo
 from ..models.common_models import SuccessResponse, ErrorResponse
+from .camera_service import CameraService
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,9 @@ class DroneManager:
         self.multi_drone_simulator = MultiDroneSimulator(space_bounds)
         self.connected_drones: Dict[str, DroneSimulator] = {}
         self.drone_info: Dict[str, Drone] = {}
+        
+        # カメラサービスを初期化
+        self.camera_service = CameraService()
         
         # ダミードローンを自動生成
         self._initialize_dummy_drones()
@@ -290,9 +294,60 @@ class DroneManager:
         
         return self.connected_drones[drone_id]
     
+    # カメラ関連メソッド
+    async def start_camera_stream(self, drone_id: str) -> SuccessResponse:
+        """カメラストリーミングを開始"""
+        # ドローンが接続されているかチェック
+        self._get_connected_drone(drone_id)
+        
+        try:
+            result = await self.camera_service.start_camera_stream(drone_id)
+            logger.info(f"Camera stream started for drone {drone_id}")
+            return SuccessResponse(
+                message=f"ドローン {drone_id} のカメラストリーミングを開始しました"
+            )
+        except Exception as e:
+            logger.error(f"Error starting camera stream for drone {drone_id}: {e}")
+            raise ValueError(f"カメラストリーミング開始に失敗しました: {str(e)}")
+    
+    async def stop_camera_stream(self, drone_id: str) -> SuccessResponse:
+        """カメラストリーミングを停止"""
+        # ドローンが接続されているかチェック
+        self._get_connected_drone(drone_id)
+        
+        try:
+            result = await self.camera_service.stop_camera_stream(drone_id)
+            logger.info(f"Camera stream stopped for drone {drone_id}")
+            return SuccessResponse(
+                message=f"ドローン {drone_id} のカメラストリーミングを停止しました"
+            )
+        except Exception as e:
+            logger.error(f"Error stopping camera stream for drone {drone_id}: {e}")
+            raise ValueError(f"カメラストリーミング停止に失敗しました: {str(e)}")
+    
+    async def capture_photo(self, drone_id: str) -> Photo:
+        """写真を撮影"""
+        # ドローンが接続されているかチェック
+        self._get_connected_drone(drone_id)
+        
+        try:
+            photo = await self.camera_service.capture_photo(drone_id)
+            logger.info(f"Photo captured for drone {drone_id}: {photo.id}")
+            return photo
+        except Exception as e:
+            logger.error(f"Error capturing photo for drone {drone_id}: {e}")
+            raise ValueError(f"写真撮影に失敗しました: {str(e)}")
+    
+    async def get_camera_stream_info(self, drone_id: str) -> Optional[dict]:
+        """カメラストリーム情報を取得"""
+        return await self.camera_service.get_stream_info(drone_id)
+
     async def shutdown(self) -> None:
         """シャットダウン処理"""
         logger.info("Shutting down DroneManager...")
+        
+        # カメラサービスをシャットダウン
+        await self.camera_service.shutdown()
         
         # 全ドローンのシミュレーションを停止
         for drone_id in list(self.connected_drones.keys()):
