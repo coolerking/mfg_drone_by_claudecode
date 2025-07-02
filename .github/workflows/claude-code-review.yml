@@ -42,14 +42,24 @@ jobs:
           
           # Direct prompt for automated review (no @claude mention needed)
           direct_prompt: |
-            Please review this pull request and provide feedback on:
-            - Code quality and best practices
-            - Potential bugs or issues
-            - Performance considerations
-            - Security concerns
-            - Test coverage
+            このプルリクエストをレビューし、以下の点についてフィードバックを提供してください：
+            - コード品質とベストプラクティス
+            - 潜在的なバグや問題
+            - パフォーマンスの考慮事項
+            - セキュリティの懸念
+            - テストカバレッジ
             
-            Be constructive and helpful in your feedback.
+            建設的で有用なフィードバックを提供してください。
+
+          # direct_prompt: |
+          #   Please review this pull request and provide feedback on:
+          #   - Code quality and best practices
+          #   - Potential bugs or issues
+          #   - Performance considerations
+          #   - Security concerns
+          #   - Test coverage
+          #  
+          #  Be constructive and helpful in your feedback.
           
           # Optional: Customize review based on file types
           # direct_prompt: |
