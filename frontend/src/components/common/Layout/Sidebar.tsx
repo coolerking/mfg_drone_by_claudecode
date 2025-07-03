@@ -9,6 +9,9 @@ import {
   Typography,
   Divider,
   Button,
+  Badge,
+  Avatar,
+  Chip,
 } from '@mui/material'
 import {
   Dashboard as DashboardIcon,
@@ -19,15 +22,26 @@ import {
   Monitoring as MonitoringIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
+  Person as PersonIcon,
 } from '@mui/icons-material'
 
 import { useAuth } from '../../../hooks/useAuth'
+import { StatusBadge, NotificationBadge } from '../StatusBadge'
 
 interface SidebarProps {
   onNavigate?: () => void
 }
 
-const navigation = [
+interface NavigationItem {
+  name: string
+  path: string
+  icon: React.ComponentType
+  badge?: number
+  status?: 'normal' | 'warning' | 'error'
+}
+
+// Demo data - in real app, this would come from API/state
+const getNavigationData = (): NavigationItem[] => [
   {
     name: 'ダッシュボード',
     path: '/dashboard',
@@ -37,26 +51,33 @@ const navigation = [
     name: 'ドローン管理',
     path: '/drones',
     icon: DroneIcon,
+    badge: 3, // number of connected drones
+    status: 'normal',
   },
   {
     name: 'データセット管理',
     path: '/datasets',
     icon: DatasetIcon,
+    badge: 5, // number of datasets
   },
   {
     name: 'モデル管理',
     path: '/models',
     icon: ModelIcon,
+    badge: 2, // number of trained models
   },
   {
     name: '追跡制御',
     path: '/tracking',
     icon: TrackingIcon,
+    status: 'normal', // tracking status
   },
   {
     name: 'システム監視',
     path: '/monitoring',
     icon: MonitoringIcon,
+    badge: 1, // number of alerts
+    status: 'warning',
   },
   {
     name: '設定',
@@ -69,6 +90,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const navigation = getNavigationData()
 
   const handleNavigate = (path: string) => {
     navigate(path)
@@ -91,6 +113,19 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         <Typography variant="caption" color="text.secondary">
           管理システム v1.0
         </Typography>
+        
+        {/* System status indicator */}
+        <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <StatusBadge 
+            status="online" 
+            variant="dot" 
+            size="small"
+            pulse
+          />
+          <Typography variant="caption" color="text.secondary">
+            システム正常
+          </Typography>
+        </Box>
       </Box>
 
       {/* Navigation */}
@@ -117,13 +152,37 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                       '& .MuiListItemIcon-root': {
                         color: 'white',
                       },
+                      '& .MuiBadge-badge': {
+                        backgroundColor: 'white',
+                        color: 'primary.main',
+                      },
                     },
                   }}
                 >
                   <ListItemIcon>
-                    <Icon />
+                    {item.badge !== undefined ? (
+                      <NotificationBadge count={item.badge}>
+                        <Icon />
+                      </NotificationBadge>
+                    ) : (
+                      <Icon />
+                    )}
                   </ListItemIcon>
-                  <ListItemText primary={item.name} />
+                  
+                  <ListItemText 
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Typography>{item.name}</Typography>
+                        {item.status && item.status !== 'normal' && (
+                          <StatusBadge 
+                            status={item.status === 'warning' ? 'warning' : 'error'}
+                            variant="dot"
+                            size="small"
+                          />
+                        )}
+                      </Box>
+                    }
+                  />
                 </ListItemButton>
               </ListItem>
             )
@@ -134,20 +193,60 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       {/* User info and logout */}
       <Box sx={{ p: 2 }}>
         <Divider sx={{ mb: 2 }} />
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="body2" color="text.secondary">
-            ログイン中
-          </Typography>
-          <Typography variant="subtitle2" fontWeight="bold">
-            {user?.username || '管理者'}
-          </Typography>
+        
+        {/* Enhanced user profile section */}
+        <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Avatar sx={{ bgcolor: 'primary.main' }}>
+            <PersonIcon />
+          </Avatar>
+          <Box sx={{ flexGrow: 1 }}>
+            <Typography variant="subtitle2" fontWeight="bold">
+              {user?.username || '管理者'}
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <StatusBadge 
+                status="online" 
+                variant="dot" 
+                size="small"
+              />
+              <Typography variant="caption" color="text.secondary">
+                オンライン
+              </Typography>
+            </Box>
+          </Box>
         </Box>
+
+        {/* Quick stats */}
+        <Box sx={{ mb: 3, display: 'flex', gap: 1 }}>
+          <Chip
+            label="3台接続"
+            size="small"
+            color="success"
+            variant="outlined"
+          />
+          <Chip
+            label="1件アラート"
+            size="small"
+            color="warning"
+            variant="outlined"
+          />
+        </Box>
+
         <Button
           fullWidth
           variant="outlined"
           startIcon={<LogoutIcon />}
           onClick={handleLogout}
           size="small"
+          sx={{
+            borderColor: 'grey.300',
+            color: 'text.secondary',
+            '&:hover': {
+              borderColor: 'error.main',
+              color: 'error.main',
+              backgroundColor: 'error.light',
+            },
+          }}
         >
           ログアウト
         </Button>
