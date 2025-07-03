@@ -1,60 +1,94 @@
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import type { RootState, AppDispatch } from '../store'
-import { loginStart, loginSuccess, loginFailure, setAuthenticated } from '../store/slices/authSlice'
+import type { LoginCredentials } from '../types/common'
+import { 
+  loginUser, 
+  validateToken, 
+  refreshToken,
+  logout as logoutAction, 
+  clearError 
+} from '../store/slices/authSlice'
 
 export const useAuth = () => {
   const dispatch = useDispatch<AppDispatch>()
-  const { user, token, isAuthenticated, isLoading } = useSelector(
+  const { user, tokens, isAuthenticated, isLoading, error } = useSelector(
     (state: RootState) => state.auth
   )
 
+  // Validate existing token on app load
   useEffect(() => {
-    // Check for existing token on app load
-    const storedToken = localStorage.getItem('auth_token')
-    if (storedToken) {
-      // In a real app, you would validate the token with the server
-      // For now, we'll just mark as authenticated
-      dispatch(setAuthenticated(true))
-    } else {
-      dispatch(setAuthenticated(false))
+    if (tokens?.accessToken && !isAuthenticated) {
+      dispatch(validateToken())
+    } else if (!tokens?.accessToken) {
+      // No token, mark as not authenticated
+      dispatch(logoutAction())
+    }
+  }, [dispatch, tokens, isAuthenticated])
+
+  // Auto-refresh token when it's close to expiring
+  useEffect(() => {
+    if (!tokens?.expiresAt || !isAuthenticated) return
+
+    const timeUntilExpiry = tokens.expiresAt - Date.now()
+    const refreshThreshold = 5 * 60 * 1000 // 5 minutes before expiry
+
+    if (timeUntilExpiry <= refreshThreshold && timeUntilExpiry > 0) {
+      dispatch(refreshToken())
+    }
+
+    // Set up timer to refresh token
+    const refreshTimer = setTimeout(() => {
+      if (isAuthenticated && tokens?.refreshToken) {
+        dispatch(refreshToken())
+      }
+    }, Math.max(timeUntilExpiry - refreshThreshold, 0))
+
+    return () => clearTimeout(refreshTimer)
+  }, [dispatch, tokens, isAuthenticated])
+
+  const login = useCallback(async (credentials: LoginCredentials) => {
+    try {
+      const result = await dispatch(loginUser(credentials))
+      
+      if (loginUser.fulfilled.match(result)) {
+        return { success: true }
+      } else {
+        return { 
+          success: false, 
+          error: result.payload || 'Login failed' 
+        }
+      }
+    } catch (error) {
+      return { 
+        success: false, 
+        error: 'Login failed' 
+      }
     }
   }, [dispatch])
 
-  const login = async (username: string, password: string) => {
-    dispatch(loginStart())
-    
-    try {
-      // Mock login for demo purposes
-      // In a real app, this would be an API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const mockUser = {
-        id: '1',
-        username,
-        role: 'admin' as const,
-      }
-      
-      const mockToken = 'mock-jwt-token-' + Date.now()
-      
-      dispatch(loginSuccess({ user: mockUser, token: mockToken }))
-      return { success: true }
-    } catch (error) {
-      dispatch(loginFailure())
-      return { success: false, error: 'Login failed' }
-    }
-  }
+  const logout = useCallback(() => {
+    dispatch(logoutAction())
+  }, [dispatch])
 
-  const logout = () => {
-    dispatch(loginFailure())
-  }
+  const clearAuthError = useCallback(() => {
+    dispatch(clearError())
+  }, [dispatch])
+
+  const isTokenValid = useCallback(() => {
+    if (!tokens?.accessToken || !tokens?.expiresAt) return false
+    return Date.now() < tokens.expiresAt
+  }, [tokens])
 
   return {
     user,
-    token,
+    tokens,
     isAuthenticated,
     isLoading,
+    error,
     login,
     logout,
+    clearError: clearAuthError,
+    isTokenValid,
   }
 }
