@@ -87,3 +87,28 @@ export interface FlightLog {
   commands: DroneCommand[]
   status: 'active' | 'completed' | 'aborted' | 'error'
 }
+
+export interface FlightPlan {
+  id?: string
+  name: string
+  waypoints: Waypoint[]
+  settings: FlightSettings
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface Waypoint {
+  id: string
+  position: Position3D
+  action?: DroneCommandType
+  parameters?: DroneCommandParameters
+  waitTime?: number
+}
+
+export interface FlightSettings {
+  speed: number
+  altitude: number
+  returnToHome: boolean
+  emergencyLanding: boolean
+  batteryThreshold: number
+}
