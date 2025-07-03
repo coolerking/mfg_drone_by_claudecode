@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ダッシュボード - MFGドローン管理システム</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>🚁 MFGドローン</h2>
+                <p style="font-size: 12px; color: #adb5bd; margin: 0;">管理システム v1.0</p>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link active">
+                        <i>📊</i> ダッシュボード
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="drone-management.html" class="nav-link">
+                        <i>🚁</i> ドローン管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="dataset-management.html" class="nav-link">
+                        <i>📁</i> データセット管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="model-management.html" class="nav-link">
+                        <i>🧠</i> モデル管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="tracking-control.html" class="nav-link">
+                        <i>🎯</i> 追跡制御
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="system-monitoring.html" class="nav-link">
+                        <i>⚙️</i> システム監視
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="settings.html" class="nav-link">
+                        <i>🔧</i> 設定
+                    </a>
+                </li>
+                <li class="nav-item" style="border-top: 1px solid #495057; margin-top: 20px; padding-top: 20px;">
+                    <a href="login.html" class="nav-link">
+                        <i>🚪</i> ログアウト
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="d-flex align-center gap-20">
+                    <button class="btn btn-secondary mobile-toggle" style="display: none;">☰</button>
+                    <h1 style="margin: 0; font-size: 24px;">ダッシュボード</h1>
+                </div>
+                
+                <div class="d-flex align-center gap-20">
+                    <div class="d-flex align-center gap-10">
+                        <span style="color: #6c757d;">最終更新:</span>
+                        <span id="last-update">2025-07-02 23:41:00</span>
+                    </div>
+                    <div class="d-flex align-center gap-10">
+                        <span style="color: #6c757d;">ユーザー:</span>
+                        <strong>管理者</strong>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <main class="content">
+                <!-- System Status Overview -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="stat-drones">3</div>
+                        <div class="stat-label">接続ドローン数</div>
+                        <div style="margin-top: 10px;">
+                            <span class="status status-online">2 オンライン</span>
+                            <span class="status status-offline">1 オフライン</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-number" id="stat-datasets">3</div>
+                        <div class="stat-label">データセット数</div>
+                        <div style="margin-top: 10px;">
+                            <span class="status status-success">2 完了</span>
+                            <span class="status status-warning">1 進行中</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-number" id="stat-models">3</div>
+                        <div class="stat-label">学習済みモデル</div>
+                        <div style="margin-top: 10px;">
+                            <span class="status status-success">2 完了</span>
+                            <span class="status status-warning">1 学習中</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-number" id="stat-tracking">0</div>
+                        <div class="stat-label">アクティブ追跡</div>
+                        <div style="margin-top: 10px;">
+                            <span class="status status-offline">停止中</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Performance -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 style="margin: 0;">システムパフォーマンス</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+                            <div>
+                                <div class="d-flex justify-between align-center mb-10">
+                                    <span>CPU使用率</span>
+                                    <span class="percentage" id="cpu-percentage">45%</span>
+                                </div>
+                                <div class="progress" id="cpu-usage">
+                                    <div class="progress-bar" style="width: 45%"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="d-flex justify-between align-center mb-10">
+                                    <span>メモリ使用率</span>
+                                    <span class="percentage" id="memory-percentage">67%</span>
+                                </div>
+                                <div class="progress" id="memory-usage">
+                                    <div class="progress-bar" style="width: 67%"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="d-flex justify-between align-center mb-10">
+                                    <span>ディスク使用率</span>
+                                    <span class="percentage" id="disk-percentage">23%</span>
+                                </div>
+                                <div class="progress" id="disk-usage">
+                                    <div class="progress-bar" style="width: 23%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Drones -->
+                <div class="card">
+                    <div class="card-header d-flex justify-between align-center">
+                        <h3 style="margin: 0;">アクティブドローン</h3>
+                        <a href="drone-management.html" class="btn btn-primary">すべて表示</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>ドローン名</th>
+                                        <th>ステータス</th>
+                                        <th>バッテリー</th>
+                                        <th>高度</th>
+                                        <th>温度</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="active-drones">
+                                    <tr>
+                                        <td>Tello EDU - Alpha</td>
+                                        <td><span class="status status-online">ONLINE</span></td>
+                                        <td>
+                                            <div class="d-flex align-center gap-10">
+                                                <span>85%</span>
+                                                <div class="progress" style="width: 60px; height: 8px;">
+                                                    <div class="progress-bar" style="width: 85%; background: #198754;"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>1.2m</td>
+                                        <td>23.5°C</td>
+                                        <td>
+                                            <a href="drone-detail.html?id=drone_001" class="btn btn-info btn-sm">制御</a>
+                                            <a href="camera-video.html?id=drone_001" class="btn btn-secondary btn-sm">カメラ</a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Tello EDU - Gamma</td>
+                                        <td><span class="status status-warning">WARNING</span></td>
+                                        <td>
+                                            <div class="d-flex align-center gap-10">
+                                                <span>15%</span>
+                                                <div class="progress" style="width: 60px; height: 8px;">
+                                                    <div class="progress-bar" style="width: 15%; background: #dc3545;"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>2.5m</td>
+                                        <td>28.2°C</td>
+                                        <td>
+                                            <a href="drone-detail.html?id=drone_003" class="btn btn-warning btn-sm">制御</a>
+                                            <a href="camera-video.html?id=drone_003" class="btn btn-secondary btn-sm">カメラ</a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 style="margin: 0;">最近のアクティビティ</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="recent-activity">
+                            <div class="activity-item info">
+                                <span class="time">23:41</span>
+                                <span class="action">ドローン Alpha が接続されました</span>
+                            </div>
+                            <div class="activity-item success">
+                                <span class="time">23:40</span>
+                                <span class="action">モデル学習が完了しました: PersonTracker_v2.3</span>
+                            </div>
+                            <div class="activity-item info">
+                                <span class="time">23:35</span>
+                                <span class="action">データセットがアップロードされました: Vehicle Detection</span>
+                            </div>
+                            <div class="activity-item warning">
+                                <span class="time">23:30</span>
+                                <span class="action">ドローン Gamma のバッテリー残量が低下しています</span>
+                            </div>
+                            <div class="activity-item success">
+                                <span class="time">23:25</span>
+                                <span class="action">追跡セッションが開始されました</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 style="margin: 0;">クイックアクション</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                            <a href="drone-management.html" class="btn btn-primary">
+                                🚁 ドローン接続
+                            </a>
+                            <a href="dataset-management.html" class="btn btn-info">
+                                📁 データセット作成
+                            </a>
+                            <a href="model-management.html" class="btn btn-success">
+                                🧠 モデル学習開始
+                            </a>
+                            <a href="tracking-control.html" class="btn btn-warning">
+                                🎯 追跡開始
+                            </a>
+                            <a href="camera-video.html" class="btn btn-secondary">
+                                📹 ライブ映像
+                            </a>
+                            <a href="system-monitoring.html" class="btn btn-danger">
+                                ⚙️ システム監視
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        // Additional dashboard-specific functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update timestamp every minute
+            setInterval(updateTimestamp, 60000);
+            
+            // Auto-refresh data every 30 seconds
+            setInterval(refreshDashboardData, 30000);
+            
+            // Initialize real-time updates
+            initializeRealTimeUpdates();
+        });
+        
+        function updateTimestamp() {
+            const now = new Date();
+            const timestamp = now.toLocaleString('ja-JP', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('last-update').textContent = timestamp;
+        }
+        
+        function refreshDashboardData() {
+            // Simulate data refresh
+            const cpuPercentage = Math.floor(Math.random() * 30) + 30;
+            const memoryPercentage = Math.floor(Math.random() * 40) + 40;
+            const diskPercentage = Math.floor(Math.random() * 20) + 15;
+            
+            updateProgressBar('cpu-usage', cpuPercentage);
+            updateProgressBar('memory-usage', memoryPercentage);
+            updateProgressBar('disk-usage', diskPercentage);
+            
+            document.getElementById('cpu-percentage').textContent = cpuPercentage + '%';
+            document.getElementById('memory-percentage').textContent = memoryPercentage + '%';
+            document.getElementById('disk-percentage').textContent = diskPercentage + '%';
+            
+            updateTimestamp();
+        }
+        
+        function initializeRealTimeUpdates() {
+            // Simulate real-time activity updates
+            const activities = [
+                { action: 'ドローンの状態が更新されました', type: 'info' },
+                { action: 'バッテリー残量が更新されました', type: 'warning' },
+                { action: '新しい学習データが追加されました', type: 'success' },
+                { action: 'システムパフォーマンスが最適化されました', type: 'info' },
+                { action: 'カメラ映像の品質が向上しました', type: 'success' }
+            ];
+            
+            setInterval(() => {
+                if (Math.random() < 0.3) { // 30% chance of new activity
+                    const activity = activities[Math.floor(Math.random() * activities.length)];
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+                    
+                    addNewActivity(timeStr, activity.action, activity.type);
+                }
+            }, 10000); // Every 10 seconds
+        }
+        
+        function addNewActivity(time, action, type) {
+            const activityContainer = document.getElementById('recent-activity');
+            const newActivity = document.createElement('div');
+            newActivity.className = `activity-item ${type}`;
+            newActivity.innerHTML = `
+                <span class="time">${time}</span>
+                <span class="action">${action}</span>
+            `;
+            
+            // Add to top of the list
+            activityContainer.insertBefore(newActivity, activityContainer.firstChild);
+            
+            // Remove oldest activity if more than 10
+            const activities = activityContainer.querySelectorAll('.activity-item');
+            if (activities.length > 10) {
+                activities[activities.length - 1].remove();
+            }
+            
+            // Add fade-in animation
+            newActivity.classList.add('fade-in');
+        }
+        
+        function updateProgressBar(containerId, percentage) {
+            const container = document.getElementById(containerId);
+            const progressBar = container.querySelector('.progress-bar');
+            if (progressBar) {
+                progressBar.style.width = percentage + '%';
+                
+                // Update color based on percentage
+                if (percentage > 80) {
+                    progressBar.style.background = '#dc3545'; // Red
+                } else if (percentage > 60) {
+                    progressBar.style.background = '#ffc107'; // Yellow
+                } else {
+                    progressBar.style.background = '#0d6efd'; // Blue
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .activity-item .time {
+            font-weight: 600;
+            color: #6c757d;
+            min-width: 50px;
+        }
+        
+        .activity-item .action {
+            flex: 1;
+        }
+        
+        .activity-item.info .time { color: #0dcaf0; }
+        .activity-item.success .time { color: #198754; }
+        .activity-item.warning .time { color: #ffc107; }
+        .activity-item.danger .time { color: #dc3545; }
+        
+        .table-responsive {
+            overflow-x: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-toggle {
+                display: block !important;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .header h1 {
+                font-size: 18px !important;
+            }
+        }
+    </style>
+</body>
+</html>

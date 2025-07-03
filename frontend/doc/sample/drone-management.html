@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ドローン管理 - MFGドローン管理システム</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>🚁 MFGドローン</h2>
+                <p style="font-size: 12px; color: #adb5bd; margin: 0;">管理システム v1.0</p>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link">
+                        <i>📊</i> ダッシュボード
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="drone-management.html" class="nav-link active">
+                        <i>🚁</i> ドローン管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="dataset-management.html" class="nav-link">
+                        <i>📁</i> データセット管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="model-management.html" class="nav-link">
+                        <i>🧠</i> モデル管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="tracking-control.html" class="nav-link">
+                        <i>🎯</i> 追跡制御
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="system-monitoring.html" class="nav-link">
+                        <i>⚙️</i> システム監視
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="settings.html" class="nav-link">
+                        <i>🔧</i> 設定
+                    </a>
+                </li>
+                <li class="nav-item" style="border-top: 1px solid #495057; margin-top: 20px; padding-top: 20px;">
+                    <a href="login.html" class="nav-link">
+                        <i>🚪</i> ログアウト
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="d-flex align-center gap-20">
+                    <button class="btn btn-secondary mobile-toggle" style="display: none;">☰</button>
+                    <h1 style="margin: 0; font-size: 24px;">ドローン管理</h1>
+                </div>
+                
+                <div class="d-flex align-center gap-20">
+                    <button class="btn btn-primary" onclick="scanForDrones()">
+                        🔍 ドローン検索
+                    </button>
+                    <button class="btn btn-success" onclick="addDrone()">
+                        ➕ ドローン追加
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <main class="content">
+                <!-- Connection Status -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 style="margin: 0;">接続状況</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number" style="color: #198754;">2</div>
+                                <div class="stat-label">オンライン</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" style="color: #dc3545;">1</div>
+                                <div class="stat-label">オフライン</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" style="color: #ffc107;">1</div>
+                                <div class="stat-label">警告</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">3</div>
+                                <div class="stat-label">合計</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drone List -->
+                <div class="card">
+                    <div class="card-header d-flex justify-between align-center">
+                        <h3 style="margin: 0;">登録ドローン一覧</h3>
+                        <div class="d-flex align-center gap-10">
+                            <input type="text" placeholder="ドローン名で検索..." class="form-control" 
+                                   style="width: 200px;" id="drone-search">
+                            <select class="form-control" style="width: 120px;" id="status-filter">
+                                <option value="">全て</option>
+                                <option value="online">オンライン</option>
+                                <option value="offline">オフライン</option>
+                                <option value="warning">警告</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>ドローン名</th>
+                                        <th>ステータス</th>
+                                        <th>バッテリー</th>
+                                        <th>高度</th>
+                                        <th>温度</th>
+                                        <th>最終接続</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="drone-list">
+                                    <!-- Populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Connection History -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 style="margin: 0;">接続履歴</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="connection-history">
+                            <div class="history-item">
+                                <div class="d-flex justify-between align-center">
+                                    <div>
+                                        <strong>Tello EDU - Alpha</strong> が接続されました
+                                    </div>
+                                    <div style="color: #6c757d; font-size: 12px;">
+                                        2025-07-02 23:41:30
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="history-item">
+                                <div class="d-flex justify-between align-center">
+                                    <div>
+                                        <strong>Tello EDU - Beta</strong> が切断されました
+                                    </div>
+                                    <div style="color: #6c757d; font-size: 12px;">
+                                        2025-07-02 23:10:15
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="history-item">
+                                <div class="d-flex justify-between align-center">
+                                    <div>
+                                        <strong>Tello EDU - Gamma</strong> バッテリー警告
+                                    </div>
+                                    <div style="color: #6c757d; font-size: 12px;">
+                                        2025-07-02 23:05:22
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add Drone Modal -->
+    <div id="add-drone-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>ドローン追加</h3>
+                <button class="modal-close" onclick="closeModal('add-drone-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-drone-form">
+                    <div class="form-group">
+                        <label class="form-label">ドローン名</label>
+                        <input type="text" class="form-control" id="drone-name" 
+                               placeholder="例: Tello EDU - Delta" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">IPアドレス</label>
+                        <input type="text" class="form-control" id="drone-ip" 
+                               placeholder="例: 192.168.1.100" pattern="^(\d{1,3}\.){3}\d{1,3}$" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">説明（オプション）</label>
+                        <textarea class="form-control" id="drone-description" rows="3" 
+                                  placeholder="ドローンの詳細情報..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('add-drone-modal')">キャンセル</button>
+                <button class="btn btn-primary" onclick="submitAddDrone()">追加</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        let filteredDrones = [];
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            populateDroneList();
+            setupFilters();
+            updateConnectionHistory();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(() => {
+                refreshDroneData();
+                populateDroneList();
+            }, 30000);
+        });
+        
+        function setupFilters() {
+            const searchInput = document.getElementById('drone-search');
+            const statusFilter = document.getElementById('status-filter');
+            
+            searchInput.addEventListener('input', filterDrones);
+            statusFilter.addEventListener('change', filterDrones);
+        }
+        
+        function filterDrones() {
+            const searchTerm = document.getElementById('drone-search').value.toLowerCase();
+            const statusFilter = document.getElementById('status-filter').value;
+            
+            filteredDrones = window.MFGDroneApp.drones.filter(drone => {
+                const matchesSearch = drone.name.toLowerCase().includes(searchTerm);
+                const matchesStatus = !statusFilter || drone.status === statusFilter;
+                return matchesSearch && matchesStatus;
+            });
+            
+            populateFilteredDroneList();
+        }
+        
+        function populateFilteredDroneList() {
+            const droneList = document.querySelector('#drone-list');
+            if (!droneList) return;
+            
+            const dronesToShow = filteredDrones.length > 0 || 
+                               document.getElementById('drone-search').value ||
+                               document.getElementById('status-filter').value ? 
+                               filteredDrones : window.MFGDroneApp.drones;
+            
+            droneList.innerHTML = dronesToShow.map(drone => createDroneRow(drone)).join('');
+        }
+        
+        function createDroneRow(drone) {
+            const batteryColor = drone.battery > 50 ? '#198754' : 
+                                drone.battery > 20 ? '#ffc107' : '#dc3545';
+            
+            const lastSeenTime = new Date(drone.lastSeen).toLocaleString('ja-JP');
+            
+            return `
+                <tr>
+                    <td>
+                        <div class="d-flex align-center gap-10">
+                            <div class="drone-indicator ${drone.status}"></div>
+                            <strong>${drone.name}</strong>
+                        </div>
+                    </td>
+                    <td><span class="status status-${drone.status}">${drone.status.toUpperCase()}</span></td>
+                    <td>
+                        <div class="d-flex align-center gap-10">
+                            <span>${drone.battery}%</span>
+                            <div class="progress" style="width: 60px; height: 8px;">
+                                <div class="progress-bar" style="width: ${drone.battery}%; background: ${batteryColor};"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${drone.altitude}m</td>
+                    <td>${drone.temperature}°C</td>
+                    <td style="font-size: 12px;">${lastSeenTime}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-primary btn-sm" onclick="controlDrone('${drone.id}', 'connect')">
+                                ${drone.status === 'online' ? '切断' : '接続'}
+                            </button>
+                            <a href="drone-detail.html?id=${drone.id}" class="btn btn-info btn-sm">制御</a>
+                            <a href="camera-video.html?id=${drone.id}" class="btn btn-secondary btn-sm">カメラ</a>
+                            <button class="btn btn-danger btn-sm" onclick="removeDrone('${drone.id}')">削除</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+        
+        function scanForDrones() {
+            showNotification('ネットワークをスキャンしています...', 'info');
+            
+            // Simulate scanning process
+            setTimeout(() => {
+                const foundDrones = Math.floor(Math.random() * 3) + 1;
+                showNotification(`${foundDrones}台の新しいドローンが見つかりました！`, 'success');
+                
+                // Simulate adding found drones
+                for (let i = 0; i < foundDrones; i++) {
+                    const newDrone = {
+                        id: 'drone_' + Math.random().toString(36).substr(2, 9),
+                        name: `Tello EDU - New${i + 1}`,
+                        status: 'offline',
+                        battery: Math.floor(Math.random() * 100),
+                        altitude: 0,
+                        temperature: 20 + Math.random() * 10,
+                        location: { x: 0, y: 0, z: 0 },
+                        lastSeen: new Date()
+                    };
+                    window.MFGDroneApp.drones.push(newDrone);
+                }
+                
+                populateDroneList();
+            }, 3000);
+        }
+        
+        function addDrone() {
+            document.getElementById('add-drone-modal').style.display = 'flex';
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        function submitAddDrone() {
+            const name = document.getElementById('drone-name').value;
+            const ip = document.getElementById('drone-ip').value;
+            const description = document.getElementById('drone-description').value;
+            
+            if (!name || !ip) {
+                showNotification('ドローン名とIPアドレスは必須です', 'danger');
+                return;
+            }
+            
+            // IP address validation
+            const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+            if (!ipPattern.test(ip)) {
+                showNotification('有効なIPアドレスを入力してください', 'danger');
+                return;
+            }
+            
+            const newDrone = {
+                id: 'drone_' + Math.random().toString(36).substr(2, 9),
+                name: name,
+                ip: ip,
+                description: description,
+                status: 'offline',
+                battery: Math.floor(Math.random() * 100),
+                altitude: 0,
+                temperature: 20 + Math.random() * 10,
+                location: { x: 0, y: 0, z: 0 },
+                lastSeen: new Date()
+            };
+            
+            window.MFGDroneApp.drones.push(newDrone);
+            populateDroneList();
+            closeModal('add-drone-modal');
+            
+            // Clear form
+            document.getElementById('add-drone-form').reset();
+            
+            showNotification(`ドローン "${name}" が追加されました`, 'success');
+        }
+        
+        function removeDrone(droneId) {
+            if (confirm('このドローンを削除しますか？')) {
+                const index = window.MFGDroneApp.drones.findIndex(d => d.id === droneId);
+                if (index > -1) {
+                    const droneName = window.MFGDroneApp.drones[index].name;
+                    window.MFGDroneApp.drones.splice(index, 1);
+                    populateDroneList();
+                    showNotification(`ドローン "${droneName}" が削除されました`, 'info');
+                }
+            }
+        }
+        
+        function refreshDroneData() {
+            // Simulate random status changes
+            window.MFGDroneApp.drones.forEach(drone => {
+                if (Math.random() < 0.2) { // 20% chance of change
+                    drone.battery = Math.max(0, drone.battery - Math.floor(Math.random() * 5));
+                    drone.temperature = 20 + Math.random() * 15;
+                    
+                    if (drone.status === 'online') {
+                        drone.lastSeen = new Date();
+                    }
+                }
+            });
+        }
+        
+        function updateConnectionHistory() {
+            // Add more realistic history items
+            const historyContainer = document.getElementById('connection-history');
+            const additionalHistory = [
+                { drone: 'Tello EDU - Alpha', action: 'ファームウェア更新完了', time: '2025-07-02 22:55:10' },
+                { drone: 'Tello EDU - Delta', action: '初回接続設定完了', time: '2025-07-02 22:45:33' }
+            ];
+            
+            additionalHistory.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.innerHTML = `
+                    <div class="d-flex justify-between align-center">
+                        <div>
+                            <strong>${item.drone}</strong> ${item.action}
+                        </div>
+                        <div style="color: #6c757d; font-size: 12px;">
+                            ${item.time}
+                        </div>
+                    </div>
+                `;
+                historyContainer.appendChild(historyItem);
+            });
+        }
+    </script>
+    
+    <style>
+        .btn-group {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-group .btn {
+            white-space: nowrap;
+        }
+        
+        .drone-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        
+        .drone-indicator.online { background: #198754; }
+        .drone-indicator.offline { background: #6c757d; }
+        .drone-indicator.warning { background: #ffc107; }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6c757d;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid #dee2e6;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .history-item {
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-toggle {
+                display: block !important;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .btn-group .btn {
+                width: 100%;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</body>
+</html>

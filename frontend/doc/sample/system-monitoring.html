@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>システム監視 - MFGドローン管理システム</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h2>🚁 MFGドローン</h2>
+                <p style="font-size: 12px; color: #adb5bd; margin: 0;">管理システム v1.0</p>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link">
+                        <i>📊</i> ダッシュボード
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="drone-management.html" class="nav-link">
+                        <i>🚁</i> ドローン管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="dataset-management.html" class="nav-link">
+                        <i>📁</i> データセット管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="model-management.html" class="nav-link">
+                        <i>🧠</i> モデル管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="tracking-control.html" class="nav-link">
+                        <i>🎯</i> 追跡制御
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="system-monitoring.html" class="nav-link active">
+                        <i>⚙️</i> システム監視
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="settings.html" class="nav-link">
+                        <i>🔧</i> 設定
+                    </a>
+                </li>
+                <li class="nav-item" style="border-top: 1px solid #495057; margin-top: 20px; padding-top: 20px;">
+                    <a href="login.html" class="nav-link">
+                        <i>🚪</i> ログアウト
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="d-flex align-center gap-20">
+                    <button class="btn btn-secondary mobile-toggle" style="display: none;">☰</button>
+                    <h1 style="margin: 0; font-size: 24px;">システム監視</h1>
+                </div>
+                
+                <div class="d-flex align-center gap-20">
+                    <div style="color: #6c757d; font-size: 14px;">
+                        最終更新: <span id="last-update">--:--:--</span>
+                    </div>
+                    <button class="btn btn-info" onclick="refreshData()">
+                        🔄 更新
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <main class="content">
+                <!-- System Status Overview -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" style="color: #198754;">正常</div>
+                        <div class="stat-label">システム状態</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="uptime">72時間15分</div>
+                        <div class="stat-label">稼働時間</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="active-processes">23</div>
+                        <div class="stat-label">アクティブプロセス</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="network-status">良好</div>
+                        <div class="stat-label">ネットワーク</div>
+                    </div>
+                </div>
+
+                <!-- Resource Usage -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 style="margin: 0;">リソース使用状況</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+                            <div>
+                                <div class="d-flex justify-between align-center mb-10">
+                                    <span><strong>CPU使用率</strong></span>
+                                    <span class="percentage" id="cpu-percentage">45%</span>
+                                </div>
+                                <div class="progress" id="cpu-usage">
+                                    <div class="progress-bar" style="width: 45%"></div>
+                                </div>
+                                <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; color: #6c757d;">
+                                    <div>温度: <span id="cpu-temp">45°C</span></div>
+                                    <div>クロック: <span id="cpu-clock">1.8GHz</span></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="d-flex justify-between align-center mb-10">
+                                    <span><strong>メモリ使用率</strong></span>
+                                    <span class="percentage" id="memory-percentage">67%</span>
+                                </div>
+                                <div class="progress" id="memory-usage">
+                                    <div class="progress-bar" style="width: 67%"></div>
+                                </div>
+                                <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; color: #6c757d;">
+                                    <div>使用: <span id="memory-used">5.4GB</span></div>
+                                    <div>総容量: <span id="memory-total">8.0GB</span></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="d-flex justify-between align-center mb-10">
+                                    <span><strong>ディスク使用率</strong></span>
+                                    <span class="percentage" id="disk-percentage">23%</span>
+                                </div>
+                                <div class="progress" id="disk-usage">
+                                    <div class="progress-bar" style="width: 23%"></div>
+                                </div>
+                                <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; color: #6c757d;">
+                                    <div>使用: <span id="disk-used">18.4GB</span></div>
+                                    <div>総容量: <span id="disk-total">80.0GB</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Service Status -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 style="margin: 0;">サービス状態</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="service-grid">
+                            <div class="service-item">
+                                <div class="d-flex justify-between align-center">
+                                    <div>
+                                        <strong>ドローン制御サービス</strong>
+                                        <div style="font-size: 12px; color: #6c757d;">drone_control.py</div>
+                                    </div>
+                                    <span class="status status-success">実行中</span>
+                                </div>
+                                <div style="margin-top: 10px; font-size: 12px; color: #6c757d;">
+                                    CPU: 12% | メモリ: 256MB | 稼働: 2日5時間
+                                </div>
+                            </div>
+                            
+                            <div class="service-item">
+                                <div class="d-flex justify-between align-center">
+                                    <div>
+                                        <strong>映像処理エンジン</strong>
+                                        <div style="font-size: 12px; color: #6c757d;">vision_engine.py</div>
+                                    </div>
+                                    <span class="status status-success">実行中</span>
+                                </div>
+                                <div style="margin-top: 10px; font-size: 12px; color: #6c757d;">
+                                    CPU: 28% | メモリ: 1.2GB | 稼働: 2日5時間
+                                </div>
+                            </div>
+                            
+                            <div class="service-item">
+                                <div class="d-flex justify-between align-center">
+                                    <div>
+                                        <strong>モデル管理サービス</strong>
+                                        <div style="font-size: 12px; color: #6c757d;">model_manager.py</div>
+                                    </div>
+                                    <span class="status status-success">実行中</span>
+                                </div>
+                                <div style="margin-top: 10px; font-size: 12px; color: #6c757d;">
+                                    CPU: 5% | メモリ: 512MB | 稼働: 2日5時間
+                                </div>
+                            </div>
+                            
+                            <div class="service-item">
+                                <div class="d-flex justify-between align-center">
+                                    <div>
+                                        <strong>APIサーバ</strong>
+                                        <div style="font-size: 12px; color: #6c757d;">FastAPI</div>
+                                    </div>
+                                    <span class="status status-success">実行中</span>
+                                </div>
+                                <div style="margin-top: 10px; font-size: 12px; color: #6c757d;">
+                                    CPU: 8% | メモリ: 128MB | 稼働: 2日5時間
+                                </div>
+                            </div>
+                            
+                            <div class="service-item">
+                                <div class="d-flex justify-between align-center">
+                                    <div>
+                                        <strong>データベース</strong>
+                                        <div style="font-size: 12px; color: #6c757d;">SQLite</div>
+                                    </div>
+                                    <span class="status status-success">実行中</span>
+                                </div>
+                                <div style="margin-top: 10px; font-size: 12px; color: #6c757d;">
+                                    CPU: 2% | メモリ: 64MB | 稼働: 2日5時間
+                                </div>
+                            </div>
+                            
+                            <div class="service-item">
+                                <div class="d-flex justify-between align-center">
+                                    <div>
+                                        <strong>ログ管理</strong>
+                                        <div style="font-size: 12px; color: #6c757d;">logging_service</div>
+                                    </div>
+                                    <span class="status status-warning">警告</span>
+                                </div>
+                                <div style="margin-top: 10px; font-size: 12px; color: #6c757d;">
+                                    CPU: 3% | メモリ: 32MB | ログサイズ: 850MB
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Metrics -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 style="margin: 0;">パフォーマンスメトリクス</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                            <div class="metric-item">
+                                <div class="metric-label">API応答時間</div>
+                                <div class="metric-value">142ms</div>
+                                <div class="metric-trend">⬇️ -15ms (24h)</div>
+                            </div>
+                            
+                            <div class="metric-item">
+                                <div class="metric-label">映像処理FPS</div>
+                                <div class="metric-value">28.5fps</div>
+                                <div class="metric-trend">⬆️ +2.1fps (24h)</div>
+                            </div>
+                            
+                            <div class="metric-item">
+                                <div class="metric-label">ドローン接続遅延</div>
+                                <div class="metric-value">23ms</div>
+                                <div class="metric-trend">➡️ 変化なし</div>
+                            </div>
+                            
+                            <div class="metric-item">
+                                <div class="metric-label">学習処理効率</div>
+                                <div class="metric-value">87%</div>
+                                <div class="metric-trend">⬆️ +5% (7d)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Logs -->
+                <div class="card">
+                    <div class="card-header d-flex justify-between align-center">
+                        <h3 style="margin: 0;">システムログ</h3>
+                        <div class="d-flex align-center gap-10">
+                            <select class="form-control" style="width: 120px;" id="log-level-filter">
+                                <option value="">全て</option>
+                                <option value="error">エラー</option>
+                                <option value="warning">警告</option>
+                                <option value="info">情報</option>
+                                <option value="debug">デバッグ</option>
+                            </select>
+                            <button class="btn btn-secondary btn-sm" onclick="clearLogs()">ログクリア</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="log-container" id="system-logs">
+                            <div class="log-entry info">
+                                <span class="log-time">23:42:15</span>
+                                <span class="log-level">INFO</span>
+                                <span class="log-message">ドローン Alpha からの映像受信を開始</span>
+                            </div>
+                            <div class="log-entry warning">
+                                <span class="log-time">23:41:30</span>
+                                <span class="log-level">WARN</span>
+                                <span class="log-message">ドローン Gamma のバッテリー残量が20%を下回りました</span>
+                            </div>
+                            <div class="log-entry success">
+                                <span class="log-time">23:40:45</span>
+                                <span class="log-level">INFO</span>
+                                <span class="log-message">モデル PersonTracker_v2.3 の学習が完了しました</span>
+                            </div>
+                            <div class="log-entry info">
+                                <span class="log-time">23:40:12</span>
+                                <span class="log-level">INFO</span>
+                                <span class="log-message">データセット Vehicle Detection に新しい画像が追加されました (50枚)</span>
+                            </div>
+                            <div class="log-entry error">
+                                <span class="log-time">23:38:22</span>
+                                <span class="log-level">ERROR</span>
+                                <span class="log-message">ドローン Beta との通信が一時的に失われました</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTimestamp();
+            setupLogFiltering();
+            startAutoRefresh();
+            
+            // Update every 5 seconds
+            setInterval(() => {
+                updateSystemMetrics();
+                updateTimestamp();
+            }, 5000);
+        });
+        
+        function updateTimestamp() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ja-JP');
+            document.getElementById('last-update').textContent = timeString;
+        }
+        
+        function updateSystemMetrics() {
+            // Simulate random metric updates
+            const cpu = Math.floor(Math.random() * 30) + 30;
+            const memory = Math.floor(Math.random() * 40) + 50;
+            const disk = Math.floor(Math.random() * 20) + 15;
+            
+            updateProgressBar('cpu-usage', cpu);
+            updateProgressBar('memory-usage', memory);
+            updateProgressBar('disk-usage', disk);
+            
+            document.getElementById('cpu-percentage').textContent = cpu + '%';
+            document.getElementById('memory-percentage').textContent = memory + '%';
+            document.getElementById('disk-percentage').textContent = disk + '%';
+            
+            // Update CPU temperature
+            const temp = Math.floor(Math.random() * 20) + 35;
+            document.getElementById('cpu-temp').textContent = temp + '°C';
+            
+            // Update memory usage
+            const memUsed = (memory * 8.0 / 100).toFixed(1);
+            document.getElementById('memory-used').textContent = memUsed + 'GB';
+            
+            // Update disk usage
+            const diskUsed = (disk * 80.0 / 100).toFixed(1);
+            document.getElementById('disk-used').textContent = diskUsed + 'GB';
+        }
+        
+        function updateProgressBar(containerId, percentage) {
+            const container = document.getElementById(containerId);
+            const progressBar = container.querySelector('.progress-bar');
+            if (progressBar) {
+                progressBar.style.width = percentage + '%';
+                
+                // Update color based on percentage
+                if (percentage > 80) {
+                    progressBar.style.background = '#dc3545'; // Red
+                } else if (percentage > 60) {
+                    progressBar.style.background = '#ffc107'; // Yellow
+                } else {
+                    progressBar.style.background = '#0d6efd'; // Blue
+                }
+            }
+        }
+        
+        function setupLogFiltering() {
+            const logLevelFilter = document.getElementById('log-level-filter');
+            logLevelFilter.addEventListener('change', filterLogs);
+        }
+        
+        function filterLogs() {
+            const selectedLevel = document.getElementById('log-level-filter').value;
+            const logEntries = document.querySelectorAll('.log-entry');
+            
+            logEntries.forEach(entry => {
+                if (!selectedLevel || entry.classList.contains(selectedLevel)) {
+                    entry.style.display = 'flex';
+                } else {
+                    entry.style.display = 'none';
+                }
+            });
+        }
+        
+        function clearLogs() {
+            if (confirm('ログをクリアしますか？')) {
+                document.getElementById('system-logs').innerHTML = 
+                    '<div style="text-align: center; color: #6c757d; padding: 20px;">ログがクリアされました</div>';
+                showNotification('ログをクリアしました', 'info');
+            }
+        }
+        
+        function refreshData() {
+            showNotification('データを更新しています...', 'info');
+            updateSystemMetrics();
+            updateTimestamp();
+            
+            // Simulate adding new log entry
+            setTimeout(() => {
+                addNewLogEntry();
+                showNotification('データの更新が完了しました', 'success');
+            }, 1000);
+        }
+        
+        function addNewLogEntry() {
+            const logContainer = document.getElementById('system-logs');
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ja-JP');
+            
+            const logTypes = ['info', 'warning', 'success', 'error'];
+            const logType = logTypes[Math.floor(Math.random() * logTypes.length)];
+            
+            const messages = {
+                info: 'システムステータスが更新されました',
+                warning: 'メモリ使用率が高くなっています',
+                success: '定期メンテナンスが完了しました',
+                error: 'ネットワーク接続の一時的な問題が検出されました'
+            };
+            
+            const levelNames = {
+                info: 'INFO',
+                warning: 'WARN',
+                success: 'INFO',
+                error: 'ERROR'
+            };
+            
+            const newLogEntry = document.createElement('div');
+            newLogEntry.className = `log-entry ${logType}`;
+            newLogEntry.innerHTML = `
+                <span class="log-time">${timeString}</span>
+                <span class="log-level">${levelNames[logType]}</span>
+                <span class="log-message">${messages[logType]}</span>
+            `;
+            
+            logContainer.insertBefore(newLogEntry, logContainer.firstChild);
+            
+            // Keep only last 20 entries
+            while (logContainer.children.length > 20) {
+                logContainer.removeChild(logContainer.lastChild);
+            }
+            
+            // Apply current filter
+            filterLogs();
+        }
+        
+        function startAutoRefresh() {
+            // Add new log entries periodically
+            setInterval(() => {
+                if (Math.random() < 0.3) { // 30% chance every 10 seconds
+                    addNewLogEntry();
+                }
+            }, 10000);
+        }
+    </script>
+    
+    <style>
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .service-item {
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        
+        .metric-item {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .metric-label {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+        
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+        
+        .metric-trend {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .log-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: #000;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        
+        .log-entry {
+            display: flex;
+            gap: 15px;
+            padding: 8px 15px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .log-time {
+            color: #6c757d;
+            min-width: 80px;
+        }
+        
+        .log-level {
+            min-width: 50px;
+            font-weight: bold;
+        }
+        
+        .log-entry.info .log-level { color: #0dcaf0; }
+        .log-entry.success .log-level { color: #198754; }
+        .log-entry.warning .log-level { color: #ffc107; }
+        .log-entry.error .log-level { color: #dc3545; }
+        
+        .log-message {
+            flex: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-toggle {
+                display: block !important;
+            }
+            
+            .service-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .log-entry {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .log-time, .log-level {
+                min-width: auto;
+            }
+        }
+    </style>
+</body>
+</html>
