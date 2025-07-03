@@ -13,36 +13,37 @@ import {
   FormControlLabel,
 } from '@mui/material'
 import { useAuth } from '../../hooks/useAuth'
+import { useNotification } from '../../hooks/useNotification'
+import type { LoginCredentials } from '../../types/common'
 
 export function Login() {
   const [username, setUsername] = useState('admin')
   const [password, setPassword] = useState('password')
   const [rememberMe, setRememberMe] = useState(true)
-  const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   
-  const { login } = useAuth()
+  const { login, isLoading, error, clearError } = useAuth()
+  const { showSuccess, showErrorFromException } = useNotification()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
     if (!username || !password) {
-      setError('ユーザー名とパスワードを入力してください')
+      showErrorFromException('ユーザー名とパスワードを入力してください')
       return
     }
 
-    setIsLoading(true)
-    setError('')
+    clearError()
 
-    const result = await login(username, password)
+    const credentials: LoginCredentials = { username, password }
+    const result = await login(credentials)
     
     if (result.success) {
+      showSuccess('ログインしました')
       navigate('/dashboard')
     } else {
-      setError(result.error || 'ログインに失敗しました')
+      showErrorFromException(result.error || 'ログインに失敗しました')
     }
-    
-    setIsLoading(false)
   }
 
   return (
