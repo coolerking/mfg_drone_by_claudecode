@@ -192,3 +192,60 @@ export function useConfirmDialog() {
     ConfirmDialog: ConfirmDialogComponent,
   }
 }
+
+// Promise-based confirm hook for easier async usage
+export function useConfirm() {
+  const [resolveRef, setResolveRef] = React.useState<{
+    resolve?: (value: boolean) => void
+  }>({})
+  
+  const [dialogState, setDialogState] = React.useState<{
+    open: boolean
+    config: Omit<ConfirmDialogProps, 'open' | 'onClose' | 'onConfirm'> | null
+  }>({
+    open: false,
+    config: null,
+  })
+
+  const confirm = React.useCallback((
+    config: Omit<ConfirmDialogProps, 'open' | 'onClose' | 'onConfirm'>
+  ): Promise<boolean> => {
+    return new Promise((resolve) => {
+      setResolveRef({ resolve })
+      setDialogState({
+        open: true,
+        config,
+      })
+    })
+  }, [])
+
+  const handleClose = React.useCallback(() => {
+    setDialogState(prev => ({ ...prev, open: false }))
+    resolveRef.resolve?.(false)
+    setResolveRef({})
+  }, [resolveRef])
+
+  const handleConfirm = React.useCallback(() => {
+    setDialogState(prev => ({ ...prev, open: false }))
+    resolveRef.resolve?.(true)
+    setResolveRef({})
+  }, [resolveRef])
+
+  const ConfirmDialogComponent = React.useCallback(() => {
+    if (!dialogState.config) return null
+
+    return (
+      <ConfirmDialog
+        {...dialogState.config}
+        open={dialogState.open}
+        onClose={handleClose}
+        onConfirm={handleConfirm}
+      />
+    )
+  }, [dialogState, handleClose, handleConfirm])
+
+  return {
+    confirm,
+    ConfirmDialog: ConfirmDialogComponent,
+  }
+}

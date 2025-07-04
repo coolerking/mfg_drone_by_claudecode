@@ -18,7 +18,7 @@ export type { LoadingProps } from './Loading'
 export { StatusBadge, NotificationBadge } from './StatusBadge'
 export type { StatusBadgeProps, StatusType } from './StatusBadge'
 
-export { ConfirmDialog, useConfirmDialog } from './ConfirmDialog'
+export { ConfirmDialog, useConfirmDialog, useConfirm } from './ConfirmDialog'
 export type { ConfirmDialogProps } from './ConfirmDialog'
 
 // Error handling
