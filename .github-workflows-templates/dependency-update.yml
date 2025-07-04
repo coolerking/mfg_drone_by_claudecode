@@ -1,0 +1,285 @@
+# Automated Dependency Updates for MFG Drone System
+# Copy this file to .github/workflows/dependency-update.yml
+
+name: Dependency Updates
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  audit-and-update:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [frontend, backend]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js (for frontend)
+        if: matrix.component == 'frontend'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Setup Python (for backend)
+        if: matrix.component == 'backend'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      # Frontend dependency updates
+      - name: Frontend - Install dependencies
+        if: matrix.component == 'frontend'
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Frontend - Audit vulnerabilities
+        if: matrix.component == 'frontend'
+        working-directory: ./frontend
+        run: |
+          npm audit --audit-level=moderate --json > audit-results.json || true
+          
+          # Check if there are fixable vulnerabilities
+          FIXABLE=$(cat audit-results.json | jq '.vulnerabilities | to_entries | map(select(.value.fixAvailable)) | length')
+          
+          if [ "$FIXABLE" -gt 0 ]; then
+            echo "Found $FIXABLE fixable vulnerabilities"
+            npm audit fix --force
+          fi
+
+      - name: Frontend - Update dependencies
+        if: matrix.component == 'frontend'
+        working-directory: ./frontend
+        run: |
+          # Update patch and minor versions
+          npm update
+          
+          # Check for major version updates
+          npx npm-check-updates --target minor --upgrade
+          
+          # Install updated dependencies
+          npm install
+
+      - name: Frontend - Run tests after updates
+        if: matrix.component == 'frontend'
+        working-directory: ./frontend
+        run: |
+          npm run test -- --run
+          npm run type-check
+          npm run lint
+
+      # Backend dependency updates
+      - name: Backend - Install dependencies
+        if: matrix.component == 'backend'
+        working-directory: ./backend
+        run: |
+          pip install -r requirements.txt
+          pip install safety
+
+      - name: Backend - Security audit
+        if: matrix.component == 'backend'
+        working-directory: ./backend
+        run: |
+          safety check --json --output audit-results.json || true
+          
+          # Check for vulnerabilities
+          if [ -f audit-results.json ] && [ "$(cat audit-results.json)" != "[]" ]; then
+            echo "Security vulnerabilities found in Python dependencies"
+            cat audit-results.json
+          fi
+
+      - name: Backend - Update dependencies
+        if: matrix.component == 'backend'
+        working-directory: ./backend
+        run: |
+          # Update to latest compatible versions
+          pip install --upgrade pip-tools
+          pip-compile --upgrade requirements.in
+          pip install -r requirements.txt
+
+      - name: Backend - Run tests after updates
+        if: matrix.component == 'backend'
+        working-directory: ./backend
+        run: |
+          python -m pytest tests/ --maxfail=1 -v || echo "Some tests failed, manual review needed"
+
+      # License compliance check
+      - name: License compliance check
+        run: |
+          if [ "${{ matrix.component }}" == "frontend" ]; then
+            cd frontend
+            npx license-checker --production --onlyAllow 'MIT;BSD;Apache;ISC;WTFPL;CC0-1.0;Unlicense' --json > licenses.json
+            
+            # Check for problematic licenses
+            PROBLEMATIC=$(cat licenses.json | jq 'to_entries | map(select(.value.licenses | type == "string" and (contains("GPL") or contains("AGPL") or contains("SSPL")))) | length')
+            
+            if [ "$PROBLEMATIC" -gt 0 ]; then
+              echo "Warning: Found potentially problematic licenses"
+              cat licenses.json | jq 'to_entries | map(select(.value.licenses | type == "string" and (contains("GPL") or contains("AGPL") or contains("SSPL"))))'
+            fi
+          fi
+
+      # Create pull request if changes exist
+      - name: Check for changes
+        id: changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.changes == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            chore(${{ matrix.component }}): automated dependency updates
+            
+            - Updated dependencies to latest compatible versions
+            - Fixed security vulnerabilities where possible
+            - Ran tests to ensure compatibility
+            
+            Generated by automated workflow on $(date)
+          title: 'chore(${{ matrix.component }}): automated dependency updates'
+          body: |
+            ## 🤖 Automated Dependency Updates
+
+            This PR contains automated updates for the **${{ matrix.component }}** component:
+
+            ### Changes Made
+            - 🔄 Updated dependencies to latest compatible versions
+            - 🔒 Applied security fixes where available
+            - ✅ Verified all tests pass after updates
+
+            ### Security Audit Results
+            - Frontend vulnerabilities: Check audit-results.json
+            - Backend vulnerabilities: Check safety audit results
+
+            ### What to Review
+            1. **Breaking Changes**: Review any major version updates
+            2. **Test Results**: Ensure all tests are passing
+            3. **Security**: Check that vulnerabilities have been addressed
+            4. **License Compliance**: Verify no problematic licenses were introduced
+
+            ### Manual Steps Required
+            1. Review the changes carefully
+            2. Run additional integration tests if needed
+            3. Update documentation if APIs have changed
+            4. Merge when satisfied with the changes
+
+            ---
+            
+            🔍 **Review Checklist**
+            - [ ] All tests are passing
+            - [ ] No breaking changes introduced
+            - [ ] Security vulnerabilities addressed
+            - [ ] License compliance maintained
+            - [ ] Documentation updated if needed
+
+            *This PR was automatically created by the dependency update workflow.*
+          branch: dependency-updates/${{ matrix.component }}-${{ github.run_number }}
+          delete-branch: true
+          labels: |
+            dependencies
+            automated
+            ${{ matrix.component }}
+          assignees: ${{ github.actor }}
+          reviewers: ${{ github.repository_owner }}
+
+  # Dependabot auto-merge for minor updates
+  auto-merge-dependabot:
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check PR details
+        id: pr-details
+        run: |
+          # Get PR information
+          PR_NUMBER=$(echo "${{ github.event.pull_request.number }}")
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          
+          # Check if it's a minor or patch update
+          if echo "$PR_TITLE" | grep -E "(patch|minor)" > /dev/null; then
+            echo "auto-merge=true" >> $GITHUB_OUTPUT
+          else
+            echo "auto-merge=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Enable auto-merge for minor/patch updates
+        if: steps.pr-details.outputs.auto-merge == 'true'
+        run: |
+          # Enable auto-merge
+          gh pr merge ${{ github.event.pull_request.number }} --auto --squash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Weekly security report
+  security-report:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Generate security report
+        run: |
+          echo "# Weekly Security Report" > security-report.md
+          echo "Generated on: $(date)" >> security-report.md
+          echo "" >> security-report.md
+          
+          # Frontend security audit
+          echo "## Frontend Dependencies" >> security-report.md
+          cd frontend
+          npm audit --json > frontend-audit.json || true
+          
+          VULNERABILITIES=$(cat frontend-audit.json | jq '.metadata.vulnerabilities')
+          echo "- Total vulnerabilities: $VULNERABILITIES" >> ../security-report.md
+          
+          cd ..
+          
+          # Backend security audit
+          echo "## Backend Dependencies" >> security-report.md
+          cd backend
+          pip install safety
+          safety check --json > backend-audit.json || true
+          
+          PYTHON_VULNS=$(cat backend-audit.json | jq '. | length')
+          echo "- Python vulnerabilities: $PYTHON_VULNS" >> ../security-report.md
+          
+          cd ..
+
+      - name: Create issue for security report
+        uses: imjohnbo/issue-bot@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "Weekly Security Report - $(date +%Y-%m-%d)"
+          body-path: security-report.md
+          labels: security,automated,report

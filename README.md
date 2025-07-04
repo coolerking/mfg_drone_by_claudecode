@@ -48,8 +48,87 @@ Tello EDU ドローンを使って移動する対象物を自動的に追跡・�
 
 4. **ドローン**
   - Tello EDU のみを使用する
-  - 同じネットワーク上にIPアドレス指定で呼び出せる状態とする
-  - 複数台の可能性あり、ゼロの場合もあり
+
+## 🚀 クイックスタート
+
+### 開発環境
+```bash
+# リポジトリクローン
+git clone https://github.com/coolerking/mfg_drone_by_claudecode.git
+cd mfg_drone_by_claudecode
+
+# フロントエンド開発環境
+cd frontend
+npm install
+npm run dev
+
+# バックエンド開発環境
+cd ../backend
+pip install -r requirements.txt
+python main.py
+```
+
+### プロダクション環境
+```bash
+# 環境設定
+cp .env.production .env
+# .envファイルを編集（パスワード等の設定）
+
+# 自動デプロイ
+chmod +x scripts/deploy.sh
+./scripts/deploy.sh
+```
+
+詳細は [デプロイメントガイド](./docs/DEPLOYMENT.md) をご覧ください。
+
+## 📊 監視・運用
+
+システムは包括的な監視スタックを提供します：
+
+- **Prometheus**: メトリクス収集 (http://localhost:9090)
+- **Grafana**: ダッシュボード (http://localhost:3001)
+- **アラート**: 自動通知システム
+- **ログ集約**: 構造化ログ分析
+
+## 🔧 開発・運用ツール
+
+### CI/CD パイプライン
+GitHub Actions による自動テスト・デプロイ：
+```bash
+# ワークフローファイル設定
+cp .github-workflows-templates/* .github/workflows/
+```
+
+### 自動デプロイスクリプト
+```bash
+# 各種操作
+./scripts/deploy.sh deploy    # フルデプロイ
+./scripts/deploy.sh rollback  # ロールバック
+./scripts/deploy.sh status    # 状態確認
+./scripts/deploy.sh logs      # ログ表示
+```
+
+## 🏗 技術スタック
+
+### フロントエンド
+- **React 18** + TypeScript
+- **Material-UI (MUI)** - UIコンポーネント
+- **Redux Toolkit** - 状態管理
+- **Vite** - ビルドツール
+- **Vitest + Playwright** - テスト
+
+### バックエンド
+- **FastAPI** - Webフレームワーク
+- **YOLO** - 物体検出
+- **OpenCV** - 画像処理
+- **PostgreSQL** - データベース
+- **Redis** - キャッシュ
+
+### インフラ・運用
+- **Docker + Docker Compose** - コンテナ化
+- **nginx** - リバースプロキシ
+- **Prometheus + Grafana** - 監視
+- **GitHub Actions** - CI/CD
 
 ## ディレクトリ構成
 
