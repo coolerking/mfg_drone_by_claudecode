@@ -9,6 +9,7 @@ import { DroneManagement } from './pages/DroneManagement'
 import { DatasetManagement } from './pages/DatasetManagement'
 import { ModelManagement } from './pages/ModelManagement'
 import { TrackingControl } from './pages/TrackingControl'
+import { SystemMonitoring } from './pages/SystemMonitoring'
 import { Settings } from './pages/Settings'
 import { ErrorBoundary, PageLoading, OfflineIndicator } from './components/common'
 import { useAuth } from './hooks/useAuth'
@@ -42,6 +43,7 @@ function App() {
                       <Route path="/datasets" element={<DatasetManagement />} />
                       <Route path="/models" element={<ModelManagement />} />
                       <Route path="/tracking" element={<TrackingControl />} />
+                      <Route path="/monitoring" element={<SystemMonitoring />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     </Routes>

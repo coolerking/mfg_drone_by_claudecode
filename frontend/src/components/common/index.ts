@@ -26,3 +26,6 @@ export { ErrorBoundary } from './ErrorBoundary'
 
 // Offline support
 export { OfflineIndicator, useOfflineIndicator } from './OfflineIndicator'
+
+// Hooks
+export { useNotification } from '../../hooks/useNotification'
