@@ -15,6 +15,8 @@
     "test:ci": "vitest run --coverage && playwright test",
     "lint": "eslint src --ext ts,tsx",
     "lint:fix": "eslint src --ext ts,tsx --fix",
+    "lint:a11y": "eslint src --ext ts,tsx --rule 'jsx-a11y/*: error'",
+    "lint:security": "eslint src --ext ts,tsx --rule 'no-console: error' --rule 'no-debugger: error' --rule 'no-eval: error'",
     "type-check": "tsc --noEmit",
     "preview": "vite preview",
     "preview:prod": "vite preview --mode production",
