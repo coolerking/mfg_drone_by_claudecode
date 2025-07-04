@@ -6,16 +6,25 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:prod": "NODE_ENV=production tsc && vite build --mode production",
+    "build:analyze": "npm run build:prod && npx vite-bundle-analyzer",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "test:e2e": "playwright test",
+    "test:ci": "vitest run --coverage && playwright test",
     "lint": "eslint src --ext ts,tsx",
     "lint:fix": "eslint src --ext ts,tsx --fix",
     "type-check": "tsc --noEmit",
     "preview": "vite preview",
+    "preview:prod": "vite preview --mode production",
     "docker:dev": "docker-compose -f docker-compose.dev.yml up",
-    "docker:test": "docker-compose -f docker-compose.test.yml up --abort-on-container-exit"
+    "docker:test": "docker-compose -f docker-compose.test.yml up --abort-on-container-exit",
+    "docker:prod": "docker-compose -f docker-compose.prod.yml up",
+    "docker:build": "docker build -t mfg-drone-frontend:latest .",
+    "security:audit": "npm audit --audit-level=moderate",
+    "clean": "rm -rf dist node_modules/.vite",
+    "clean:install": "npm run clean && npm ci"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -66,7 +75,11 @@
     "msw": "^1.1.0",
     "@playwright/test": "^1.31.0",
     "@vitest/coverage-v8": "^0.29.1",
-    "@vitest/ui": "^0.29.1"
+    "@vitest/ui": "^0.29.1",
+    "rollup-plugin-visualizer": "^5.9.0",
+    "babel-plugin-react-remove-properties": "^0.3.0",
+    "terser": "^5.16.6",
+    "vite-bundle-analyzer": "^0.7.0"
   },
   "engines": {
     "node": ">=18.0.0"

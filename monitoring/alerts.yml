@@ -1,0 +1,249 @@
+# Alert rules for MFG Drone System
+groups:
+  - name: infrastructure
+    rules:
+      # System resource alerts
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% for {{ $labels.instance }} (current: {{ $value }}%)"
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 85% for {{ $labels.instance }} (current: {{ $value }}%)"
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+        for: 2m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is below 10% for {{ $labels.instance }} on {{ $labels.mountpoint }} (current: {{ $value }}%)"
+
+      - alert: HighDiskIOWait
+        expr: rate(node_cpu_seconds_total{mode="iowait"}[5m]) * 100 > 20
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "High disk I/O wait time"
+          description: "Disk I/O wait time is above 20% for {{ $labels.instance }} (current: {{ $value }}%)"
+
+  - name: services
+    rules:
+      # Service availability alerts
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: service
+        annotations:
+          summary: "Service is down"
+          description: "{{ $labels.job }} service is down for {{ $labels.instance }}"
+
+      - alert: HighRequestLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          category: service
+        annotations:
+          summary: "High request latency"
+          description: "95th percentile latency is above 500ms for {{ $labels.job }} (current: {{ $value }}s)"
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) * 100 > 5
+        for: 5m
+        labels:
+          severity: critical
+          category: service
+        annotations:
+          summary: "High error rate"
+          description: "Error rate is above 5% for {{ $labels.job }} (current: {{ $value }}%)"
+
+      - alert: APIRateLimitHit
+        expr: rate(nginx_http_requests_total{status="429"}[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          category: service
+        annotations:
+          summary: "API rate limit frequently hit"
+          description: "Rate limiting is being triggered frequently ({{ $value }} requests/sec)"
+
+  - name: database
+    rules:
+      # Database alerts
+      - alert: PostgresConnectionsHigh
+        expr: pg_stat_database_numbackends / pg_settings_max_connections * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "High PostgreSQL connection usage"
+          description: "PostgreSQL connection usage is above 80% (current: {{ $value }}%)"
+
+      - alert: PostgresReplicationLag
+        expr: pg_replication_lag > 30
+        for: 5m
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "PostgreSQL replication lag high"
+          description: "Replication lag is above 30 seconds (current: {{ $value }}s)"
+
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "Redis memory usage high"
+          description: "Redis memory usage is above 90% (current: {{ $value }}%)"
+
+      - alert: RedisConnectionsFailed
+        expr: increase(redis_rejected_connections_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "Redis connections being rejected"
+          description: "Redis is rejecting connections ({{ $value }} in last 5 minutes)"
+
+  - name: containers
+    rules:
+      # Container alerts
+      - alert: ContainerCPUHigh
+        expr: rate(container_cpu_usage_seconds_total[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: container
+        annotations:
+          summary: "Container CPU usage high"
+          description: "Container {{ $labels.name }} CPU usage is above 80% (current: {{ $value }}%)"
+
+      - alert: ContainerMemoryHigh
+        expr: container_memory_usage_bytes / container_spec_memory_limit_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: container
+        annotations:
+          summary: "Container memory usage high"
+          description: "Container {{ $labels.name }} memory usage is above 85% (current: {{ $value }}%)"
+
+      - alert: ContainerRestartHigh
+        expr: increase(container_restart_count[1h]) > 3
+        for: 1m
+        labels:
+          severity: warning
+          category: container
+        annotations:
+          summary: "Container restarting frequently"
+          description: "Container {{ $labels.name }} has restarted {{ $value }} times in the last hour"
+
+  - name: application
+    rules:
+      # Application-specific alerts
+      - alert: DroneConnectionLost
+        expr: drone_connection_status == 0
+        for: 30s
+        labels:
+          severity: critical
+          category: application
+        annotations:
+          summary: "Drone connection lost"
+          description: "Connection to drone {{ $labels.drone_id }} has been lost"
+
+      - alert: DronebatteryLow
+        expr: drone_battery_percentage < 20
+        for: 1m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "Drone battery low"
+          description: "Drone {{ $labels.drone_id }} battery is below 20% (current: {{ $value }}%)"
+
+      - alert: ModelTrainingFailed
+        expr: increase(model_training_failures_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "Model training failed"
+          description: "Model training failed for {{ $labels.model_name }}"
+
+      - alert: CameraStreamDown
+        expr: camera_stream_active == 0
+        for: 1m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "Camera stream inactive"
+          description: "Camera stream for drone {{ $labels.drone_id }} is inactive"
+
+      - alert: WebSocketConnectionsHigh
+        expr: websocket_connections_active > 50
+        for: 5m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "High WebSocket connection count"
+          description: "WebSocket connections are above 50 (current: {{ $value }})"
+
+  - name: security
+    rules:
+      # Security alerts
+      - alert: FailedLoginAttempts
+        expr: increase(failed_login_attempts_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "Multiple failed login attempts"
+          description: "{{ $value }} failed login attempts in the last 5 minutes from {{ $labels.source_ip }}"
+
+      - alert: UnauthorizedAPIAccess
+        expr: increase(http_requests_total{status="401"}[5m]) > 20
+        for: 2m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "High number of unauthorized API requests"
+          description: "{{ $value }} unauthorized requests in the last 5 minutes"
+
+      - alert: SuspiciousFileUpload
+        expr: increase(suspicious_file_uploads_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "Suspicious file upload detected"
+          description: "{{ $value }} suspicious file uploads detected in the last 5 minutes"
