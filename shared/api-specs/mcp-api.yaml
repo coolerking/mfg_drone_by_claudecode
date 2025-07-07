@@ -802,7 +802,6 @@ components:
           type: boolean
           default: true
           description: 安全チェック実行
-      required: []
 
     MoveCommand:
       type: object
@@ -867,7 +866,6 @@ components:
         metadata:
           type: object
           description: 追加メタデータ
-      required: []
 
     StreamingCommand:
       type: object
