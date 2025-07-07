@@ -19,6 +19,9 @@ export {
 export { default as ErrorAnalyticsDashboard } from './ErrorAnalyticsDashboard'
 export { default as AdvancedLogAnalyzer } from './AdvancedLogAnalyzer'
 
+// System health monitoring components
+export { default as SystemHealthDashboard } from './SystemHealthDashboard'
+
 // Re-export types
 export type {
   SystemConfiguration,
