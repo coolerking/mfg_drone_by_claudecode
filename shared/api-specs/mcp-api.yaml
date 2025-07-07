@@ -1,0 +1,1310 @@
+openapi: 3.0.3
+info:
+  title: MCP Drone Control Server API
+  description: |
+    MCP (Model Context Protocol) サーバーAPI仕様。
+    自然言語コマンドを受け付けて、ドローン制御バックエンドシステムとの橋渡しを行います。
+    MCPクライアントから自然言語プロンプトを受け取り、適切なバックエンドAPI操作に変換して実行します。
+  version: 1.0.0
+  contact:
+    name: MFG Drone MCP Server
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8001
+    description: MCP サーバー開発環境
+  - url: http://raspberrypi.local:8001
+    description: MCP サーバー Raspberry Pi環境
+
+tags:
+  - name: command
+    description: 自然言語コマンド処理
+  - name: drone-query
+    description: ドローン情報取得
+  - name: drone-control
+    description: ドローン制御操作
+  - name: camera
+    description: カメラ・ビジョン操作
+  - name: system
+    description: システム状態管理
+
+paths:
+  # 自然言語コマンド処理
+  /mcp/command:
+    post:
+      tags: [command]
+      summary: 自然言語コマンド実行
+      description: |
+        自然言語で記述されたコマンドを解析し、適切なバックエンドAPI操作を実行します。
+        例: "ドローンXXXに接続して", "高さ1メートルまで上昇して", "右に50センチ移動して"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NaturalLanguageCommand'
+      responses:
+        '200':
+          description: コマンド実行成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResponse'
+        '400':
+          description: コマンド解析エラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /mcp/command/batch:
+    post:
+      tags: [command]
+      summary: 複数自然言語コマンド一括実行
+      description: |
+        複数の自然言語コマンドを一括で実行します。
+        複雑な操作シーケンスを一度に処理することができます。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchCommand'
+      responses:
+        '200':
+          description: 一括コマンド実行成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchCommandResponse'
+        '400':
+          description: コマンド解析エラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ドローン情報取得
+  /mcp/drones:
+    get:
+      tags: [drone-query]
+      summary: 登録ドローン一覧取得
+      description: |
+        現在登録されているドローンの一覧を取得します。
+        自然言語コマンド例: "現在登録されているドローンは？", "利用可能なドローンを教えて"
+      responses:
+        '200':
+          description: ドローン一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DroneListResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /mcp/drones/available:
+    get:
+      tags: [drone-query]
+      summary: 操作可能ドローン一覧取得
+      description: |
+        現在操作可能なドローンの一覧を取得します。
+        自然言語コマンド例: "操作可能なドローンは？", "接続できるドローンを教えて"
+      responses:
+        '200':
+          description: 操作可能ドローン一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DroneListResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /mcp/drones/{droneId}/status:
+    get:
+      tags: [drone-query]
+      summary: ドローン状態取得
+      description: |
+        指定されたドローンの現在状態を取得します。
+        自然言語コマンド例: "ドローンXXXの状態は？", "ドローンはどういう状態？"
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      responses:
+        '200':
+          description: ドローン状態
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DroneStatusResponse'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # ドローン制御操作
+  /mcp/drones/{droneId}/connect:
+    post:
+      tags: [drone-control]
+      summary: ドローン接続
+      description: |
+        指定されたドローンに接続します。
+        自然言語コマンド例: "ドローンXXXに接続して", "ドローンに繋げて"
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      responses:
+        '200':
+          description: 接続成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+        '409':
+          $ref: '#/components/responses/DroneAlreadyConnected'
+        '503':
+          $ref: '#/components/responses/DroneUnavailable'
+
+  /mcp/drones/{droneId}/disconnect:
+    post:
+      tags: [drone-control]
+      summary: ドローン切断
+      description: |
+        指定されたドローンから切断します。
+        自然言語コマンド例: "ドローンから切断して", "接続を切って"
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      responses:
+        '200':
+          description: 切断成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+
+  /mcp/drones/{droneId}/takeoff:
+    post:
+      tags: [drone-control]
+      summary: 離陸
+      description: |
+        ドローンを離陸させます。
+        自然言語コマンド例: "ドローンを起動して", "離陸して", "飛び立って"
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TakeoffCommand'
+      responses:
+        '200':
+          description: 離陸成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        '400':
+          $ref: '#/components/responses/DroneNotReady'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+        '503':
+          $ref: '#/components/responses/DroneUnavailable'
+
+  /mcp/drones/{droneId}/land:
+    post:
+      tags: [drone-control]
+      summary: 着陸
+      description: |
+        ドローンを着陸させます。
+        自然言語コマンド例: "ドローンを着陸させて", "降りて", "着陸して"
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      responses:
+        '200':
+          description: 着陸成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+        '503':
+          $ref: '#/components/responses/DroneUnavailable'
+
+  /mcp/drones/{droneId}/move:
+    post:
+      tags: [drone-control]
+      summary: 移動
+      description: |
+        ドローンを指定方向・距離で移動させます。
+        自然言語コマンド例: "右に50センチ移動して", "前に1メートル進んで", "上に30センチ上がって"
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveCommand'
+      responses:
+        '200':
+          description: 移動成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        '400':
+          $ref: '#/components/responses/InvalidCommand'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+        '503':
+          $ref: '#/components/responses/DroneUnavailable'
+
+  /mcp/drones/{droneId}/rotate:
+    post:
+      tags: [drone-control]
+      summary: 回転
+      description: |
+        ドローンを指定角度で回転させます。
+        自然言語コマンド例: "右に90度回転して", "左に45度向きを変えて", "180度回って"
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RotateCommand'
+      responses:
+        '200':
+          description: 回転成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        '400':
+          $ref: '#/components/responses/InvalidCommand'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+        '503':
+          $ref: '#/components/responses/DroneUnavailable'
+
+  /mcp/drones/{droneId}/emergency:
+    post:
+      tags: [drone-control]
+      summary: 緊急停止
+      description: |
+        ドローンを緊急停止させます。
+        自然言語コマンド例: "緊急停止して", "止まって", "ストップ"
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      responses:
+        '200':
+          description: 緊急停止成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+
+  /mcp/drones/{droneId}/altitude:
+    post:
+      tags: [drone-control]
+      summary: 高度調整
+      description: |
+        ドローンの高度を指定値に調整します。
+        自然言語コマンド例: "高度を1メートルにして", "2メートルの高さまで上がって"
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AltitudeCommand'
+      responses:
+        '200':
+          description: 高度調整成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        '400':
+          $ref: '#/components/responses/InvalidCommand'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+        '503':
+          $ref: '#/components/responses/DroneUnavailable'
+
+  # カメラ・ビジョン操作
+  /mcp/drones/{droneId}/camera/photo:
+    post:
+      tags: [camera]
+      summary: 写真撮影
+      description: |
+        ドローンで写真を撮影します。
+        自然言語コマンド例: "写真を撮って", "撮影して", "カメラで撮って"
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhotoCommand'
+      responses:
+        '200':
+          description: 撮影成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoResponse'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+        '503':
+          $ref: '#/components/responses/DroneUnavailable'
+
+  /mcp/drones/{droneId}/camera/streaming:
+    post:
+      tags: [camera]
+      summary: カメラストリーミング制御
+      description: |
+        ドローンのカメラストリーミングを開始・停止します。
+        自然言語コマンド例: "カメラストリーミングを開始して", "ストリーミングを止めて"
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StreamingCommand'
+      responses:
+        '200':
+          description: ストリーミング制御成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+        '503':
+          $ref: '#/components/responses/DroneUnavailable'
+
+  /mcp/drones/{droneId}/learning/collect:
+    post:
+      tags: [camera]
+      summary: 学習データ収集
+      description: |
+        物体追従学習用のデータを収集します。
+        前後左右など複数の角度から対象物体を撮影し、学習データセットを作成します。
+        自然言語コマンド例: "正面の物体を学習するために撮影して", "学習データを収集して"
+      parameters:
+        - $ref: '#/components/parameters/DroneId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LearningDataCommand'
+      responses:
+        '200':
+          description: 学習データ収集成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningDataResponse'
+        '400':
+          $ref: '#/components/responses/InvalidCommand'
+        '404':
+          $ref: '#/components/responses/DroneNotFound'
+        '503':
+          $ref: '#/components/responses/DroneUnavailable'
+
+  /mcp/vision/detection:
+    post:
+      tags: [camera]
+      summary: 物体検出
+      description: |
+        現在のカメラ画像から物体を検出します。
+        自然言語コマンド例: "何が見えるか教えて", "物体を検出して"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DetectionCommand'
+      responses:
+        '200':
+          description: 物体検出成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetectionResponse'
+        '400':
+          $ref: '#/components/responses/InvalidCommand'
+        '404':
+          $ref: '#/components/responses/ModelNotFound'
+
+  /mcp/vision/tracking:
+    post:
+      tags: [camera]
+      summary: 物体追跡制御
+      description: |
+        物体追跡を開始・停止します。
+        自然言語コマンド例: "物体を追跡して", "追跡を開始して", "追跡を停止して"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackingCommand'
+      responses:
+        '200':
+          description: 追跡制御成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+        '400':
+          $ref: '#/components/responses/InvalidCommand'
+        '404':
+          $ref: '#/components/responses/ModelNotFound'
+        '409':
+          $ref: '#/components/responses/TrackingAlreadyActive'
+
+  # システム状態管理
+  /mcp/system/status:
+    get:
+      tags: [system]
+      summary: システム状態取得
+      description: |
+        MCPサーバーとバックエンドシステムの状態を取得します。
+        自然言語コマンド例: "システムの状態は？", "正常に動作している？"
+      responses:
+        '200':
+          description: システム状態
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatusResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /mcp/system/health:
+    get:
+      tags: [system]
+      summary: ヘルスチェック
+      description: |
+        MCPサーバーのヘルスチェックを実行します。
+        自然言語コマンド例: "サーバーは正常？", "接続確認"
+      responses:
+        '200':
+          description: ヘルスチェック成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: サービス利用不可
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+components:
+  parameters:
+    DroneId:
+      name: droneId
+      in: path
+      required: true
+      description: ドローンID
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9_-]+$'
+
+  schemas:
+    # 自然言語コマンド関連
+    NaturalLanguageCommand:
+      type: object
+      properties:
+        command:
+          type: string
+          description: 自然言語コマンド
+          example: "ドローンAAに接続して高さ1メートルまで上昇して"
+        context:
+          type: object
+          description: 追加のコンテキスト情報
+          properties:
+            drone_id:
+              type: string
+              description: 対象ドローンID（省略可）
+            language:
+              type: string
+              default: "ja"
+              description: 言語設定
+        options:
+          type: object
+          description: 実行オプション
+          properties:
+            confirm_before_execution:
+              type: boolean
+              default: false
+              description: 実行前確認
+            dry_run:
+              type: boolean
+              default: false
+              description: ドライラン実行
+      required: [command]
+
+    BatchCommand:
+      type: object
+      properties:
+        commands:
+          type: array
+          items:
+            $ref: '#/components/schemas/NaturalLanguageCommand'
+          description: 実行するコマンド一覧
+        execution_mode:
+          type: string
+          enum: [sequential, parallel]
+          default: sequential
+          description: 実行モード
+        stop_on_error:
+          type: boolean
+          default: true
+          description: エラー時停止
+      required: [commands]
+
+    CommandResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: 実行成功フラグ
+        message:
+          type: string
+          description: 実行結果メッセージ
+        parsed_intent:
+          type: object
+          description: 解析された意図
+          properties:
+            action:
+              type: string
+              description: 実行アクション
+            parameters:
+              type: object
+              description: 抽出されたパラメータ
+            confidence:
+              type: number
+              minimum: 0
+              maximum: 1
+              description: 解析信頼度
+        execution_details:
+          type: object
+          description: 実行詳細
+          properties:
+            backend_calls:
+              type: array
+              items:
+                type: object
+              description: 実行されたバックエンドAPI呼び出し
+            execution_time:
+              type: number
+              description: 実行時間（秒）
+        result:
+          type: object
+          description: 実行結果データ
+        timestamp:
+          type: string
+          format: date-time
+          description: 実行時刻
+      required: [success, message, timestamp]
+
+    BatchCommandResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: 全体成功フラグ
+        message:
+          type: string
+          description: 全体結果メッセージ
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommandResponse'
+          description: 各コマンドの実行結果
+        summary:
+          type: object
+          description: 実行サマリー
+          properties:
+            total_commands:
+              type: integer
+              description: 総コマンド数
+            successful_commands:
+              type: integer
+              description: 成功コマンド数
+            failed_commands:
+              type: integer
+              description: 失敗コマンド数
+            total_execution_time:
+              type: number
+              description: 総実行時間（秒）
+        timestamp:
+          type: string
+          format: date-time
+          description: 実行時刻
+      required: [success, message, results, summary, timestamp]
+
+    CommandError:
+      type: object
+      properties:
+        error:
+          type: boolean
+          default: true
+        error_code:
+          type: string
+          description: エラーコード
+        message:
+          type: string
+          description: エラーメッセージ
+        details:
+          type: object
+          description: エラー詳細
+          properties:
+            parsing_error:
+              type: string
+              description: 解析エラー詳細
+            suggested_corrections:
+              type: array
+              items:
+                type: string
+              description: 修正提案
+            original_command:
+              type: string
+              description: 元のコマンド
+        timestamp:
+          type: string
+          format: date-time
+          description: エラー発生時刻
+      required: [error, error_code, message, timestamp]
+
+    # ドローン関連
+    DroneListResponse:
+      type: object
+      properties:
+        drones:
+          type: array
+          items:
+            $ref: '#/components/schemas/DroneInfo'
+          description: ドローン一覧
+        count:
+          type: integer
+          description: ドローン数
+        message:
+          type: string
+          description: メッセージ
+        timestamp:
+          type: string
+          format: date-time
+          description: 取得時刻
+      required: [drones, count, timestamp]
+
+    DroneInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ドローンID
+        name:
+          type: string
+          description: ドローン名
+        type:
+          type: string
+          enum: [real, dummy]
+          description: ドローンタイプ
+        status:
+          type: string
+          enum: [available, connected, busy, offline, error]
+          description: 現在ステータス
+        capabilities:
+          type: array
+          items:
+            type: string
+          description: 機能一覧
+        last_seen:
+          type: string
+          format: date-time
+          description: 最終確認時刻
+      required: [id, name, type, status]
+
+    DroneStatusResponse:
+      type: object
+      properties:
+        drone_id:
+          type: string
+          description: ドローンID
+        status:
+          type: object
+          description: ドローン状態
+          properties:
+            connection_status:
+              type: string
+              enum: [disconnected, connected, error]
+              description: 接続状態
+            flight_status:
+              type: string
+              enum: [landed, flying, hovering, landing, taking_off]
+              description: 飛行状態
+            battery_level:
+              type: integer
+              minimum: 0
+              maximum: 100
+              description: バッテリーレベル（%）
+            height:
+              type: integer
+              minimum: 0
+              description: 高度（cm）
+            temperature:
+              type: number
+              description: 温度（℃）
+            wifi_signal:
+              type: integer
+              minimum: 0
+              maximum: 100
+              description: WiFi信号強度（%）
+        message:
+          type: string
+          description: ステータスメッセージ
+        timestamp:
+          type: string
+          format: date-time
+          description: 取得時刻
+      required: [drone_id, status, timestamp]
+
+    # ドローン制御コマンド
+    TakeoffCommand:
+      type: object
+      properties:
+        target_height:
+          type: integer
+          minimum: 20
+          maximum: 300
+          description: 目標高度（cm）
+        safety_check:
+          type: boolean
+          default: true
+          description: 安全チェック実行
+      required: []
+
+    MoveCommand:
+      type: object
+      properties:
+        direction:
+          type: string
+          enum: [up, down, left, right, forward, back]
+          description: 移動方向
+        distance:
+          type: integer
+          minimum: 20
+          maximum: 500
+          description: 移動距離（cm）
+        speed:
+          type: integer
+          minimum: 10
+          maximum: 100
+          description: 移動速度（cm/s）
+      required: [direction, distance]
+
+    RotateCommand:
+      type: object
+      properties:
+        direction:
+          type: string
+          enum: [clockwise, counter_clockwise, left, right]
+          description: 回転方向
+        angle:
+          type: integer
+          minimum: 1
+          maximum: 360
+          description: 回転角度（度）
+      required: [direction, angle]
+
+    AltitudeCommand:
+      type: object
+      properties:
+        target_height:
+          type: integer
+          minimum: 20
+          maximum: 300
+          description: 目標高度（cm）
+        mode:
+          type: string
+          enum: [absolute, relative]
+          default: absolute
+          description: 高度指定モード
+      required: [target_height]
+
+    # カメラ・ビジョン関連
+    PhotoCommand:
+      type: object
+      properties:
+        filename:
+          type: string
+          description: 保存ファイル名（省略可）
+        quality:
+          type: string
+          enum: [high, medium, low]
+          default: high
+          description: 画質設定
+        metadata:
+          type: object
+          description: 追加メタデータ
+      required: []
+
+    StreamingCommand:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [start, stop]
+          description: ストリーミング制御
+        quality:
+          type: string
+          enum: [high, medium, low]
+          default: medium
+          description: ストリーミング品質
+        resolution:
+          type: string
+          enum: [720p, 480p, 360p]
+          default: 720p
+          description: 解像度
+      required: [action]
+
+    LearningDataCommand:
+      type: object
+      properties:
+        object_name:
+          type: string
+          description: 学習対象物体名
+        capture_positions:
+          type: array
+          items:
+            type: string
+            enum: [front, back, left, right, top, bottom]
+          default: [front, back, left, right]
+          description: 撮影位置
+        movement_distance:
+          type: integer
+          minimum: 20
+          maximum: 100
+          default: 30
+          description: 移動距離（cm）
+        photos_per_position:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 3
+          description: 位置あたり撮影枚数
+        dataset_name:
+          type: string
+          description: データセット名
+      required: [object_name]
+
+    DetectionCommand:
+      type: object
+      properties:
+        drone_id:
+          type: string
+          description: 対象ドローンID
+        model_id:
+          type: string
+          description: 使用モデルID
+        confidence_threshold:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.5
+          description: 信頼度閾値
+      required: [drone_id]
+
+    TrackingCommand:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [start, stop]
+          description: 追跡制御
+        drone_id:
+          type: string
+          description: 対象ドローンID
+        model_id:
+          type: string
+          description: 使用モデルID
+        follow_distance:
+          type: integer
+          minimum: 50
+          maximum: 500
+          default: 200
+          description: 追従距離（cm）
+        confidence_threshold:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.5
+          description: 信頼度閾値
+      required: [action, drone_id]
+
+    # レスポンス
+    OperationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: 操作成功フラグ
+        message:
+          type: string
+          description: 操作結果メッセージ
+        operation_id:
+          type: string
+          description: 操作ID
+        execution_time:
+          type: number
+          description: 実行時間（秒）
+        timestamp:
+          type: string
+          format: date-time
+          description: 実行時刻
+      required: [success, message, timestamp]
+
+    PhotoResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: 撮影成功フラグ
+        message:
+          type: string
+          description: 撮影結果メッセージ
+        photo:
+          type: object
+          description: 撮影画像情報
+          properties:
+            id:
+              type: string
+              description: 画像ID
+            filename:
+              type: string
+              description: ファイル名
+            path:
+              type: string
+              description: ファイルパス
+            size:
+              type: integer
+              description: ファイルサイズ（bytes）
+            timestamp:
+              type: string
+              format: date-time
+              description: 撮影時刻
+        timestamp:
+          type: string
+          format: date-time
+          description: レスポンス時刻
+      required: [success, message, timestamp]
+
+    LearningDataResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: 収集成功フラグ
+        message:
+          type: string
+          description: 収集結果メッセージ
+        dataset:
+          type: object
+          description: 作成されたデータセット情報
+          properties:
+            id:
+              type: string
+              description: データセットID
+            name:
+              type: string
+              description: データセット名
+            image_count:
+              type: integer
+              description: 収集画像数
+            positions_captured:
+              type: array
+              items:
+                type: string
+              description: 撮影完了位置
+        execution_summary:
+          type: object
+          description: 実行サマリー
+          properties:
+            total_moves:
+              type: integer
+              description: 総移動回数
+            total_photos:
+              type: integer
+              description: 総撮影枚数
+            execution_time:
+              type: number
+              description: 実行時間（秒）
+        timestamp:
+          type: string
+          format: date-time
+          description: 完了時刻
+      required: [success, message, timestamp]
+
+    DetectionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: 検出成功フラグ
+        message:
+          type: string
+          description: 検出結果メッセージ
+        detections:
+          type: array
+          items:
+            type: object
+            properties:
+              label:
+                type: string
+                description: 検出されたオブジェクトのラベル
+              confidence:
+                type: number
+                minimum: 0
+                maximum: 1
+                description: 信頼度
+              bbox:
+                type: object
+                properties:
+                  x:
+                    type: number
+                    description: X座標
+                  y:
+                    type: number
+                    description: Y座標
+                  width:
+                    type: number
+                    description: 幅
+                  height:
+                    type: number
+                    description: 高さ
+          description: 検出結果一覧
+        processing_time:
+          type: number
+          description: 処理時間（秒）
+        timestamp:
+          type: string
+          format: date-time
+          description: 検出時刻
+      required: [success, message, detections, timestamp]
+
+    # システム状態
+    SystemStatusResponse:
+      type: object
+      properties:
+        mcp_server:
+          type: object
+          description: MCPサーバー状態
+          properties:
+            status:
+              type: string
+              enum: [running, stopped, error]
+              description: サーバー状態
+            uptime:
+              type: integer
+              description: 稼働時間（秒）
+            version:
+              type: string
+              description: バージョン
+            active_connections:
+              type: integer
+              description: アクティブ接続数
+        backend_system:
+          type: object
+          description: バックエンドシステム状態
+          properties:
+            connection_status:
+              type: string
+              enum: [connected, disconnected, error]
+              description: 接続状態
+            api_endpoint:
+              type: string
+              description: APIエンドポイント
+            response_time:
+              type: number
+              description: レスポンス時間（ms）
+        connected_drones:
+          type: integer
+          description: 接続中ドローン数
+        active_operations:
+          type: integer
+          description: アクティブ操作数
+        system_health:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+          description: システムヘルス
+        timestamp:
+          type: string
+          format: date-time
+          description: 取得時刻
+      required: [mcp_server, backend_system, system_health, timestamp]
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+          description: ヘルス状態
+        checks:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: チェック名
+              status:
+                type: string
+                enum: [pass, fail]
+                description: チェック結果
+              message:
+                type: string
+                description: チェック詳細
+              response_time:
+                type: number
+                description: レスポンス時間（ms）
+          description: ヘルスチェック詳細
+        timestamp:
+          type: string
+          format: date-time
+          description: チェック時刻
+      required: [status, checks, timestamp]
+
+  responses:
+    DroneNotFound:
+      description: ドローンが見つかりません
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CommandError'
+          example:
+            error: true
+            error_code: DRONE_NOT_FOUND
+            message: 指定されたドローンが見つかりません
+            timestamp: '2023-01-01T12:00:00Z'
+
+    DroneNotReady:
+      description: ドローンが操作可能な状態ではありません
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CommandError'
+          example:
+            error: true
+            error_code: DRONE_NOT_READY
+            message: ドローンが操作可能な状態ではありません（バッテリー不足など）
+            timestamp: '2023-01-01T12:00:00Z'
+
+    DroneAlreadyConnected:
+      description: ドローンは既に接続されています
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CommandError'
+          example:
+            error: true
+            error_code: DRONE_ALREADY_CONNECTED
+            message: ドローンは既に接続されています
+            timestamp: '2023-01-01T12:00:00Z'
+
+    DroneUnavailable:
+      description: ドローンが利用できません
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CommandError'
+          example:
+            error: true
+            error_code: DRONE_UNAVAILABLE
+            message: ドローンが利用できません（接続エラー、ハードウェア障害など）
+            timestamp: '2023-01-01T12:00:00Z'
+
+    InvalidCommand:
+      description: 無効なコマンド
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CommandError'
+          example:
+            error: true
+            error_code: INVALID_COMMAND
+            message: 指定されたコマンドは無効です
+            timestamp: '2023-01-01T12:00:00Z'
+
+    ModelNotFound:
+      description: モデルが見つかりません
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CommandError'
+          example:
+            error: true
+            error_code: MODEL_NOT_FOUND
+            message: 指定されたモデルが見つかりません
+            timestamp: '2023-01-01T12:00:00Z'
+
+    TrackingAlreadyActive:
+      description: 追跡は既にアクティブです
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CommandError'
+          example:
+            error: true
+            error_code: TRACKING_ALREADY_ACTIVE
+            message: 物体追跡は既にアクティブです
+            timestamp: '2023-01-01T12:00:00Z'
+
+    InternalServerError:
+      description: 内部サーバーエラー
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CommandError'
+          example:
+            error: true
+            error_code: INTERNAL_SERVER_ERROR
+            message: 内部サーバーエラーが発生しました
+            timestamp: '2023-01-01T12:00:00Z'
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: MCP API認証キー
+
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT認証トークン
+
+security:
+  - ApiKeyAuth: []
+  - BearerAuth: []
