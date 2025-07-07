@@ -977,7 +977,6 @@ components:
           maximum: 0.5
           default: 0.2
           description: 検証データ分割比率
-      required: []
 
     TrainingJob:
       type: object
