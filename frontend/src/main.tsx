@@ -10,7 +10,17 @@ import { SnackbarProvider } from 'notistack'
 import App from './App'
 import { store } from './store'
 import { theme } from './styles/theme'
+import sentryService from './utils/sentry'
+import monitoring from './utils/monitoring'
 import './styles/global.css'
+
+// Initialize error tracking and monitoring
+sentryService.initialize()
+
+// Initialize frontend monitoring
+if (import.meta.env.PROD) {
+  monitoring // This will automatically initialize monitoring
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
