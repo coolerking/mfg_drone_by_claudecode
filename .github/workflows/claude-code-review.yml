@@ -59,7 +59,7 @@ jobs:
                 }
               }
             }
-          allowed_tools: ["mcp__sequential-thinking__sequentialthinking", "mcp__perplexity-ask__perplexityask"] 
+          allowed_tools: '["mcp__sequential-thinking__sequentialthinking", "mcp__perplexity-ask__perplexityask"]' 
           # Important: Each MCP tool from your server must be listed here, comma-separated
           # ... other inputs
           
