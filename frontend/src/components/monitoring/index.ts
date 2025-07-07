@@ -15,6 +15,10 @@ export {
   PerformanceDebugger
 } from './PerformanceMonitorHOC'
 
+// Error tracking and analysis components
+export { default as ErrorAnalyticsDashboard } from './ErrorAnalyticsDashboard'
+export { default as AdvancedLogAnalyzer } from './AdvancedLogAnalyzer'
+
 // Re-export types
 export type {
   SystemConfiguration,

@@ -39,6 +39,9 @@
     "perf:webvitals": "web-vitals --url=http://localhost:3000",
     "perf:bundle": "webpack-bundle-analyzer dist/stats.json",
     "perf:memory": "node --inspect scripts/memory-analysis.js",
+    "error:sentry:init": "sentry-wizard -i sourcemaps",
+    "error:analyze": "node scripts/error-analysis.js",
+    "error:report": "node scripts/error-report.js",
     "type-check": "tsc --noEmit",
     "preview": "vite preview",
     "preview:prod": "vite preview --mode production",
@@ -74,7 +77,10 @@
     "@tanstack/react-query": "^4.24.6",
     "react-webcam": "^7.0.1",
     "react-dropzone": "^14.2.3",
-    "lodash-es": "^4.17.21"
+    "lodash-es": "^4.17.21",
+    "@sentry/react": "^7.50.0",
+    "@sentry/tracing": "^7.50.0",
+    "@sentry/integrations": "^7.50.0"
   },
   "devDependencies": {
     "@types/react": "^18.0.28",
@@ -103,7 +109,9 @@
     "rollup-plugin-visualizer": "^5.9.0",
     "babel-plugin-react-remove-properties": "^0.3.0",
     "terser": "^5.16.6",
-    "vite-bundle-analyzer": "^0.7.0"
+    "vite-bundle-analyzer": "^0.7.0",
+    "@sentry/wizard": "^3.13.0",
+    "@sentry/cli": "^2.20.7"
   },
   "engines": {
     "node": ">=18.0.0"
