@@ -68,11 +68,24 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 backend_client = BackendClient()
 nlp_engine = EnhancedNLPEngine()
 command_router = EnhancedCommandRouter(backend_client)
-security_manager = SecurityManager(SecurityConfig(
-    jwt_secret=os.getenv("JWT_SECRET", "your-secure-secret-key"),
-    max_failed_attempts=int(os.getenv("MAX_FAILED_ATTEMPTS", "5")),
-    lockout_duration_minutes=int(os.getenv("LOCKOUT_DURATION", "15"))
-))
+def get_security_config() -> SecurityConfig:
+    """Get security configuration with proper validation"""
+    jwt_secret = os.getenv("JWT_SECRET")
+    if not jwt_secret:
+        raise ValueError(
+            "JWT_SECRET environment variable is required for security. "
+            "Please set a strong, randomly generated secret of at least 32 characters."
+        )
+    
+    return SecurityConfig(
+        jwt_secret=jwt_secret,
+        max_failed_attempts=int(os.getenv("MAX_FAILED_ATTEMPTS", "5")),
+        lockout_duration_minutes=int(os.getenv("LOCKOUT_DURATION", "15")),
+        allowed_ips=os.getenv("ALLOWED_IPS", "").split(",") if os.getenv("ALLOWED_IPS") else [],
+        blocked_ips=os.getenv("BLOCKED_IPS", "").split(",") if os.getenv("BLOCKED_IPS") else []
+    )
+
+security_manager = SecurityManager(get_security_config())
 monitoring_service = MonitoringService()
 
 # Application startup and shutdown events
@@ -279,21 +292,85 @@ async def value_error_handler(request: Request, exc: ValueError):
         ).dict()
     )
 
+# Secure user authentication configuration
+def get_user_credentials() -> Dict[str, Dict[str, str]]:
+    """Get user credentials from environment variables or secure storage"""
+    users = {}
+    
+    # Load admin credentials from environment
+    admin_username = os.getenv("ADMIN_USERNAME")
+    admin_password = os.getenv("ADMIN_PASSWORD")
+    if admin_username and admin_password:
+        users[admin_username] = {
+            "password": admin_password,
+            "security_level": SecurityLevel.ADMIN.value
+        }
+    
+    # Load operator credentials from environment
+    operator_username = os.getenv("OPERATOR_USERNAME")
+    operator_password = os.getenv("OPERATOR_PASSWORD")
+    if operator_username and operator_password:
+        users[operator_username] = {
+            "password": operator_password,
+            "security_level": SecurityLevel.OPERATOR.value
+        }
+    
+    # Load read-only credentials from environment
+    readonly_username = os.getenv("READONLY_USERNAME")
+    readonly_password = os.getenv("READONLY_PASSWORD")
+    if readonly_username and readonly_password:
+        users[readonly_username] = {
+            "password": readonly_password,
+            "security_level": SecurityLevel.READ_ONLY.value
+        }
+    
+    if not users:
+        raise ValueError(
+            "No user credentials configured. Please set environment variables: "
+            "ADMIN_USERNAME, ADMIN_PASSWORD, OPERATOR_USERNAME, OPERATOR_PASSWORD, etc."
+        )
+    
+    return users
+
 # Authentication endpoints
 @app.post("/auth/login", response_model=Dict[str, Any], tags=["authentication"])
-async def login(username: str, password: str, background_tasks: BackgroundTasks):
+async def login(username: str, password: str, background_tasks: BackgroundTasks, request: Request):
     """Login and get JWT token"""
-    # This is a simplified login - in production, verify against user database
-    if username == "admin" and password == "admin123":
+    client_ip = request.client.host
+    
+    try:
+        user_credentials = get_user_credentials()
+        
+        # Check if user exists and password matches
+        if username not in user_credentials or user_credentials[username]["password"] != password:
+            # Record failed attempt
+            security_manager.record_access_attempt(
+                client_ip, username, "/auth/login", False, "Invalid credentials"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials"
+            )
+        
+        # Check if account is locked
+        if security_manager.is_account_locked(username):
+            security_manager.record_access_attempt(
+                client_ip, username, "/auth/login", False, "Account locked"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_423_LOCKED,
+                detail="Account is temporarily locked due to multiple failed attempts"
+            )
+        
         user_id = username
-        security_level = SecurityLevel.ADMIN
-    elif username == "operator" and password == "operator123":
-        user_id = username
-        security_level = SecurityLevel.OPERATOR
-    else:
+        security_level = SecurityLevel(user_credentials[username]["security_level"])
+        
+    except ValueError as e:
+        # Configuration error
+        logger.error(f"Authentication configuration error: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Authentication service temporarily unavailable"
         )
     
     # Generate JWT token

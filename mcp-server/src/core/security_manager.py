@@ -76,7 +76,7 @@ class RateLimitConfig:
 @dataclass
 class SecurityConfig:
     """Security configuration"""
-    jwt_secret: str = "your-secret-key"
+    jwt_secret: Optional[str] = None
     jwt_expiry_minutes: int = 60
     max_failed_attempts: int = 5
     lockout_duration_minutes: int = 15
@@ -84,6 +84,34 @@ class SecurityConfig:
     allowed_ips: List[str] = field(default_factory=list)
     blocked_ips: List[str] = field(default_factory=list)
     enable_audit_logging: bool = True
+    
+    def __post_init__(self):
+        """Validate configuration after initialization"""
+        if not self.jwt_secret:
+            raise ValueError(
+                "JWT secret is required. Set JWT_SECRET environment variable or provide jwt_secret parameter. "
+                "Secret must be at least 32 characters long for security."
+            )
+        if len(self.jwt_secret) < 32:
+            raise ValueError(
+                "JWT secret must be at least 32 characters long for security. "
+                f"Current length: {len(self.jwt_secret)}"
+            )
+        # Ensure secret is not a default/weak value
+        weak_secrets = [
+            "your-secret-key",
+            "your-secure-secret-key", 
+            "your-secure-secret-key-change-in-production",
+            "secret",
+            "password",
+            "admin",
+            "test"
+        ]
+        if self.jwt_secret.lower() in [s.lower() for s in weak_secrets]:
+            raise ValueError(
+                f"JWT secret cannot be a default or weak value. "
+                f"Please use a strong, randomly generated secret."
+            )
 
 
 class SecurityManager:

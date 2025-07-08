@@ -49,8 +49,15 @@ class Phase5ServerManager:
         
     def setup_security(self) -> SecurityManager:
         """Setup security manager with configuration"""
+        jwt_secret = os.getenv("JWT_SECRET")
+        if not jwt_secret:
+            raise ValueError(
+                "JWT_SECRET environment variable is required for security. "
+                "Please set a strong, randomly generated secret of at least 32 characters."
+            )
+        
         security_config = SecurityConfig(
-            jwt_secret=os.getenv("JWT_SECRET", "your-secure-secret-key-change-in-production"),
+            jwt_secret=jwt_secret,
             jwt_expiry_minutes=int(os.getenv("JWT_EXPIRY_MINUTES", "60")),
             max_failed_attempts=int(os.getenv("MAX_FAILED_ATTEMPTS", "5")),
             lockout_duration_minutes=int(os.getenv("LOCKOUT_DURATION", "15")),
@@ -79,16 +86,30 @@ class Phase5ServerManager:
     
     def validate_environment(self) -> bool:
         """Validate environment configuration"""
-        required_vars = []
+        required_vars = ["JWT_SECRET"]
         missing_vars = []
         
         # Check critical environment variables
         if os.getenv("ENVIRONMENT") == "production":
-            required_vars = [
-                "JWT_SECRET",
-                "MFG_DRONE_ADMIN_KEY", 
-                "MFG_DRONE_READONLY_KEY"
+            required_vars.extend([
+                "ADMIN_USERNAME", "ADMIN_PASSWORD",
+                "OPERATOR_USERNAME", "OPERATOR_PASSWORD"
+            ])
+        else:
+            # For development, we still need at least one user
+            auth_vars = [
+                ("ADMIN_USERNAME", "ADMIN_PASSWORD"),
+                ("OPERATOR_USERNAME", "OPERATOR_PASSWORD"),
+                ("READONLY_USERNAME", "READONLY_PASSWORD")
             ]
+            has_user = any(os.getenv(user) and os.getenv(pwd) for user, pwd in auth_vars)
+            if not has_user:
+                logger.error(
+                    "At least one user must be configured. Set username/password pairs: "
+                    "ADMIN_USERNAME/ADMIN_PASSWORD, OPERATOR_USERNAME/OPERATOR_PASSWORD, or "
+                    "READONLY_USERNAME/READONLY_PASSWORD"
+                )
+                return False
         
         for var in required_vars:
             if not os.getenv(var):
@@ -101,7 +122,22 @@ class Phase5ServerManager:
         # Validate JWT secret strength
         jwt_secret = os.getenv("JWT_SECRET", "")
         if len(jwt_secret) < 32:
-            logger.warning("JWT secret should be at least 32 characters long for security")
+            logger.error("JWT secret must be at least 32 characters long for security")
+            return False
+        
+        # Check for weak JWT secrets
+        weak_secrets = [
+            "your-secret-key",
+            "your-secure-secret-key", 
+            "your-secure-secret-key-change-in-production",
+            "secret",
+            "password",
+            "admin",
+            "test"
+        ]
+        if jwt_secret.lower() in [s.lower() for s in weak_secrets]:
+            logger.error("JWT secret cannot be a default or weak value. Use a strong, randomly generated secret.")
+            return False
         
         # Validate backend API URL
         if not settings.backend_api_url:
