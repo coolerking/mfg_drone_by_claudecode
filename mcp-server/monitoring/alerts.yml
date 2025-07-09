@@ -1,0 +1,179 @@
+# Prometheus Alert Rules for MCP Server Phase 6-3
+# Production-ready alerting configuration
+
+groups:
+  - name: mcp-server-alerts
+    rules:
+      # High-level service alerts
+      - alert: MCPServerDown
+        expr: up{job="mcp-server"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: mcp-server
+        annotations:
+          summary: "MCP Server is down"
+          description: "MCP Server has been down for more than 1 minute"
+
+      - alert: MCPServerHighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="mcp-server"}[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: mcp-server
+        annotations:
+          summary: "MCP Server high latency"
+          description: "95th percentile latency is above 1 second"
+
+      - alert: MCPServerHighErrorRate
+        expr: rate(http_requests_total{job="mcp-server", status=~"5.."}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          service: mcp-server
+        annotations:
+          summary: "MCP Server high error rate"
+          description: "Error rate is above 10%"
+
+      # Security alerts
+      - alert: SecurityViolationDetected
+        expr: increase(security_violations_total{job="mcp-server"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: mcp-server
+          type: security
+        annotations:
+          summary: "Security violation detected"
+          description: "Security violations detected in the last 5 minutes"
+
+      - alert: HighFailedLoginAttempts
+        expr: increase(failed_login_attempts_total{job="mcp-server"}[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+          service: mcp-server
+          type: security
+        annotations:
+          summary: "High failed login attempts"
+          description: "More than 10 failed login attempts in the last 5 minutes"
+
+      - alert: AccountLockoutTriggered
+        expr: increase(account_lockouts_total{job="mcp-server"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: mcp-server
+          type: security
+        annotations:
+          summary: "Account lockout triggered"
+          description: "Account lockouts detected in the last 5 minutes"
+
+      # System resource alerts
+      - alert: HighCPUUsage
+        expr: system_cpu_usage_percent{job="mcp-server"} > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: mcp-server
+          type: system
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is above 80% for more than 5 minutes"
+
+      - alert: HighMemoryUsage
+        expr: system_memory_usage_percent{job="mcp-server"} > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: mcp-server
+          type: system
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is above 85% for more than 5 minutes"
+
+      - alert: LowDiskSpace
+        expr: system_disk_usage_percent{job="mcp-server"} > 90
+        for: 5m
+        labels:
+          severity: critical
+          service: mcp-server
+          type: system
+        annotations:
+          summary: "Low disk space"
+          description: "Disk usage is above 90% for more than 5 minutes"
+
+      # Database/Redis alerts
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis is down"
+          description: "Redis has been down for more than 1 minute"
+
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes{job="redis"} / redis_memory_max_bytes{job="redis"} > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis memory usage is above 80%"
+
+      # Application-specific alerts
+      - alert: HighActiveConnections
+        expr: active_connections_count{job="mcp-server"} > 100
+        for: 5m
+        labels:
+          severity: warning
+          service: mcp-server
+          type: application
+        annotations:
+          summary: "High number of active connections"
+          description: "More than 100 active connections for more than 5 minutes"
+
+      - alert: DroneConnectionFailure
+        expr: increase(drone_connection_failures_total{job="mcp-server"}[5m]) > 5
+        for: 1m
+        labels:
+          severity: warning
+          service: mcp-server
+          type: application
+        annotations:
+          summary: "Drone connection failures"
+          description: "More than 5 drone connection failures in the last 5 minutes"
+
+      - alert: BackendAPIDown
+        expr: backend_api_healthy{job="mcp-server"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: backend-api
+        annotations:
+          summary: "Backend API is down"
+          description: "Backend API has been unreachable for more than 1 minute"
+
+      # Monitoring system alerts
+      - alert: PrometheusDown
+        expr: up{job="prometheus"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: prometheus
+        annotations:
+          summary: "Prometheus is down"
+          description: "Prometheus has been down for more than 1 minute"
+
+      - alert: HighPrometheusScrapeFailures
+        expr: rate(prometheus_scrape_failures_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: prometheus
+        annotations:
+          summary: "High Prometheus scrape failures"
+          description: "Prometheus scrape failure rate is above 10%"

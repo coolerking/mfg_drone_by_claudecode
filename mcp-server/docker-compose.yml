@@ -1,0 +1,163 @@
+version: '3.8'
+
+services:
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mcp-server-prod
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      # Basic Configuration
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - DEBUG=false
+      
+      # Security Configuration (MUST be set via .env file or environment)
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRY_MINUTES=${JWT_EXPIRY_MINUTES:-60}
+      - MAX_FAILED_ATTEMPTS=${MAX_FAILED_ATTEMPTS:-5}
+      - LOCKOUT_DURATION=${LOCKOUT_DURATION:-15}
+      
+      # User Authentication (MUST be set via .env file)
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - OPERATOR_USERNAME=${OPERATOR_USERNAME:-operator}
+      - OPERATOR_PASSWORD=${OPERATOR_PASSWORD}
+      - READONLY_USERNAME=${READONLY_USERNAME:-readonly}
+      - READONLY_PASSWORD=${READONLY_PASSWORD}
+      
+      # Monitoring & Logging
+      - ENABLE_MONITORING=true
+      - ENABLE_AUDIT_LOGGING=true
+      - MONITORING_INTERVAL=${MONITORING_INTERVAL:-30}
+      
+      # Network Configuration
+      - ALLOWED_IPS=${ALLOWED_IPS:-}
+      - BLOCKED_IPS=${BLOCKED_IPS:-}
+      
+      # Backend API Configuration
+      - BACKEND_API_URL=${BACKEND_API_URL:-http://backend:8000}
+      - BACKEND_API_KEY=${BACKEND_API_KEY:-}
+      
+      # SSL/TLS Configuration
+      - SSL_ENABLED=${SSL_ENABLED:-false}
+      - SSL_CERT_PATH=${SSL_CERT_PATH:-/app/certs/cert.pem}
+      - SSL_KEY_PATH=${SSL_KEY_PATH:-/app/certs/key.pem}
+    
+    volumes:
+      # Configuration files
+      - ./config:/app/config:ro
+      
+      # Persistent data
+      - mcp-server-data:/app/data
+      - mcp-server-logs:/app/logs
+      
+      # SSL certificates (if using SSL)
+      - ${SSL_CERTS_PATH:-./certs}:/app/certs:ro
+    
+    networks:
+      - mcp-network
+      - backend-network
+    
+    depends_on:
+      - redis
+      - prometheus
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/mcp/system/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mcp-server.rule=Host(`mcp.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.mcp-server.tls=true"
+      - "traefik.http.services.mcp-server.loadbalancer.server.port=8003"
+
+  # Redis for session management and caching
+  redis:
+    image: redis:7-alpine
+    container_name: mcp-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - mcp-network
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redispassword}
+
+  # Prometheus for monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: mcp-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - mcp-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: mcp-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-grafanapassword}
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - mcp-network
+
+  # Nginx reverse proxy (optional)
+  nginx:
+    image: nginx:alpine
+    container_name: mcp-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${SSL_CERTS_PATH:-./certs}:/etc/nginx/certs:ro
+    networks:
+      - mcp-network
+    depends_on:
+      - mcp-server
+
+networks:
+  mcp-network:
+    driver: bridge
+  backend-network:
+    external: true
+    name: backend_network
+
+volumes:
+  mcp-server-data:
+    driver: local
+  mcp-server-logs:
+    driver: local
+  redis-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
