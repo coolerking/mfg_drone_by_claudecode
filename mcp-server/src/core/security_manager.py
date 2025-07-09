@@ -243,6 +243,7 @@ class SecurityManager:
         self.mfa_setups: Dict[str, MFASetup] = {}
         self.extended_api_keys: Dict[str, ExtendedAPIKey] = {}
         self.user_roles: Dict[str, UserRole] = {}
+        self.user_role_assignments: Dict[str, str] = {}
         self.enhanced_sessions: Dict[str, UserSession] = {}
         self.session_fingerprints: Dict[str, str] = {}
         
@@ -565,10 +566,51 @@ class SecurityManager:
             return False
     
     def _verify_totp_code(self, secret: str, code: str) -> bool:
-        """Verify TOTP code (simplified implementation)"""
-        # In a real implementation, use pyotp library
-        # This is a placeholder that accepts any 6-digit code
-        return len(code) == 6 and code.isdigit()
+        """Verify TOTP code using standard algorithm"""
+        import struct
+        
+        if not code or len(code) != 6 or not code.isdigit():
+            return False
+            
+        try:
+            # TOTP implementation following RFC 6238
+            # Time step is 30 seconds
+            time_step = 30
+            current_time = int(time.time() // time_step)
+            
+            # Allow some time drift (±1 time step)
+            for time_counter in [current_time - 1, current_time, current_time + 1]:
+                if self._generate_totp_code(secret, time_counter) == code:
+                    return True
+                    
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error verifying TOTP code: {str(e)}")
+            return False
+    
+    def _generate_totp_code(self, secret: str, time_counter: int) -> str:
+        """Generate TOTP code for given time counter"""
+        import struct
+        
+        # Decode base32 secret
+        secret_bytes = base64.b32decode(secret.upper())
+        
+        # Convert time counter to bytes
+        time_bytes = struct.pack('>Q', time_counter)
+        
+        # Generate HMAC-SHA1
+        hmac_hash = hmac.new(secret_bytes, time_bytes, hashlib.sha1).digest()
+        
+        # Dynamic truncation
+        offset = hmac_hash[-1] & 0x0f
+        truncated_hash = hmac_hash[offset:offset + 4]
+        
+        # Extract 4-byte dynamic binary code
+        code = struct.unpack('>I', truncated_hash)[0] & 0x7fffffff
+        
+        # Generate 6-digit code
+        return f"{code % 1000000:06d}"
     
     def is_mfa_required(self, user_id: str, security_level: SecurityLevel) -> bool:
         """Check if MFA is required for user"""
@@ -817,9 +859,15 @@ class SecurityManager:
     
     def get_user_role(self, user_id: str) -> Optional[UserRole]:
         """Get user role"""
-        # In a real implementation, this would query a database
-        # For now, return default role
-        return self.user_roles.get(self.config.default_user_role)
+        # Check if user has assigned role in user_role_assignments
+        if not hasattr(self, 'user_role_assignments'):
+            self.user_role_assignments = {}
+            
+        # Get assigned role or default role
+        assigned_role_name = self.user_role_assignments.get(user_id, self.config.default_user_role)
+        
+        # Return the role object
+        return self.user_roles.get(assigned_role_name)
     
     def assign_role(self, user_id: str, role_name: str) -> bool:
         """Assign role to user"""
@@ -827,8 +875,13 @@ class SecurityManager:
             if role_name not in self.user_roles:
                 return False
             
-            # In a real implementation, this would update a database
-            # For now, just log the event
+            # Initialize user_role_assignments if it doesn't exist
+            if not hasattr(self, 'user_role_assignments'):
+                self.user_role_assignments = {}
+            
+            # Assign the role to the user
+            self.user_role_assignments[user_id] = role_name
+            
             self.log_security_event(
                 "ROLE_ASSIGNED",
                 ThreatLevel.LOW,

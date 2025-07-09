@@ -451,8 +451,8 @@ class AuditService:
             logger.error(f"Error tracking configuration change: {str(e)}")
             return False
     
-    def analyze_access_patterns(self, user_id: str, days_back: int = 30) -> List[AccessPattern]:
-        """Analyze user access patterns"""
+    def analyze_access_patterns(self, user_id: str, days_back: int = 30, limit: int = 1000) -> List[AccessPattern]:
+        """Analyze user access patterns with pagination support"""
         try:
             end_time = datetime.utcnow()
             start_time = end_time - timedelta(days=days_back)
@@ -464,8 +464,9 @@ class AuditService:
                     FROM audit_logs
                     WHERE user_id = ? AND timestamp BETWEEN ? AND ?
                     AND event_type IN ('data_access', 'user_login')
-                    ORDER BY timestamp
-                ''', (user_id, start_time.isoformat(), end_time.isoformat()))
+                    ORDER BY timestamp DESC
+                    LIMIT ?
+                ''', (user_id, start_time.isoformat(), end_time.isoformat(), limit))
                 
                 rows = cursor.fetchall()
             
@@ -561,7 +562,7 @@ class AuditService:
             times = sorted(data['access_times'])
             rapid_access = 0
             for i in range(1, len(times)):
-                if (times[i] - times[i-1]).seconds < 60:
+                if (times[i] - times[i-1]).total_seconds() < 60:
                     rapid_access += 1
             
             if rapid_access > len(times) * 0.5:
@@ -822,8 +823,9 @@ class AuditService:
             logger.error(f"Error storing compliance report: {str(e)}")
     
     def export_audit_logs(self, format: str = "json", period_start: datetime = None,
-                         period_end: datetime = None, filters: Dict[str, Any] = None) -> str:
-        """Export audit logs"""
+                         period_end: datetime = None, filters: Dict[str, Any] = None, 
+                         limit: int = 10000) -> str:
+        """Export audit logs with pagination support"""
         try:
             if period_start is None:
                 period_start = datetime.utcnow() - timedelta(days=30)
@@ -845,7 +847,8 @@ class AuditService:
                     query += " AND source_ip = ?"
                     params.append(filters['source_ip'])
             
-            query += " ORDER BY timestamp DESC"
+            query += " ORDER BY timestamp DESC LIMIT ?"
+            params.append(limit)
             
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()

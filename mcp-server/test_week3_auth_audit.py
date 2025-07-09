@@ -7,6 +7,7 @@ import pytest
 import tempfile
 import os
 import json
+import time
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
@@ -88,11 +89,11 @@ class TestEnhancedSecurityManager:
     
     def test_mfa_verification(self):
         """Test MFA verification"""
-        # Setup MFA first
+        # Setup Email MFA first
         self.security_manager.setup_mfa("user123", MFAMethod.EMAIL)
         mfa_setup = self.security_manager.mfa_setups["user123"]
         
-        # Test correct code
+        # Test correct code for email
         assert self.security_manager.verify_mfa("user123", mfa_setup.secret) is True
         assert mfa_setup.verified is True
         
@@ -101,6 +102,18 @@ class TestEnhancedSecurityManager:
         
         # Test non-existent user
         assert self.security_manager.verify_mfa("nonexistent", "code") is False
+        
+        # Test TOTP verification (more realistic test)
+        success, qr_data, secret = self.security_manager.setup_mfa("user456", MFAMethod.TOTP)
+        assert success is True
+        
+        # Generate a valid TOTP code for testing
+        totp_code = self.security_manager._generate_totp_code(secret, int(time.time() // 30))
+        assert self.security_manager.verify_mfa("user456", totp_code) is True
+        
+        # Test invalid TOTP code
+        assert self.security_manager.verify_mfa("user456", "123456") is False
+        assert self.security_manager.verify_mfa("user456", "abcdef") is False
     
     def test_mfa_backup_codes(self):
         """Test MFA backup codes"""
@@ -537,6 +550,14 @@ class TestAuditService:
         assert len(pattern.locations) == 3  # 3 different IPs
         assert pattern.risk_score >= 0
         assert pattern.risk_score <= 1
+        
+        # Test with pagination limit
+        patterns_limited = self.audit_service.analyze_access_patterns(user_id, limit=5)
+        assert len(patterns_limited) > 0
+        
+        # The access frequency should be limited by the pagination
+        limited_pattern = patterns_limited[0]
+        assert limited_pattern.access_frequency <= 5
     
     def test_audit_log_export(self):
         """Test audit log export"""
