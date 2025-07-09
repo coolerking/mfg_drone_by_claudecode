@@ -1,0 +1,120 @@
+# PersistentVolumeClaims for MCP Server Phase 6-3
+# Production-ready storage configuration
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mcp-server-data-pvc
+  namespace: mcp-server
+  labels:
+    app: mcp-server
+    environment: production
+    type: data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: gp3-ssd
+  volumeMode: Filesystem
+
+---
+# Redis Data PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-data-pvc
+  namespace: mcp-server
+  labels:
+    app: redis
+    environment: production
+    type: data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: gp3-ssd
+  volumeMode: Filesystem
+
+---
+# Prometheus Data PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-data-pvc
+  namespace: mcp-server
+  labels:
+    app: prometheus
+    environment: production
+    type: data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: gp3-ssd
+  volumeMode: Filesystem
+
+---
+# Grafana Data PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-data-pvc
+  namespace: mcp-server
+  labels:
+    app: grafana
+    environment: production
+    type: data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: gp3-ssd
+  volumeMode: Filesystem
+
+---
+# Shared Configuration PVC (ReadWriteMany)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shared-config-pvc
+  namespace: mcp-server
+  labels:
+    app: mcp-server
+    environment: production
+    type: shared-config
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: efs-storage
+  volumeMode: Filesystem
+
+---
+# Backup PVC for data backup
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backup-pvc
+  namespace: mcp-server
+  labels:
+    app: mcp-server
+    environment: production
+    type: backup
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: gp3-ssd
+  volumeMode: Filesystem
