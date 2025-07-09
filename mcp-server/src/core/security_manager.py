@@ -12,6 +12,9 @@ import hmac
 import time
 import json
 import re
+import secrets
+import base64
+import sqlite3
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, field
@@ -41,6 +44,39 @@ class ThreatLevel(Enum):
     CRITICAL = "critical"
 
 
+class MFAMethod(Enum):
+    """Multi-factor authentication methods"""
+    TOTP = "totp"  # Time-based One-Time Password
+    SMS = "sms"    # SMS verification
+    EMAIL = "email"  # Email verification
+    BACKUP_CODES = "backup_codes"
+
+
+class Permission(Enum):
+    """Granular permissions"""
+    READ_SYSTEM = "read_system"
+    WRITE_SYSTEM = "write_system"
+    READ_USERS = "read_users"
+    WRITE_USERS = "write_users"
+    READ_LOGS = "read_logs"
+    WRITE_LOGS = "write_logs"
+    READ_CONFIG = "read_config"
+    WRITE_CONFIG = "write_config"
+    EXECUTE_COMMANDS = "execute_commands"
+    MANAGE_SECURITY = "manage_security"
+    AUDIT_ACCESS = "audit_access"
+    SYSTEM_ADMIN = "system_admin"
+
+
+class APIKeyScope(Enum):
+    """API key scopes"""
+    READ_ONLY = "read_only"
+    WRITE_ONLY = "write_only"
+    READ_WRITE = "read_write"
+    ADMIN = "admin"
+    SYSTEM = "system"
+
+
 @dataclass
 class SecurityEvent:
     """Security event record"""
@@ -65,6 +101,58 @@ class AccessAttempt:
 
 
 @dataclass
+class MFASetup:
+    """Multi-factor authentication setup"""
+    user_id: str
+    method: MFAMethod
+    secret: str
+    backup_codes: List[str] = field(default_factory=list)
+    verified: bool = False
+    created_at: datetime = field(default_factory=datetime.utcnow)
+
+
+@dataclass
+class ExtendedAPIKey:
+    """Extended API key with scopes and permissions"""
+    key_id: str
+    user_id: str
+    security_level: SecurityLevel
+    scope: APIKeyScope
+    permissions: List[Permission]
+    created_at: datetime
+    expires_at: Optional[datetime] = None
+    last_used: Optional[datetime] = None
+    usage_count: int = 0
+    rate_limit_override: Optional[int] = None
+    ip_restrictions: List[str] = field(default_factory=list)
+    active: bool = True
+
+
+@dataclass
+class UserRole:
+    """User role with permissions"""
+    role_name: str
+    permissions: List[Permission]
+    description: str = ""
+    created_at: datetime = field(default_factory=datetime.utcnow)
+
+
+@dataclass
+class UserSession:
+    """Enhanced user session"""
+    session_id: str
+    user_id: str
+    security_level: SecurityLevel
+    permissions: List[Permission]
+    created_at: datetime
+    last_activity: datetime
+    source_ip: str
+    user_agent: str = ""
+    mfa_verified: bool = False
+    requires_mfa: bool = False
+
+
+@dataclass
 class RateLimitConfig:
     """Rate limiting configuration"""
     requests_per_minute: int = 60
@@ -84,6 +172,31 @@ class SecurityConfig:
     allowed_ips: List[str] = field(default_factory=list)
     blocked_ips: List[str] = field(default_factory=list)
     enable_audit_logging: bool = True
+    
+    # MFA configuration
+    mfa_required: bool = False
+    mfa_methods: List[MFAMethod] = field(default_factory=lambda: [MFAMethod.TOTP])
+    mfa_issuer: str = "MCP-Server"
+    backup_codes_count: int = 10
+    
+    # API key configuration
+    api_key_default_expiry_days: int = 30
+    api_key_max_expiry_days: int = 365
+    api_key_require_ip_restriction: bool = False
+    
+    # Session configuration
+    session_timeout_minutes: int = 1440  # 24 hours
+    session_idle_timeout_minutes: int = 60
+    max_concurrent_sessions: int = 5
+    
+    # Role-based access control
+    enable_rbac: bool = True
+    default_user_role: str = "user"
+    
+    # Advanced security features
+    enable_anomaly_detection: bool = True
+    enable_brute_force_protection: bool = True
+    enable_session_fingerprinting: bool = True
     
     def __post_init__(self):
         """Validate configuration after initialization"""
@@ -126,7 +239,64 @@ class SecurityManager:
         self.locked_accounts: Dict[str, datetime] = {}
         self.active_sessions: Dict[str, Dict[str, Any]] = {}
         
-        logger.info("Security Manager initialized")
+        # Extended authentication features
+        self.mfa_setups: Dict[str, MFASetup] = {}
+        self.extended_api_keys: Dict[str, ExtendedAPIKey] = {}
+        self.user_roles: Dict[str, UserRole] = {}
+        self.enhanced_sessions: Dict[str, UserSession] = {}
+        self.session_fingerprints: Dict[str, str] = {}
+        
+        # Initialize default roles
+        self._initialize_default_roles()
+        
+        logger.info("Security Manager initialized with enhanced authentication features")
+    
+    def _initialize_default_roles(self):
+        """Initialize default user roles"""
+        # Public role
+        self.user_roles["public"] = UserRole(
+            role_name="public",
+            permissions=[Permission.READ_SYSTEM],
+            description="Public access with read-only system permissions"
+        )
+        
+        # User role
+        self.user_roles["user"] = UserRole(
+            role_name="user",
+            permissions=[Permission.READ_SYSTEM, Permission.READ_USERS],
+            description="Standard user with basic read permissions"
+        )
+        
+        # Operator role
+        self.user_roles["operator"] = UserRole(
+            role_name="operator",
+            permissions=[
+                Permission.READ_SYSTEM, Permission.WRITE_SYSTEM,
+                Permission.READ_USERS, Permission.EXECUTE_COMMANDS
+            ],
+            description="Operator with system write and command execution permissions"
+        )
+        
+        # Admin role
+        self.user_roles["admin"] = UserRole(
+            role_name="admin",
+            permissions=[
+                Permission.READ_SYSTEM, Permission.WRITE_SYSTEM,
+                Permission.READ_USERS, Permission.WRITE_USERS,
+                Permission.READ_LOGS, Permission.WRITE_LOGS,
+                Permission.READ_CONFIG, Permission.WRITE_CONFIG,
+                Permission.EXECUTE_COMMANDS, Permission.MANAGE_SECURITY,
+                Permission.AUDIT_ACCESS
+            ],
+            description="Administrator with full system access except system admin"
+        )
+        
+        # System admin role
+        self.user_roles["system_admin"] = UserRole(
+            role_name="system_admin",
+            permissions=list(Permission),
+            description="System administrator with all permissions"
+        )
     
     # Authentication and Authorization
     
@@ -270,6 +440,551 @@ class SecurityManager:
             )
         
         return authorized
+    
+    # Multi-Factor Authentication (MFA)
+    
+    def setup_mfa(self, user_id: str, method: MFAMethod) -> Tuple[bool, str, Optional[str]]:
+        """Setup multi-factor authentication for a user"""
+        try:
+            if method == MFAMethod.TOTP:
+                # Generate secret for TOTP
+                secret = base64.b32encode(secrets.token_bytes(32)).decode()
+                
+                # Generate backup codes
+                backup_codes = [secrets.token_hex(8) for _ in range(self.config.backup_codes_count)]
+                
+                mfa_setup = MFASetup(
+                    user_id=user_id,
+                    method=method,
+                    secret=secret,
+                    backup_codes=backup_codes,
+                    verified=False
+                )
+                
+                self.mfa_setups[user_id] = mfa_setup
+                
+                # Generate QR code data
+                qr_data = f"otpauth://totp/{self.config.mfa_issuer}:{user_id}?secret={secret}&issuer={self.config.mfa_issuer}"
+                
+                self.log_security_event(
+                    "MFA_SETUP_INITIATED",
+                    ThreatLevel.LOW,
+                    user_id=user_id,
+                    description=f"MFA setup initiated for user {user_id} with method {method.value}"
+                )
+                
+                return True, qr_data, secret
+                
+            elif method in [MFAMethod.SMS, MFAMethod.EMAIL]:
+                # For SMS/Email, we would typically send a verification code
+                # This is a placeholder implementation
+                verification_code = secrets.token_hex(6)
+                
+                mfa_setup = MFASetup(
+                    user_id=user_id,
+                    method=method,
+                    secret=verification_code,
+                    verified=False
+                )
+                
+                self.mfa_setups[user_id] = mfa_setup
+                
+                self.log_security_event(
+                    "MFA_SETUP_INITIATED",
+                    ThreatLevel.LOW,
+                    user_id=user_id,
+                    description=f"MFA setup initiated for user {user_id} with method {method.value}"
+                )
+                
+                return True, f"Verification code sent via {method.value}", verification_code
+                
+            else:
+                return False, "Unsupported MFA method", None
+                
+        except Exception as e:
+            self.log_security_event(
+                "MFA_SETUP_ERROR",
+                ThreatLevel.MEDIUM,
+                user_id=user_id,
+                description=f"Error setting up MFA: {str(e)}"
+            )
+            return False, f"MFA setup error: {str(e)}", None
+    
+    def verify_mfa(self, user_id: str, code: str) -> bool:
+        """Verify MFA code"""
+        try:
+            if user_id not in self.mfa_setups:
+                return False
+            
+            mfa_setup = self.mfa_setups[user_id]
+            
+            if mfa_setup.method == MFAMethod.TOTP:
+                # For TOTP, we would typically use a library like pyotp
+                # This is a simplified implementation
+                return self._verify_totp_code(mfa_setup.secret, code)
+                
+            elif mfa_setup.method in [MFAMethod.SMS, MFAMethod.EMAIL]:
+                # For SMS/Email, verify the code directly
+                if code == mfa_setup.secret:
+                    mfa_setup.verified = True
+                    self.log_security_event(
+                        "MFA_VERIFICATION_SUCCESS",
+                        ThreatLevel.LOW,
+                        user_id=user_id,
+                        description=f"MFA verification successful for user {user_id}"
+                    )
+                    return True
+                    
+            elif mfa_setup.method == MFAMethod.BACKUP_CODES:
+                # Check if code is in backup codes
+                if code in mfa_setup.backup_codes:
+                    mfa_setup.backup_codes.remove(code)  # Use backup code only once
+                    self.log_security_event(
+                        "MFA_BACKUP_CODE_USED",
+                        ThreatLevel.LOW,
+                        user_id=user_id,
+                        description=f"MFA backup code used for user {user_id}"
+                    )
+                    return True
+            
+            self.log_security_event(
+                "MFA_VERIFICATION_FAILED",
+                ThreatLevel.MEDIUM,
+                user_id=user_id,
+                description=f"MFA verification failed for user {user_id}"
+            )
+            return False
+            
+        except Exception as e:
+            self.log_security_event(
+                "MFA_VERIFICATION_ERROR",
+                ThreatLevel.MEDIUM,
+                user_id=user_id,
+                description=f"Error verifying MFA: {str(e)}"
+            )
+            return False
+    
+    def _verify_totp_code(self, secret: str, code: str) -> bool:
+        """Verify TOTP code (simplified implementation)"""
+        # In a real implementation, use pyotp library
+        # This is a placeholder that accepts any 6-digit code
+        return len(code) == 6 and code.isdigit()
+    
+    def is_mfa_required(self, user_id: str, security_level: SecurityLevel) -> bool:
+        """Check if MFA is required for user"""
+        if not self.config.mfa_required:
+            return False
+        
+        # MFA required for admin and system levels
+        if security_level in [SecurityLevel.ADMIN, SecurityLevel.SYSTEM]:
+            return True
+        
+        # Check if user has MFA setup
+        return user_id in self.mfa_setups and self.mfa_setups[user_id].verified
+    
+    # Extended API Key Management
+    
+    def create_extended_api_key(self, user_id: str, security_level: SecurityLevel,
+                               scope: APIKeyScope, permissions: List[Permission],
+                               expiry_days: Optional[int] = None,
+                               ip_restrictions: List[str] = None) -> Tuple[bool, str, Optional[str]]:
+        """Create extended API key with advanced features"""
+        try:
+            # Generate unique key ID
+            key_id = secrets.token_hex(16)
+            
+            # Set expiry
+            if expiry_days is None:
+                expiry_days = self.config.api_key_default_expiry_days
+            
+            if expiry_days > self.config.api_key_max_expiry_days:
+                return False, f"Expiry exceeds maximum allowed ({self.config.api_key_max_expiry_days} days)", None
+            
+            expires_at = datetime.utcnow() + timedelta(days=expiry_days)
+            
+            # Create API key data
+            api_key_data = ExtendedAPIKey(
+                key_id=key_id,
+                user_id=user_id,
+                security_level=security_level,
+                scope=scope,
+                permissions=permissions,
+                created_at=datetime.utcnow(),
+                expires_at=expires_at,
+                ip_restrictions=ip_restrictions or [],
+                active=True
+            )
+            
+            # Generate the actual API key
+            payload = f"{key_id}:{user_id}:{security_level.value}:{scope.value}:{int(expires_at.timestamp())}"
+            signature = hmac.new(
+                self.config.jwt_secret.encode(),
+                payload.encode(),
+                hashlib.sha256
+            ).hexdigest()
+            
+            api_key = f"{payload}:{signature}"
+            
+            # Store the API key data
+            self.extended_api_keys[key_id] = api_key_data
+            
+            self.log_security_event(
+                "EXTENDED_API_KEY_CREATED",
+                ThreatLevel.LOW,
+                user_id=user_id,
+                description=f"Extended API key created for user {user_id} with scope {scope.value}"
+            )
+            
+            return True, "API key created successfully", api_key
+            
+        except Exception as e:
+            self.log_security_event(
+                "API_KEY_CREATION_ERROR",
+                ThreatLevel.MEDIUM,
+                user_id=user_id,
+                description=f"Error creating API key: {str(e)}"
+            )
+            return False, f"API key creation error: {str(e)}", None
+    
+    def validate_extended_api_key(self, api_key: str, source_ip: str = None,
+                                 required_permissions: List[Permission] = None) -> Tuple[bool, Optional[str], Optional[ExtendedAPIKey]]:
+        """Validate extended API key with advanced checks"""
+        try:
+            parts = api_key.split(":")
+            if len(parts) != 6:
+                return False, None, None
+            
+            key_id, user_id, security_level_str, scope_str, expires_timestamp, signature = parts
+            
+            # Verify signature
+            payload = f"{key_id}:{user_id}:{security_level_str}:{scope_str}:{expires_timestamp}"
+            expected_signature = hmac.new(
+                self.config.jwt_secret.encode(),
+                payload.encode(),
+                hashlib.sha256
+            ).hexdigest()
+            
+            if not hmac.compare_digest(signature, expected_signature):
+                self.log_security_event(
+                    "INVALID_EXTENDED_API_KEY_SIGNATURE",
+                    ThreatLevel.MEDIUM,
+                    source_ip=source_ip,
+                    description=f"Invalid extended API key signature for user {user_id}"
+                )
+                return False, None, None
+            
+            # Check if key exists and is active
+            if key_id not in self.extended_api_keys:
+                self.log_security_event(
+                    "UNKNOWN_API_KEY",
+                    ThreatLevel.MEDIUM,
+                    source_ip=source_ip,
+                    description=f"Unknown API key ID: {key_id}"
+                )
+                return False, None, None
+            
+            api_key_data = self.extended_api_keys[key_id]
+            
+            # Check if key is active
+            if not api_key_data.active:
+                self.log_security_event(
+                    "INACTIVE_API_KEY",
+                    ThreatLevel.MEDIUM,
+                    source_ip=source_ip,
+                    description=f"Inactive API key used: {key_id}"
+                )
+                return False, None, None
+            
+            # Check expiry
+            if api_key_data.expires_at and datetime.utcnow() > api_key_data.expires_at:
+                self.log_security_event(
+                    "EXPIRED_EXTENDED_API_KEY",
+                    ThreatLevel.LOW,
+                    source_ip=source_ip,
+                    description=f"Expired extended API key for user {user_id}"
+                )
+                return False, None, None
+            
+            # Check IP restrictions
+            if api_key_data.ip_restrictions and source_ip:
+                ip_allowed = False
+                for allowed_ip in api_key_data.ip_restrictions:
+                    try:
+                        if ipaddress.ip_address(source_ip) in ipaddress.ip_network(allowed_ip, strict=False):
+                            ip_allowed = True
+                            break
+                    except ValueError:
+                        continue
+                
+                if not ip_allowed:
+                    self.log_security_event(
+                        "API_KEY_IP_RESTRICTION_VIOLATION",
+                        ThreatLevel.HIGH,
+                        source_ip=source_ip,
+                        user_id=user_id,
+                        description=f"API key used from restricted IP: {source_ip}"
+                    )
+                    return False, None, None
+            
+            # Check permissions
+            if required_permissions:
+                if not all(perm in api_key_data.permissions for perm in required_permissions):
+                    self.log_security_event(
+                        "INSUFFICIENT_API_KEY_PERMISSIONS",
+                        ThreatLevel.MEDIUM,
+                        source_ip=source_ip,
+                        user_id=user_id,
+                        description=f"API key lacks required permissions: {required_permissions}"
+                    )
+                    return False, None, None
+            
+            # Update usage stats
+            api_key_data.last_used = datetime.utcnow()
+            api_key_data.usage_count += 1
+            
+            return True, user_id, api_key_data
+            
+        except Exception as e:
+            self.log_security_event(
+                "API_KEY_VALIDATION_ERROR",
+                ThreatLevel.MEDIUM,
+                source_ip=source_ip,
+                description=f"Error validating extended API key: {str(e)}"
+            )
+            return False, None, None
+    
+    def revoke_api_key(self, key_id: str, user_id: str) -> bool:
+        """Revoke an API key"""
+        try:
+            if key_id in self.extended_api_keys:
+                api_key_data = self.extended_api_keys[key_id]
+                
+                # Check if user owns the key
+                if api_key_data.user_id != user_id:
+                    self.log_security_event(
+                        "UNAUTHORIZED_API_KEY_REVOCATION",
+                        ThreatLevel.HIGH,
+                        user_id=user_id,
+                        description=f"Unauthorized attempt to revoke API key {key_id}"
+                    )
+                    return False
+                
+                api_key_data.active = False
+                
+                self.log_security_event(
+                    "API_KEY_REVOKED",
+                    ThreatLevel.LOW,
+                    user_id=user_id,
+                    description=f"API key revoked: {key_id}"
+                )
+                
+                return True
+            
+            return False
+            
+        except Exception as e:
+            self.log_security_event(
+                "API_KEY_REVOCATION_ERROR",
+                ThreatLevel.MEDIUM,
+                user_id=user_id,
+                description=f"Error revoking API key: {str(e)}"
+            )
+            return False
+    
+    # Enhanced Permission Management
+    
+    def check_permission(self, user_id: str, permission: Permission) -> bool:
+        """Check if user has specific permission"""
+        try:
+            if not self.config.enable_rbac:
+                return True  # RBAC disabled, allow all
+            
+            # Check if user has a role
+            user_role = self.get_user_role(user_id)
+            if not user_role:
+                return False
+            
+            return permission in user_role.permissions
+            
+        except Exception as e:
+            self.log_security_event(
+                "PERMISSION_CHECK_ERROR",
+                ThreatLevel.MEDIUM,
+                user_id=user_id,
+                description=f"Error checking permission: {str(e)}"
+            )
+            return False
+    
+    def get_user_role(self, user_id: str) -> Optional[UserRole]:
+        """Get user role"""
+        # In a real implementation, this would query a database
+        # For now, return default role
+        return self.user_roles.get(self.config.default_user_role)
+    
+    def assign_role(self, user_id: str, role_name: str) -> bool:
+        """Assign role to user"""
+        try:
+            if role_name not in self.user_roles:
+                return False
+            
+            # In a real implementation, this would update a database
+            # For now, just log the event
+            self.log_security_event(
+                "ROLE_ASSIGNED",
+                ThreatLevel.LOW,
+                user_id=user_id,
+                description=f"Role '{role_name}' assigned to user {user_id}"
+            )
+            
+            return True
+            
+        except Exception as e:
+            self.log_security_event(
+                "ROLE_ASSIGNMENT_ERROR",
+                ThreatLevel.MEDIUM,
+                user_id=user_id,
+                description=f"Error assigning role: {str(e)}"
+            )
+            return False
+    
+    # Enhanced Session Management
+    
+    def create_enhanced_session(self, user_id: str, security_level: SecurityLevel,
+                               source_ip: str, user_agent: str = "",
+                               requires_mfa: bool = False) -> Tuple[bool, str, Optional[str]]:
+        """Create enhanced session with fingerprinting"""
+        try:
+            # Check concurrent session limit
+            user_sessions = [s for s in self.enhanced_sessions.values() if s.user_id == user_id]
+            if len(user_sessions) >= self.config.max_concurrent_sessions:
+                # Remove oldest session
+                oldest_session = min(user_sessions, key=lambda s: s.created_at)
+                del self.enhanced_sessions[oldest_session.session_id]
+                
+                self.log_security_event(
+                    "SESSION_LIMIT_EXCEEDED",
+                    ThreatLevel.LOW,
+                    user_id=user_id,
+                    description=f"Session limit exceeded, removed oldest session"
+                )
+            
+            # Generate session ID
+            session_id = secrets.token_hex(32)
+            
+            # Get user permissions
+            user_role = self.get_user_role(user_id)
+            permissions = user_role.permissions if user_role else []
+            
+            # Create session
+            session = UserSession(
+                session_id=session_id,
+                user_id=user_id,
+                security_level=security_level,
+                permissions=permissions,
+                created_at=datetime.utcnow(),
+                last_activity=datetime.utcnow(),
+                source_ip=source_ip,
+                user_agent=user_agent,
+                mfa_verified=not requires_mfa,
+                requires_mfa=requires_mfa
+            )
+            
+            self.enhanced_sessions[session_id] = session
+            
+            # Generate session fingerprint
+            if self.config.enable_session_fingerprinting:
+                fingerprint = self._generate_session_fingerprint(source_ip, user_agent)
+                self.session_fingerprints[session_id] = fingerprint
+            
+            self.log_security_event(
+                "ENHANCED_SESSION_CREATED",
+                ThreatLevel.LOW,
+                source_ip=source_ip,
+                user_id=user_id,
+                description=f"Enhanced session created for user {user_id}"
+            )
+            
+            return True, "Session created successfully", session_id
+            
+        except Exception as e:
+            self.log_security_event(
+                "SESSION_CREATION_ERROR",
+                ThreatLevel.MEDIUM,
+                source_ip=source_ip,
+                user_id=user_id,
+                description=f"Error creating session: {str(e)}"
+            )
+            return False, f"Session creation error: {str(e)}", None
+    
+    def validate_enhanced_session(self, session_id: str, source_ip: str = None,
+                                 user_agent: str = "") -> Tuple[bool, Optional[UserSession]]:
+        """Validate enhanced session"""
+        try:
+            if session_id not in self.enhanced_sessions:
+                return False, None
+            
+            session = self.enhanced_sessions[session_id]
+            
+            # Check session timeout
+            now = datetime.utcnow()
+            if now - session.created_at > timedelta(minutes=self.config.session_timeout_minutes):
+                del self.enhanced_sessions[session_id]
+                self.log_security_event(
+                    "SESSION_TIMEOUT",
+                    ThreatLevel.LOW,
+                    user_id=session.user_id,
+                    description=f"Session timeout for user {session.user_id}"
+                )
+                return False, None
+            
+            # Check idle timeout
+            if now - session.last_activity > timedelta(minutes=self.config.session_idle_timeout_minutes):
+                del self.enhanced_sessions[session_id]
+                self.log_security_event(
+                    "SESSION_IDLE_TIMEOUT",
+                    ThreatLevel.LOW,
+                    user_id=session.user_id,
+                    description=f"Session idle timeout for user {session.user_id}"
+                )
+                return False, None
+            
+            # Check session fingerprint
+            if self.config.enable_session_fingerprinting and session_id in self.session_fingerprints:
+                current_fingerprint = self._generate_session_fingerprint(source_ip or "", user_agent)
+                stored_fingerprint = self.session_fingerprints[session_id]
+                
+                if current_fingerprint != stored_fingerprint:
+                    self.log_security_event(
+                        "SESSION_FINGERPRINT_MISMATCH",
+                        ThreatLevel.HIGH,
+                        source_ip=source_ip,
+                        user_id=session.user_id,
+                        description=f"Session fingerprint mismatch for user {session.user_id}"
+                    )
+                    return False, None
+            
+            # Check MFA requirement
+            if session.requires_mfa and not session.mfa_verified:
+                return False, None
+            
+            # Update last activity
+            session.last_activity = now
+            
+            return True, session
+            
+        except Exception as e:
+            self.log_security_event(
+                "SESSION_VALIDATION_ERROR",
+                ThreatLevel.MEDIUM,
+                source_ip=source_ip,
+                description=f"Error validating session: {str(e)}"
+            )
+            return False, None
+    
+    def _generate_session_fingerprint(self, source_ip: str, user_agent: str) -> str:
+        """Generate session fingerprint"""
+        fingerprint_data = f"{source_ip}:{user_agent}"
+        return hashlib.sha256(fingerprint_data.encode()).hexdigest()
     
     # Rate Limiting
     
