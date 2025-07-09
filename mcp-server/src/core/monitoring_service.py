@@ -19,6 +19,16 @@ import statistics
 from collections import defaultdict, deque
 import threading
 import queue
+import sqlite3
+import os
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
+import csv
+import hashlib
+import pickle
 
 import logging
 logger = logging.getLogger(__name__)
@@ -38,6 +48,113 @@ class AlertSeverity(Enum):
     WARNING = "warning"
     ERROR = "error"
     CRITICAL = "critical"
+
+
+class ThreatLevel(Enum):
+    """Threat severity levels"""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class IncidentStatus(Enum):
+    """Incident status"""
+    OPEN = "open"
+    INVESTIGATING = "investigating"
+    RESOLVED = "resolved"
+    CLOSED = "closed"
+
+
+class ActivityType(Enum):
+    """Types of monitored activities"""
+    LOGIN_ATTEMPT = "login_attempt"
+    API_ACCESS = "api_access"
+    FILE_UPLOAD = "file_upload"
+    COMMAND_EXECUTION = "command_execution"
+    DATA_ACCESS = "data_access"
+    CONFIGURATION_CHANGE = "configuration_change"
+    SYSTEM_EVENT = "system_event"
+
+
+@dataclass
+class SecurityEvent:
+    """Security event record with persistence support"""
+    id: Optional[str] = None
+    timestamp: datetime = field(default_factory=datetime.utcnow)
+    event_type: str = ""
+    severity: ThreatLevel = ThreatLevel.LOW
+    source_ip: str = "unknown"
+    user_id: Optional[str] = None
+    description: str = ""
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    resolved: bool = False
+    resolved_at: Optional[datetime] = None
+    
+    def __post_init__(self):
+        if self.id is None:
+            self.id = self._generate_id()
+    
+    def _generate_id(self) -> str:
+        """Generate unique ID for the event"""
+        content = f"{self.timestamp}{self.event_type}{self.source_ip}{self.user_id}{self.description}"
+        return hashlib.md5(content.encode()).hexdigest()[:12]
+
+
+@dataclass
+class SuspiciousActivity:
+    """Suspicious activity detection record"""
+    id: str
+    timestamp: datetime
+    activity_type: ActivityType
+    source_ip: str
+    user_id: Optional[str]
+    risk_score: float  # 0-100
+    indicators: List[str]
+    related_events: List[str]  # Event IDs
+    auto_blocked: bool = False
+    investigation_notes: str = ""
+
+
+@dataclass
+class SecurityIncident:
+    """Security incident record"""
+    id: str
+    timestamp: datetime
+    title: str
+    description: str
+    severity: ThreatLevel
+    status: IncidentStatus
+    assigned_to: Optional[str]
+    related_events: List[str]  # Event IDs
+    related_activities: List[str]  # Activity IDs
+    timeline: List[Dict[str, Any]]  # Timeline of actions
+    resolution: Optional[str] = None
+    resolved_at: Optional[datetime] = None
+    
+    def __post_init__(self):
+        if not self.timeline:
+            self.timeline = [{
+                "timestamp": self.timestamp,
+                "action": "incident_created",
+                "description": "Security incident created",
+                "user": "system"
+            }]
+
+
+@dataclass
+class SecurityReport:
+    """Security report data"""
+    id: str
+    timestamp: datetime
+    report_type: str  # daily, weekly, monthly, incident
+    time_range: Dict[str, datetime]
+    summary: Dict[str, Any]
+    events: List[SecurityEvent]
+    activities: List[SuspiciousActivity]
+    incidents: List[SecurityIncident]
+    recommendations: List[str]
+    charts_data: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -104,7 +221,7 @@ class PerformanceSnapshot:
 class MonitoringService:
     """Comprehensive monitoring service for MCP Server"""
     
-    def __init__(self):
+    def __init__(self, db_path: str = "security_monitoring.db"):
         self.metrics: Dict[str, Metric] = {}
         self.alerts: Dict[str, Alert] = {}
         self.alert_instances: List[AlertInstance] = []
@@ -120,11 +237,33 @@ class MonitoringService:
         self.monitoring_thread = None
         self.alert_callbacks: List[Callable] = []
         
-        # Initialize default metrics
+        # Enhanced security monitoring
+        self.db_path = db_path
+        self.security_events: deque = deque(maxlen=10000)  # In-memory cache
+        self.suspicious_activities: deque = deque(maxlen=1000)
+        self.security_incidents: deque = deque(maxlen=100)
+        self.activity_patterns: Dict[str, Dict[str, Any]] = defaultdict(dict)
+        
+        # Notification settings
+        self.notification_settings = {
+            "email_enabled": False,
+            "email_smtp_host": "",
+            "email_smtp_port": 587,
+            "email_username": "",
+            "email_password": "",
+            "email_recipients": [],
+            "report_schedule": "daily"  # daily, weekly, monthly
+        }
+        
+        # Initialize database and default settings
+        self._initialize_database()
         self._initialize_default_metrics()
         self._initialize_default_alerts()
         
-        logger.info("Monitoring Service initialized")
+        # Start background tasks
+        self._start_background_tasks()
+        
+        logger.info("Enhanced Monitoring Service initialized")
     
     def _initialize_default_metrics(self):
         """Initialize default system metrics"""
@@ -161,6 +300,112 @@ class MonitoringService:
         
         for alert_id, name, condition, threshold, severity in default_alerts:
             self.create_alert(alert_id, name, condition, threshold, severity)
+    
+    def _initialize_database(self):
+        """Initialize SQLite database for persistent storage"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            # Create security events table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS security_events (
+                    id TEXT PRIMARY KEY,
+                    timestamp DATETIME,
+                    event_type TEXT,
+                    severity TEXT,
+                    source_ip TEXT,
+                    user_id TEXT,
+                    description TEXT,
+                    metadata TEXT,
+                    resolved BOOLEAN DEFAULT 0,
+                    resolved_at DATETIME
+                )
+            ''')
+            
+            # Create suspicious activities table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS suspicious_activities (
+                    id TEXT PRIMARY KEY,
+                    timestamp DATETIME,
+                    activity_type TEXT,
+                    source_ip TEXT,
+                    user_id TEXT,
+                    risk_score REAL,
+                    indicators TEXT,
+                    related_events TEXT,
+                    auto_blocked BOOLEAN DEFAULT 0,
+                    investigation_notes TEXT
+                )
+            ''')
+            
+            # Create security incidents table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS security_incidents (
+                    id TEXT PRIMARY KEY,
+                    timestamp DATETIME,
+                    title TEXT,
+                    description TEXT,
+                    severity TEXT,
+                    status TEXT,
+                    assigned_to TEXT,
+                    related_events TEXT,
+                    related_activities TEXT,
+                    timeline TEXT,
+                    resolution TEXT,
+                    resolved_at DATETIME
+                )
+            ''')
+            
+            # Create security reports table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS security_reports (
+                    id TEXT PRIMARY KEY,
+                    timestamp DATETIME,
+                    report_type TEXT,
+                    time_range TEXT,
+                    summary TEXT,
+                    events TEXT,
+                    activities TEXT,
+                    incidents TEXT,
+                    recommendations TEXT,
+                    charts_data TEXT
+                )
+            ''')
+            
+            # Create indexes for performance
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_events_timestamp ON security_events(timestamp)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_events_severity ON security_events(severity)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_events_source_ip ON security_events(source_ip)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_activities_timestamp ON suspicious_activities(timestamp)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_activities_risk_score ON suspicious_activities(risk_score)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_incidents_timestamp ON security_incidents(timestamp)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_incidents_severity ON security_incidents(severity)')
+            
+            conn.commit()
+            conn.close()
+            logger.info("Database initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"Error initializing database: {str(e)}")
+    
+    def _start_background_tasks(self):
+        """Start background tasks for monitoring and reporting"""
+        # Start activity pattern analysis
+        self.pattern_analysis_thread = threading.Thread(
+            target=self._activity_pattern_analysis, 
+            daemon=True
+        )
+        self.pattern_analysis_thread.start()
+        
+        # Start report generation scheduler
+        self.report_scheduler_thread = threading.Thread(
+            target=self._report_scheduler,
+            daemon=True
+        )
+        self.report_scheduler_thread.start()
+        
+        logger.info("Background tasks started")
     
     # Metric Management
     
@@ -770,6 +1015,1200 @@ class MonitoringService:
                 lines.append(f"{name}{labels_str} {latest.value}")
         
         return "\n".join(lines)
+    
+    # Enhanced Security Monitoring and Logging
+    
+    def log_security_event(self, event_type: str, severity: ThreatLevel, 
+                          source_ip: str = "unknown", user_id: Optional[str] = None,
+                          description: str = "", metadata: Dict[str, Any] = None) -> str:
+        """Log and persist security event"""
+        try:
+            # Create security event
+            event = SecurityEvent(
+                event_type=event_type,
+                severity=severity,
+                source_ip=source_ip,
+                user_id=user_id,
+                description=description,
+                metadata=metadata or {}
+            )
+            
+            # Add to in-memory cache
+            self.security_events.append(event)
+            
+            # Persist to database
+            self._persist_security_event(event)
+            
+            # Log to system logger
+            if severity == ThreatLevel.CRITICAL:
+                logger.critical(f"SECURITY CRITICAL: {event_type} - {description}")
+            elif severity == ThreatLevel.HIGH:
+                logger.error(f"SECURITY HIGH: {event_type} - {description}")
+            elif severity == ThreatLevel.MEDIUM:
+                logger.warning(f"SECURITY MEDIUM: {event_type} - {description}")
+            else:
+                logger.info(f"SECURITY LOW: {event_type} - {description}")
+            
+            # Trigger suspicious activity analysis
+            self._analyze_for_suspicious_activity(event)
+            
+            # Check for incident creation
+            self._check_for_incident_creation(event)
+            
+            return event.id
+            
+        except Exception as e:
+            logger.error(f"Error logging security event: {str(e)}")
+            return ""
+    
+    def _persist_security_event(self, event: SecurityEvent):
+        """Persist security event to database"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT OR REPLACE INTO security_events 
+                (id, timestamp, event_type, severity, source_ip, user_id, description, metadata, resolved, resolved_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                event.id,
+                event.timestamp,
+                event.event_type,
+                event.severity.value,
+                event.source_ip,
+                event.user_id,
+                event.description,
+                json.dumps(event.metadata),
+                event.resolved,
+                event.resolved_at
+            ))
+            
+            conn.commit()
+            conn.close()
+            
+        except Exception as e:
+            logger.error(f"Error persisting security event: {str(e)}")
+    
+    def _analyze_for_suspicious_activity(self, event: SecurityEvent):
+        """Analyze event for suspicious activity patterns"""
+        try:
+            # Calculate risk score based on event characteristics
+            risk_score = self._calculate_risk_score(event)
+            
+            if risk_score >= 60:  # Threshold for suspicious activity
+                indicators = self._identify_risk_indicators(event)
+                
+                # Create suspicious activity record
+                activity = SuspiciousActivity(
+                    id=f"SA_{event.id}",
+                    timestamp=event.timestamp,
+                    activity_type=self._map_event_to_activity_type(event.event_type),
+                    source_ip=event.source_ip,
+                    user_id=event.user_id,
+                    risk_score=risk_score,
+                    indicators=indicators,
+                    related_events=[event.id],
+                    auto_blocked=risk_score >= 85  # Auto-block high-risk activities
+                )
+                
+                # Add to in-memory cache
+                self.suspicious_activities.append(activity)
+                
+                # Persist to database
+                self._persist_suspicious_activity(activity)
+                
+                logger.warning(f"Suspicious activity detected: {activity.id} (Risk: {risk_score})")
+                
+                # Auto-block if risk is very high
+                if activity.auto_blocked:
+                    self._auto_block_activity(activity)
+                
+        except Exception as e:
+            logger.error(f"Error analyzing for suspicious activity: {str(e)}")
+    
+    def _calculate_risk_score(self, event: SecurityEvent) -> float:
+        """Calculate risk score for an event (0-100)"""
+        score = 0.0
+        
+        # Base score by severity
+        severity_scores = {
+            ThreatLevel.LOW: 10,
+            ThreatLevel.MEDIUM: 30,
+            ThreatLevel.HIGH: 60,
+            ThreatLevel.CRITICAL: 80
+        }
+        score += severity_scores.get(event.severity, 10)
+        
+        # Additional risk factors
+        if event.event_type in ["MALICIOUS_INPUT_DETECTED", "ADVANCED_INJECTION_DETECTED"]:
+            score += 20
+        
+        if event.event_type in ["RATE_LIMIT_EXCEEDED", "BLOCKED_IP_ACCESS"]:
+            score += 15
+        
+        # Check for repeated events from same source
+        recent_events = [e for e in self.security_events 
+                        if e.source_ip == event.source_ip 
+                        and (event.timestamp - e.timestamp).seconds < 3600]  # Last hour
+        
+        if len(recent_events) > 5:
+            score += 10 * min(len(recent_events) - 5, 5)  # Cap at 50 points
+        
+        # Check for events from unusual locations or patterns
+        if self._is_unusual_activity(event):
+            score += 15
+        
+        return min(score, 100)
+    
+    def _identify_risk_indicators(self, event: SecurityEvent) -> List[str]:
+        """Identify risk indicators for an event"""
+        indicators = []
+        
+        # High severity events
+        if event.severity in [ThreatLevel.HIGH, ThreatLevel.CRITICAL]:
+            indicators.append("high_severity_event")
+        
+        # Injection attempts
+        if "injection" in event.event_type.lower():
+            indicators.append("injection_attempt")
+        
+        # Rate limiting violations
+        if "rate_limit" in event.event_type.lower():
+            indicators.append("rate_limit_violation")
+        
+        # Repeated events from same source
+        recent_events = [e for e in self.security_events 
+                        if e.source_ip == event.source_ip 
+                        and (event.timestamp - e.timestamp).seconds < 3600]
+        
+        if len(recent_events) > 5:
+            indicators.append("repeated_events_same_source")
+        
+        # Unusual timing
+        if event.timestamp.hour < 6 or event.timestamp.hour > 22:
+            indicators.append("unusual_timing")
+        
+        # Failed authentication attempts
+        if "authentication" in event.event_type.lower() and "failed" in event.description.lower():
+            indicators.append("authentication_failure")
+        
+        return indicators
+    
+    def _map_event_to_activity_type(self, event_type: str) -> ActivityType:
+        """Map event type to activity type"""
+        if "login" in event_type.lower() or "authentication" in event_type.lower():
+            return ActivityType.LOGIN_ATTEMPT
+        elif "api" in event_type.lower():
+            return ActivityType.API_ACCESS
+        elif "file" in event_type.lower() or "upload" in event_type.lower():
+            return ActivityType.FILE_UPLOAD
+        elif "command" in event_type.lower():
+            return ActivityType.COMMAND_EXECUTION
+        elif "config" in event_type.lower():
+            return ActivityType.CONFIGURATION_CHANGE
+        else:
+            return ActivityType.SYSTEM_EVENT
+    
+    def _is_unusual_activity(self, event: SecurityEvent) -> bool:
+        """Check if activity is unusual based on historical patterns"""
+        # Simple heuristic - can be enhanced with ML
+        
+        # Check if source IP is new
+        historical_ips = set(e.source_ip for e in self.security_events)
+        if event.source_ip not in historical_ips:
+            return True
+        
+        # Check if activity is at unusual time
+        if event.timestamp.hour < 6 or event.timestamp.hour > 22:
+            return True
+        
+        # Check if user is performing unusual actions
+        if event.user_id:
+            user_events = [e for e in self.security_events if e.user_id == event.user_id]
+            if len(user_events) > 0:
+                typical_event_types = set(e.event_type for e in user_events)
+                if event.event_type not in typical_event_types:
+                    return True
+        
+        return False
+    
+    def _persist_suspicious_activity(self, activity: SuspiciousActivity):
+        """Persist suspicious activity to database"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT OR REPLACE INTO suspicious_activities 
+                (id, timestamp, activity_type, source_ip, user_id, risk_score, 
+                 indicators, related_events, auto_blocked, investigation_notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                activity.id,
+                activity.timestamp,
+                activity.activity_type.value,
+                activity.source_ip,
+                activity.user_id,
+                activity.risk_score,
+                json.dumps(activity.indicators),
+                json.dumps(activity.related_events),
+                activity.auto_blocked,
+                activity.investigation_notes
+            ))
+            
+            conn.commit()
+            conn.close()
+            
+        except Exception as e:
+            logger.error(f"Error persisting suspicious activity: {str(e)}")
+    
+    def _auto_block_activity(self, activity: SuspiciousActivity):
+        """Auto-block high-risk suspicious activity"""
+        try:
+            # Log the auto-block action
+            logger.critical(f"Auto-blocking suspicious activity: {activity.id}")
+            
+            # Here you would implement actual blocking logic
+            # For example, adding IP to firewall rules, disabling user account, etc.
+            
+            # For now, just log it as a security event
+            self.log_security_event(
+                "AUTO_BLOCK_ACTIVATED",
+                ThreatLevel.HIGH,
+                source_ip=activity.source_ip,
+                user_id=activity.user_id,
+                description=f"Auto-blocked suspicious activity: {activity.id}",
+                metadata={"blocked_activity_id": activity.id}
+            )
+            
+        except Exception as e:
+            logger.error(f"Error auto-blocking activity: {str(e)}")
+    
+    def _check_for_incident_creation(self, event: SecurityEvent):
+        """Check if event should trigger incident creation"""
+        try:
+            # Incident creation criteria
+            create_incident = False
+            incident_title = ""
+            incident_description = ""
+            
+            # Critical events always create incidents
+            if event.severity == ThreatLevel.CRITICAL:
+                create_incident = True
+                incident_title = f"Critical Security Event: {event.event_type}"
+                incident_description = f"Critical security event detected: {event.description}"
+            
+            # Multiple high-severity events from same source
+            elif event.severity == ThreatLevel.HIGH:
+                recent_high_events = [e for e in self.security_events 
+                                    if e.source_ip == event.source_ip 
+                                    and e.severity == ThreatLevel.HIGH
+                                    and (event.timestamp - e.timestamp).seconds < 3600]
+                
+                if len(recent_high_events) >= 3:
+                    create_incident = True
+                    incident_title = f"Multiple High-Severity Events from {event.source_ip}"
+                    incident_description = f"Multiple high-severity events detected from {event.source_ip}"
+            
+            # Specific event types that should create incidents
+            critical_event_types = [
+                "ADVANCED_INJECTION_DETECTED",
+                "DANGEROUS_FILE_UPLOAD",
+                "EXECUTABLE_FILE_DETECTED",
+                "AUTO_BLOCK_ACTIVATED"
+            ]
+            
+            if event.event_type in critical_event_types:
+                create_incident = True
+                incident_title = f"Security Incident: {event.event_type}"
+                incident_description = f"Security incident triggered by: {event.description}"
+            
+            # Create incident if criteria met
+            if create_incident:
+                incident = SecurityIncident(
+                    id=f"INC_{event.id}",
+                    timestamp=event.timestamp,
+                    title=incident_title,
+                    description=incident_description,
+                    severity=event.severity,
+                    status=IncidentStatus.OPEN,
+                    assigned_to=None,
+                    related_events=[event.id],
+                    related_activities=[],
+                    timeline=[{
+                        "timestamp": event.timestamp,
+                        "action": "incident_created",
+                        "description": "Security incident created automatically",
+                        "user": "system"
+                    }]
+                )
+                
+                # Add to in-memory cache
+                self.security_incidents.append(incident)
+                
+                # Persist to database
+                self._persist_security_incident(incident)
+                
+                logger.error(f"Security incident created: {incident.id}")
+                
+                # Send notification
+                self._send_incident_notification(incident)
+                
+        except Exception as e:
+            logger.error(f"Error checking for incident creation: {str(e)}")
+    
+    def _persist_security_incident(self, incident: SecurityIncident):
+        """Persist security incident to database"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT OR REPLACE INTO security_incidents 
+                (id, timestamp, title, description, severity, status, assigned_to,
+                 related_events, related_activities, timeline, resolution, resolved_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                incident.id,
+                incident.timestamp,
+                incident.title,
+                incident.description,
+                incident.severity.value,
+                incident.status.value,
+                incident.assigned_to,
+                json.dumps(incident.related_events),
+                json.dumps(incident.related_activities),
+                json.dumps(incident.timeline, default=str),
+                incident.resolution,
+                incident.resolved_at
+            ))
+            
+            conn.commit()
+            conn.close()
+            
+        except Exception as e:
+            logger.error(f"Error persisting security incident: {str(e)}")
+    
+    def _send_incident_notification(self, incident: SecurityIncident):
+        """Send notification for security incident"""
+        try:
+            if not self.notification_settings.get("email_enabled", False):
+                return
+            
+            # Create email notification
+            subject = f"Security Incident Alert: {incident.title}"
+            body = f"""
+            Security Incident Alert
+            
+            Incident ID: {incident.id}
+            Timestamp: {incident.timestamp}
+            Severity: {incident.severity.value}
+            Status: {incident.status.value}
+            
+            Description:
+            {incident.description}
+            
+            Related Events: {', '.join(incident.related_events)}
+            
+            Please investigate immediately.
+            
+            This is an automated alert from the MCP Server Security Monitoring System.
+            """
+            
+            self._send_email_notification(subject, body)
+            
+        except Exception as e:
+            logger.error(f"Error sending incident notification: {str(e)}")
+    
+    def _send_email_notification(self, subject: str, body: str, attachments: List[str] = None):
+        """Send email notification"""
+        try:
+            if not self.notification_settings.get("email_enabled", False):
+                return
+            
+            msg = MIMEMultipart()
+            msg['From'] = self.notification_settings["email_username"]
+            msg['To'] = ", ".join(self.notification_settings["email_recipients"])
+            msg['Subject'] = subject
+            
+            msg.attach(MIMEText(body, 'plain'))
+            
+            # Add attachments if provided
+            if attachments:
+                for file_path in attachments:
+                    if os.path.exists(file_path):
+                        with open(file_path, "rb") as attachment:
+                            part = MIMEBase('application', 'octet-stream')
+                            part.set_payload(attachment.read())
+                            encoders.encode_base64(part)
+                            part.add_header(
+                                'Content-Disposition',
+                                f'attachment; filename= {os.path.basename(file_path)}'
+                            )
+                            msg.attach(part)
+            
+            # Send email
+            server = smtplib.SMTP(
+                self.notification_settings["email_smtp_host"],
+                self.notification_settings["email_smtp_port"]
+            )
+            server.starttls()
+            server.login(
+                self.notification_settings["email_username"],
+                self.notification_settings["email_password"]
+            )
+            
+            server.send_message(msg)
+            server.quit()
+            
+            logger.info(f"Email notification sent: {subject}")
+            
+        except Exception as e:
+            logger.error(f"Error sending email notification: {str(e)}")
+    
+    def _activity_pattern_analysis(self):
+        """Background task for analyzing activity patterns"""
+        while True:
+            try:
+                time.sleep(300)  # Run every 5 minutes
+                
+                # Analyze recent activity patterns
+                self._analyze_activity_patterns()
+                
+            except Exception as e:
+                logger.error(f"Error in activity pattern analysis: {str(e)}")
+    
+    def _analyze_activity_patterns(self):
+        """Analyze activity patterns for anomalies"""
+        try:
+            # Get recent events (last hour)
+            recent_events = [e for e in self.security_events 
+                           if (datetime.utcnow() - e.timestamp).seconds < 3600]
+            
+            if not recent_events:
+                return
+            
+            # Group events by source IP
+            ip_events = defaultdict(list)
+            for event in recent_events:
+                ip_events[event.source_ip].append(event)
+            
+            # Analyze each IP's activity
+            for ip, events in ip_events.items():
+                if len(events) >= 10:  # Threshold for pattern analysis
+                    # Check for coordinated attacks
+                    if self._detect_coordinated_attack(events):
+                        self.log_security_event(
+                            "COORDINATED_ATTACK_DETECTED",
+                            ThreatLevel.HIGH,
+                            source_ip=ip,
+                            description=f"Coordinated attack pattern detected from {ip}"
+                        )
+                    
+                    # Check for scanning behavior
+                    if self._detect_scanning_behavior(events):
+                        self.log_security_event(
+                            "SCANNING_BEHAVIOR_DETECTED",
+                            ThreatLevel.MEDIUM,
+                            source_ip=ip,
+                            description=f"Scanning behavior detected from {ip}"
+                        )
+            
+        except Exception as e:
+            logger.error(f"Error analyzing activity patterns: {str(e)}")
+    
+    def _detect_coordinated_attack(self, events: List[SecurityEvent]) -> bool:
+        """Detect coordinated attack patterns"""
+        # Look for multiple different attack types in short time
+        event_types = set(e.event_type for e in events)
+        attack_types = [t for t in event_types if "injection" in t.lower() or "malicious" in t.lower()]
+        
+        return len(attack_types) >= 3
+    
+    def _detect_scanning_behavior(self, events: List[SecurityEvent]) -> bool:
+        """Detect scanning/reconnaissance behavior"""
+        # Look for rapid sequential access to different endpoints
+        timestamps = [e.timestamp for e in events]
+        timestamps.sort()
+        
+        # Check for rapid sequential events
+        rapid_events = 0
+        for i in range(1, len(timestamps)):
+            if (timestamps[i] - timestamps[i-1]).seconds < 5:
+                rapid_events += 1
+        
+        return rapid_events >= 8
+    
+    def _report_scheduler(self):
+        """Background task for scheduled report generation"""
+        last_daily_report = datetime.utcnow() - timedelta(days=1)
+        last_weekly_report = datetime.utcnow() - timedelta(weeks=1)
+        
+        while True:
+            try:
+                now = datetime.utcnow()
+                
+                # Generate daily report
+                if (now - last_daily_report).days >= 1:
+                    self._generate_scheduled_report("daily")
+                    last_daily_report = now
+                
+                # Generate weekly report
+                if (now - last_weekly_report).days >= 7:
+                    self._generate_scheduled_report("weekly")
+                    last_weekly_report = now
+                
+                time.sleep(3600)  # Check every hour
+                
+            except Exception as e:
+                logger.error(f"Error in report scheduler: {str(e)}")
+    
+    def _generate_scheduled_report(self, report_type: str):
+        """Generate scheduled security report"""
+        try:
+            # Generate report
+            report = self.generate_security_report(report_type)
+            
+            # Save to database
+            self._persist_security_report(report)
+            
+            # Send notification if enabled
+            if self.notification_settings.get("email_enabled", False):
+                self._send_report_notification(report)
+            
+            logger.info(f"Generated {report_type} security report: {report.id}")
+            
+        except Exception as e:
+            logger.error(f"Error generating scheduled report: {str(e)}")
+    
+    def generate_security_report(self, report_type: str = "daily") -> SecurityReport:
+        """Generate comprehensive security report"""
+        try:
+            # Determine time range
+            now = datetime.utcnow()
+            if report_type == "daily":
+                start_time = now - timedelta(days=1)
+            elif report_type == "weekly":
+                start_time = now - timedelta(weeks=1)
+            elif report_type == "monthly":
+                start_time = now - timedelta(days=30)
+            else:
+                start_time = now - timedelta(days=1)
+            
+            # Get events in time range
+            events = [e for e in self.security_events 
+                     if e.timestamp >= start_time]
+            
+            # Get activities in time range
+            activities = [a for a in self.suspicious_activities 
+                         if a.timestamp >= start_time]
+            
+            # Get incidents in time range
+            incidents = [i for i in self.security_incidents 
+                        if i.timestamp >= start_time]
+            
+            # Generate summary
+            summary = self._generate_report_summary(events, activities, incidents)
+            
+            # Generate recommendations
+            recommendations = self._generate_security_recommendations(events, activities, incidents)
+            
+            # Generate charts data
+            charts_data = self._generate_charts_data(events, activities, incidents)
+            
+            # Create report
+            report = SecurityReport(
+                id=f"RPT_{report_type}_{int(now.timestamp())}",
+                timestamp=now,
+                report_type=report_type,
+                time_range={"start": start_time, "end": now},
+                summary=summary,
+                events=events,
+                activities=activities,
+                incidents=incidents,
+                recommendations=recommendations,
+                charts_data=charts_data
+            )
+            
+            return report
+            
+        except Exception as e:
+            logger.error(f"Error generating security report: {str(e)}")
+            raise
+    
+    def _generate_report_summary(self, events: List[SecurityEvent], 
+                                activities: List[SuspiciousActivity], 
+                                incidents: List[SecurityIncident]) -> Dict[str, Any]:
+        """Generate report summary statistics"""
+        summary = {
+            "total_events": len(events),
+            "total_activities": len(activities),
+            "total_incidents": len(incidents),
+            "events_by_severity": {},
+            "activities_by_risk": {},
+            "incidents_by_severity": {},
+            "top_source_ips": {},
+            "top_event_types": {},
+            "resolution_status": {}
+        }
+        
+        # Events by severity
+        for severity in ThreatLevel:
+            summary["events_by_severity"][severity.value] = len([
+                e for e in events if e.severity == severity
+            ])
+        
+        # Activities by risk level
+        high_risk = len([a for a in activities if a.risk_score >= 80])
+        medium_risk = len([a for a in activities if 60 <= a.risk_score < 80])
+        low_risk = len([a for a in activities if a.risk_score < 60])
+        
+        summary["activities_by_risk"] = {
+            "high": high_risk,
+            "medium": medium_risk,
+            "low": low_risk
+        }
+        
+        # Incidents by severity
+        for severity in ThreatLevel:
+            summary["incidents_by_severity"][severity.value] = len([
+                i for i in incidents if i.severity == severity
+            ])
+        
+        # Top source IPs
+        ip_counts = defaultdict(int)
+        for event in events:
+            ip_counts[event.source_ip] += 1
+        
+        summary["top_source_ips"] = dict(sorted(ip_counts.items(), 
+                                              key=lambda x: x[1], 
+                                              reverse=True)[:10])
+        
+        # Top event types
+        event_type_counts = defaultdict(int)
+        for event in events:
+            event_type_counts[event.event_type] += 1
+        
+        summary["top_event_types"] = dict(sorted(event_type_counts.items(), 
+                                                key=lambda x: x[1], 
+                                                reverse=True)[:10])
+        
+        # Resolution status
+        resolved_events = len([e for e in events if e.resolved])
+        resolved_incidents = len([i for i in incidents if i.status == IncidentStatus.RESOLVED])
+        
+        summary["resolution_status"] = {
+            "resolved_events": resolved_events,
+            "unresolved_events": len(events) - resolved_events,
+            "resolved_incidents": resolved_incidents,
+            "open_incidents": len(incidents) - resolved_incidents
+        }
+        
+        return summary
+    
+    def _generate_security_recommendations(self, events: List[SecurityEvent], 
+                                         activities: List[SuspiciousActivity], 
+                                         incidents: List[SecurityIncident]) -> List[str]:
+        """Generate security recommendations based on analysis"""
+        recommendations = []
+        
+        # Check for high-risk activities
+        high_risk_activities = [a for a in activities if a.risk_score >= 80]
+        if high_risk_activities:
+            recommendations.append(f"Investigate {len(high_risk_activities)} high-risk activities immediately")
+        
+        # Check for unresolved incidents
+        open_incidents = [i for i in incidents if i.status == IncidentStatus.OPEN]
+        if open_incidents:
+            recommendations.append(f"Resolve {len(open_incidents)} open security incidents")
+        
+        # Check for frequent source IPs
+        ip_counts = defaultdict(int)
+        for event in events:
+            ip_counts[event.source_ip] += 1
+        
+        frequent_ips = [ip for ip, count in ip_counts.items() if count >= 20]
+        if frequent_ips:
+            recommendations.append(f"Consider blocking or monitoring frequent source IPs: {', '.join(frequent_ips[:5])}")
+        
+        # Check for injection attempts
+        injection_events = [e for e in events if "injection" in e.event_type.lower()]
+        if injection_events:
+            recommendations.append(f"Review and strengthen input validation (${len(injection_events)} injection attempts)")
+        
+        # Check for failed authentication
+        auth_failures = [e for e in events if "authentication" in e.event_type.lower() and "failed" in e.description.lower()]
+        if auth_failures:
+            recommendations.append(f"Review authentication security ({len(auth_failures)} failed attempts)")
+        
+        if not recommendations:
+            recommendations.append("Security posture is good - continue monitoring")
+        
+        return recommendations
+    
+    def _generate_charts_data(self, events: List[SecurityEvent], 
+                             activities: List[SuspiciousActivity], 
+                             incidents: List[SecurityIncident]) -> Dict[str, Any]:
+        """Generate data for charts and visualizations"""
+        charts_data = {
+            "events_timeline": [],
+            "severity_distribution": {},
+            "top_threats": [],
+            "activity_heatmap": {}
+        }
+        
+        # Events timeline (hourly buckets)
+        timeline_buckets = defaultdict(int)
+        for event in events:
+            hour_key = event.timestamp.strftime("%Y-%m-%d %H:00")
+            timeline_buckets[hour_key] += 1
+        
+        charts_data["events_timeline"] = [
+            {"time": time, "count": count}
+            for time, count in sorted(timeline_buckets.items())
+        ]
+        
+        # Severity distribution
+        for severity in ThreatLevel:
+            charts_data["severity_distribution"][severity.value] = len([
+                e for e in events if e.severity == severity
+            ])
+        
+        # Top threats by event type
+        event_type_counts = defaultdict(int)
+        for event in events:
+            event_type_counts[event.event_type] += 1
+        
+        charts_data["top_threats"] = [
+            {"threat": event_type, "count": count}
+            for event_type, count in sorted(event_type_counts.items(), 
+                                          key=lambda x: x[1], 
+                                          reverse=True)[:10]
+        ]
+        
+        # Activity heatmap by hour and day
+        heatmap_data = defaultdict(int)
+        for event in events:
+            day_hour = f"{event.timestamp.strftime('%A')}_{event.timestamp.hour}"
+            heatmap_data[day_hour] += 1
+        
+        charts_data["activity_heatmap"] = dict(heatmap_data)
+        
+        return charts_data
+    
+    def _persist_security_report(self, report: SecurityReport):
+        """Persist security report to database"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                INSERT OR REPLACE INTO security_reports 
+                (id, timestamp, report_type, time_range, summary, events, 
+                 activities, incidents, recommendations, charts_data)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                report.id,
+                report.timestamp,
+                report.report_type,
+                json.dumps(report.time_range, default=str),
+                json.dumps(report.summary),
+                json.dumps([e.__dict__ for e in report.events], default=str),
+                json.dumps([a.__dict__ for a in report.activities], default=str),
+                json.dumps([i.__dict__ for i in report.incidents], default=str),
+                json.dumps(report.recommendations),
+                json.dumps(report.charts_data)
+            ))
+            
+            conn.commit()
+            conn.close()
+            
+        except Exception as e:
+            logger.error(f"Error persisting security report: {str(e)}")
+    
+    def _send_report_notification(self, report: SecurityReport):
+        """Send notification for security report"""
+        try:
+            # Generate report summary email
+            subject = f"Security Report - {report.report_type.title()} ({report.timestamp.strftime('%Y-%m-%d')})"
+            
+            body = f"""
+            Security Report Summary - {report.report_type.title()}
+            Generated: {report.timestamp.strftime('%Y-%m-%d %H:%M:%S')}
+            
+            Summary:
+            - Total Events: {report.summary['total_events']}
+            - Suspicious Activities: {report.summary['total_activities']}
+            - Security Incidents: {report.summary['total_incidents']}
+            
+            Events by Severity:
+            - Critical: {report.summary['events_by_severity'].get('critical', 0)}
+            - High: {report.summary['events_by_severity'].get('high', 0)}
+            - Medium: {report.summary['events_by_severity'].get('medium', 0)}
+            - Low: {report.summary['events_by_severity'].get('low', 0)}
+            
+            Top Recommendations:
+            {chr(10).join(f"- {rec}" for rec in report.recommendations[:5])}
+            
+            For detailed analysis, please check the security dashboard.
+            
+            This is an automated report from the MCP Server Security Monitoring System.
+            """
+            
+            # Export report to CSV for attachment
+            csv_file = self._export_report_to_csv(report)
+            attachments = [csv_file] if csv_file else []
+            
+            self._send_email_notification(subject, body, attachments)
+            
+            # Clean up temporary files
+            if csv_file and os.path.exists(csv_file):
+                os.remove(csv_file)
+            
+        except Exception as e:
+            logger.error(f"Error sending report notification: {str(e)}")
+    
+    def _export_report_to_csv(self, report: SecurityReport) -> Optional[str]:
+        """Export report data to CSV file"""
+        try:
+            filename = f"security_report_{report.report_type}_{int(report.timestamp.timestamp())}.csv"
+            
+            with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                
+                # Write events
+                writer.writerow(["Events"])
+                writer.writerow(["ID", "Timestamp", "Type", "Severity", "Source IP", "User ID", "Description"])
+                
+                for event in report.events:
+                    writer.writerow([
+                        event.id,
+                        event.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                        event.event_type,
+                        event.severity.value,
+                        event.source_ip,
+                        event.user_id or "",
+                        event.description
+                    ])
+                
+                writer.writerow([])  # Empty row
+                
+                # Write suspicious activities
+                writer.writerow(["Suspicious Activities"])
+                writer.writerow(["ID", "Timestamp", "Type", "Source IP", "Risk Score", "Indicators"])
+                
+                for activity in report.activities:
+                    writer.writerow([
+                        activity.id,
+                        activity.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                        activity.activity_type.value,
+                        activity.source_ip,
+                        activity.risk_score,
+                        ", ".join(activity.indicators)
+                    ])
+                
+                writer.writerow([])  # Empty row
+                
+                # Write incidents
+                writer.writerow(["Security Incidents"])
+                writer.writerow(["ID", "Timestamp", "Title", "Severity", "Status", "Description"])
+                
+                for incident in report.incidents:
+                    writer.writerow([
+                        incident.id,
+                        incident.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                        incident.title,
+                        incident.severity.value,
+                        incident.status.value,
+                        incident.description
+                    ])
+            
+            return filename
+            
+        except Exception as e:
+            logger.error(f"Error exporting report to CSV: {str(e)}")
+            return None
+    
+    def get_security_events(self, start_time: Optional[datetime] = None, 
+                           end_time: Optional[datetime] = None,
+                           severity: Optional[ThreatLevel] = None,
+                           source_ip: Optional[str] = None,
+                           limit: int = 1000) -> List[SecurityEvent]:
+        """Get security events with filtering"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            query = "SELECT * FROM security_events WHERE 1=1"
+            params = []
+            
+            if start_time:
+                query += " AND timestamp >= ?"
+                params.append(start_time)
+            
+            if end_time:
+                query += " AND timestamp <= ?"
+                params.append(end_time)
+            
+            if severity:
+                query += " AND severity = ?"
+                params.append(severity.value)
+            
+            if source_ip:
+                query += " AND source_ip = ?"
+                params.append(source_ip)
+            
+            query += " ORDER BY timestamp DESC LIMIT ?"
+            params.append(limit)
+            
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            
+            events = []
+            for row in rows:
+                event = SecurityEvent(
+                    id=row[0],
+                    timestamp=datetime.fromisoformat(row[1]) if row[1] else datetime.utcnow(),
+                    event_type=row[2],
+                    severity=ThreatLevel(row[3]),
+                    source_ip=row[4],
+                    user_id=row[5],
+                    description=row[6],
+                    metadata=json.loads(row[7]) if row[7] else {},
+                    resolved=bool(row[8]),
+                    resolved_at=datetime.fromisoformat(row[9]) if row[9] else None
+                )
+                events.append(event)
+            
+            conn.close()
+            return events
+            
+        except Exception as e:
+            logger.error(f"Error getting security events: {str(e)}")
+            return []
+    
+    def get_suspicious_activities(self, start_time: Optional[datetime] = None,
+                                 end_time: Optional[datetime] = None,
+                                 min_risk_score: float = 0.0,
+                                 limit: int = 1000) -> List[SuspiciousActivity]:
+        """Get suspicious activities with filtering"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            query = "SELECT * FROM suspicious_activities WHERE risk_score >= ?"
+            params = [min_risk_score]
+            
+            if start_time:
+                query += " AND timestamp >= ?"
+                params.append(start_time)
+            
+            if end_time:
+                query += " AND timestamp <= ?"
+                params.append(end_time)
+            
+            query += " ORDER BY risk_score DESC, timestamp DESC LIMIT ?"
+            params.append(limit)
+            
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            
+            activities = []
+            for row in rows:
+                activity = SuspiciousActivity(
+                    id=row[0],
+                    timestamp=datetime.fromisoformat(row[1]) if row[1] else datetime.utcnow(),
+                    activity_type=ActivityType(row[2]),
+                    source_ip=row[3],
+                    user_id=row[4],
+                    risk_score=row[5],
+                    indicators=json.loads(row[6]) if row[6] else [],
+                    related_events=json.loads(row[7]) if row[7] else [],
+                    auto_blocked=bool(row[8]),
+                    investigation_notes=row[9] or ""
+                )
+                activities.append(activity)
+            
+            conn.close()
+            return activities
+            
+        except Exception as e:
+            logger.error(f"Error getting suspicious activities: {str(e)}")
+            return []
+    
+    def get_security_incidents(self, start_time: Optional[datetime] = None,
+                              end_time: Optional[datetime] = None,
+                              status: Optional[IncidentStatus] = None,
+                              limit: int = 100) -> List[SecurityIncident]:
+        """Get security incidents with filtering"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            query = "SELECT * FROM security_incidents WHERE 1=1"
+            params = []
+            
+            if start_time:
+                query += " AND timestamp >= ?"
+                params.append(start_time)
+            
+            if end_time:
+                query += " AND timestamp <= ?"
+                params.append(end_time)
+            
+            if status:
+                query += " AND status = ?"
+                params.append(status.value)
+            
+            query += " ORDER BY timestamp DESC LIMIT ?"
+            params.append(limit)
+            
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            
+            incidents = []
+            for row in rows:
+                incident = SecurityIncident(
+                    id=row[0],
+                    timestamp=datetime.fromisoformat(row[1]) if row[1] else datetime.utcnow(),
+                    title=row[2],
+                    description=row[3],
+                    severity=ThreatLevel(row[4]),
+                    status=IncidentStatus(row[5]),
+                    assigned_to=row[6],
+                    related_events=json.loads(row[7]) if row[7] else [],
+                    related_activities=json.loads(row[8]) if row[8] else [],
+                    timeline=json.loads(row[9]) if row[9] else [],
+                    resolution=row[10],
+                    resolved_at=datetime.fromisoformat(row[11]) if row[11] else None
+                )
+                incidents.append(incident)
+            
+            conn.close()
+            return incidents
+            
+        except Exception as e:
+            logger.error(f"Error getting security incidents: {str(e)}")
+            return []
+    
+    def update_notification_settings(self, settings: Dict[str, Any]):
+        """Update notification settings"""
+        self.notification_settings.update(settings)
+        logger.info("Notification settings updated")
+    
+    def get_security_dashboard_data(self) -> Dict[str, Any]:
+        """Get comprehensive security dashboard data"""
+        try:
+            now = datetime.utcnow()
+            last_24h = now - timedelta(days=1)
+            last_7d = now - timedelta(days=7)
+            
+            # Get recent data
+            recent_events = self.get_security_events(start_time=last_24h)
+            recent_activities = self.get_suspicious_activities(start_time=last_24h)
+            recent_incidents = self.get_security_incidents(start_time=last_24h)
+            
+            # Get weekly data for trends
+            weekly_events = self.get_security_events(start_time=last_7d)
+            weekly_activities = self.get_suspicious_activities(start_time=last_7d)
+            
+            # Calculate metrics
+            dashboard_data = {
+                "overview": {
+                    "events_24h": len(recent_events),
+                    "activities_24h": len(recent_activities),
+                    "incidents_24h": len(recent_incidents),
+                    "critical_events_24h": len([e for e in recent_events if e.severity == ThreatLevel.CRITICAL]),
+                    "high_risk_activities_24h": len([a for a in recent_activities if a.risk_score >= 80]),
+                    "open_incidents": len([i for i in recent_incidents if i.status == IncidentStatus.OPEN])
+                },
+                "trends": {
+                    "events_7d": len(weekly_events),
+                    "activities_7d": len(weekly_activities),
+                    "avg_events_per_day": len(weekly_events) / 7,
+                    "avg_activities_per_day": len(weekly_activities) / 7
+                },
+                "top_threats": self._get_top_threats(recent_events),
+                "top_source_ips": self._get_top_source_ips(recent_events),
+                "severity_distribution": self._get_severity_distribution(recent_events),
+                "activity_timeline": self._get_activity_timeline(recent_events),
+                "recent_critical_events": [
+                    {
+                        "id": e.id,
+                        "timestamp": e.timestamp.isoformat(),
+                        "type": e.event_type,
+                        "description": e.description,
+                        "source_ip": e.source_ip
+                    }
+                    for e in recent_events 
+                    if e.severity == ThreatLevel.CRITICAL
+                ][:10],
+                "high_risk_activities": [
+                    {
+                        "id": a.id,
+                        "timestamp": a.timestamp.isoformat(),
+                        "type": a.activity_type.value,
+                        "source_ip": a.source_ip,
+                        "risk_score": a.risk_score,
+                        "indicators": a.indicators
+                    }
+                    for a in recent_activities 
+                    if a.risk_score >= 80
+                ][:10]
+            }
+            
+            return dashboard_data
+            
+        except Exception as e:
+            logger.error(f"Error getting security dashboard data: {str(e)}")
+            return {}
+    
+    def _get_top_threats(self, events: List[SecurityEvent]) -> List[Dict[str, Any]]:
+        """Get top threat types"""
+        threat_counts = defaultdict(int)
+        for event in events:
+            threat_counts[event.event_type] += 1
+        
+        return [
+            {"type": threat_type, "count": count}
+            for threat_type, count in sorted(threat_counts.items(), 
+                                           key=lambda x: x[1], 
+                                           reverse=True)[:10]
+        ]
+    
+    def _get_top_source_ips(self, events: List[SecurityEvent]) -> List[Dict[str, Any]]:
+        """Get top source IPs"""
+        ip_counts = defaultdict(int)
+        for event in events:
+            ip_counts[event.source_ip] += 1
+        
+        return [
+            {"ip": ip, "count": count}
+            for ip, count in sorted(ip_counts.items(), 
+                                  key=lambda x: x[1], 
+                                  reverse=True)[:10]
+        ]
+    
+    def _get_severity_distribution(self, events: List[SecurityEvent]) -> Dict[str, int]:
+        """Get severity distribution"""
+        distribution = {}
+        for severity in ThreatLevel:
+            distribution[severity.value] = len([e for e in events if e.severity == severity])
+        
+        return distribution
+    
+    def _get_activity_timeline(self, events: List[SecurityEvent]) -> List[Dict[str, Any]]:
+        """Get activity timeline (hourly buckets)"""
+        timeline_buckets = defaultdict(int)
+        for event in events:
+            hour_key = event.timestamp.strftime("%Y-%m-%d %H:00")
+            timeline_buckets[hour_key] += 1
+        
+        return [
+            {"time": time, "count": count}
+            for time, count in sorted(timeline_buckets.items())
+        ]
 
 
 # Example usage and testing
