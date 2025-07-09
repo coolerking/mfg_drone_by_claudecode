@@ -12,6 +12,7 @@ import os
 import sys
 import asyncio
 import time
+import json
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from contextlib import asynccontextmanager
@@ -20,7 +21,7 @@ from fastapi import FastAPI, HTTPException, Depends, status, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, APIKeyHeader
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.background_tasks import BackgroundTasks
 import uvicorn
 
@@ -70,7 +71,7 @@ nlp_engine = EnhancedNLPEngine()
 command_router = EnhancedCommandRouter(backend_client)
 def get_security_config() -> SecurityConfig:
     """Get security configuration with proper validation"""
-    jwt_secret = os.getenv("JWT_SECRET")
+    jwt_secret = settings.jwt_secret
     if not jwt_secret:
         raise ValueError(
             "JWT_SECRET environment variable is required for security. "
@@ -79,10 +80,11 @@ def get_security_config() -> SecurityConfig:
     
     return SecurityConfig(
         jwt_secret=jwt_secret,
-        max_failed_attempts=int(os.getenv("MAX_FAILED_ATTEMPTS", "5")),
-        lockout_duration_minutes=int(os.getenv("LOCKOUT_DURATION", "15")),
-        allowed_ips=os.getenv("ALLOWED_IPS", "").split(",") if os.getenv("ALLOWED_IPS") else [],
-        blocked_ips=os.getenv("BLOCKED_IPS", "").split(",") if os.getenv("BLOCKED_IPS") else []
+        max_failed_attempts=settings.max_failed_attempts,
+        lockout_duration_minutes=settings.lockout_duration,
+        allowed_ips=settings.allowed_ips,
+        blocked_ips=settings.blocked_ips,
+        enable_audit_logging=settings.audit_logging_enabled
     )
 
 security_manager = SecurityManager(get_security_config())
@@ -134,18 +136,45 @@ app = FastAPI(
 )
 
 # Add middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.allowed_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+if settings.cors_enabled:
+    # Configure CORS based on environment
+    cors_origins = settings.allowed_origins
+    if settings.is_production() and "*" in cors_origins:
+        raise ValueError("CORS wildcard (*) is not allowed in production environment")
+    
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=settings.cors_allow_credentials,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+        max_age=settings.cors_max_age,
+    )
+    logger.info(f"CORS middleware configured with origins: {cors_origins}")
 
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=["*"]  # Configure as needed for production
-)
+if settings.trusted_hosts_enabled:
+    # Configure trusted hosts based on environment
+    trusted_hosts = settings.trusted_hosts
+    if settings.is_production() and "*" in trusted_hosts:
+        raise ValueError("Trusted hosts wildcard (*) is not allowed in production environment")
+    
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=trusted_hosts
+    )
+    logger.info(f"Trusted hosts middleware configured with hosts: {trusted_hosts}")
+
+# HTTPS redirect middleware
+@app.middleware("http")
+async def https_redirect_middleware(request: Request, call_next):
+    """Middleware to force HTTPS redirection in production"""
+    if settings.force_https and not request.url.scheme == "https":
+        # Check if this is a health check or internal request
+        if request.url.path not in ["/health", "/metrics"]:
+            https_url = request.url.replace(scheme="https")
+            return RedirectResponse(https_url, status_code=status.HTTP_301_MOVED_PERMANENTLY)
+    
+    return await call_next(request)
 
 # Request timing middleware
 @app.middleware("http")
@@ -173,10 +202,23 @@ async def request_timing_middleware(request: Request, call_next):
     )
     
     # Add security headers
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    if settings.security_headers_enabled:
+        response.headers["X-Content-Type-Options"] = settings.x_content_type_options
+        response.headers["X-Frame-Options"] = settings.x_frame_options
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = settings.referrer_policy
+        response.headers["Content-Security-Policy"] = settings.content_security_policy
+        
+        # Add HSTS header if HTTPS is enabled
+        if settings.ssl_enabled or settings.force_https:
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        
+        # Add additional security headers for production
+        if settings.is_production():
+            response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
+            response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+            response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+            response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
     
     return response
 
@@ -297,30 +339,24 @@ def get_user_credentials() -> Dict[str, Dict[str, str]]:
     """Get user credentials from environment variables or secure storage"""
     users = {}
     
-    # Load admin credentials from environment
-    admin_username = os.getenv("ADMIN_USERNAME")
-    admin_password = os.getenv("ADMIN_PASSWORD")
-    if admin_username and admin_password:
-        users[admin_username] = {
-            "password": admin_password,
+    # Load admin credentials from settings
+    if settings.admin_username and settings.admin_password:
+        users[settings.admin_username] = {
+            "password": settings.admin_password,
             "security_level": SecurityLevel.ADMIN.value
         }
     
-    # Load operator credentials from environment
-    operator_username = os.getenv("OPERATOR_USERNAME")
-    operator_password = os.getenv("OPERATOR_PASSWORD")
-    if operator_username and operator_password:
-        users[operator_username] = {
-            "password": operator_password,
+    # Load operator credentials from settings
+    if settings.operator_username and settings.operator_password:
+        users[settings.operator_username] = {
+            "password": settings.operator_password,
             "security_level": SecurityLevel.OPERATOR.value
         }
     
-    # Load read-only credentials from environment
-    readonly_username = os.getenv("READONLY_USERNAME")
-    readonly_password = os.getenv("READONLY_PASSWORD")
-    if readonly_username and readonly_password:
-        users[readonly_username] = {
-            "password": readonly_password,
+    # Load read-only credentials from settings
+    if settings.readonly_username and settings.readonly_password:
+        users[settings.readonly_username] = {
+            "password": settings.readonly_password,
             "security_level": SecurityLevel.READ_ONLY.value
         }
     
