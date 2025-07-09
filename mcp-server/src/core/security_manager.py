@@ -446,6 +446,344 @@ class SecurityManager:
         sanitized_command = self.sanitize_input(command)
         return True, sanitized_command
     
+    def validate_comprehensive_input(self, input_data: Any, input_type: str = "string", 
+                                   max_length: int = 1000, allowed_patterns: List[str] = None) -> Tuple[bool, str, Any]:
+        """Comprehensive input validation with type checking"""
+        try:
+            # Type validation
+            if input_type == "string":
+                if not isinstance(input_data, str):
+                    return False, "Invalid input type, expected string", None
+                
+                # Length check
+                if len(input_data) > max_length:
+                    return False, f"Input too long, maximum {max_length} characters", None
+                
+                # Pattern validation
+                if allowed_patterns:
+                    pattern_matched = False
+                    for pattern in allowed_patterns:
+                        if re.match(pattern, input_data):
+                            pattern_matched = True
+                            break
+                    
+                    if not pattern_matched:
+                        self.log_security_event(
+                            "INVALID_INPUT_PATTERN",
+                            ThreatLevel.MEDIUM,
+                            description=f"Input doesn't match allowed patterns: {input_data[:50]}..."
+                        )
+                        return False, "Input format not allowed", None
+                
+                # Enhanced injection detection
+                if not self._check_advanced_injection_patterns(input_data):
+                    return False, "Potentially malicious input detected", None
+                
+                sanitized = self.sanitize_input(input_data)
+                return True, "Valid input", sanitized
+            
+            elif input_type == "email":
+                if not isinstance(input_data, str):
+                    return False, "Invalid input type, expected string", None
+                
+                email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+                if not re.match(email_pattern, input_data):
+                    return False, "Invalid email format", None
+                
+                if len(input_data) > 254:  # RFC 5321 limit
+                    return False, "Email address too long", None
+                
+                return True, "Valid email", input_data.lower().strip()
+            
+            elif input_type == "number":
+                if isinstance(input_data, str):
+                    try:
+                        input_data = float(input_data)
+                    except ValueError:
+                        return False, "Invalid number format", None
+                
+                if not isinstance(input_data, (int, float)):
+                    return False, "Invalid input type, expected number", None
+                
+                return True, "Valid number", input_data
+            
+            elif input_type == "json":
+                if isinstance(input_data, str):
+                    try:
+                        parsed_data = json.loads(input_data)
+                        # Check for dangerous JSON content
+                        if self._check_dangerous_json(parsed_data):
+                            return False, "JSON contains potentially dangerous content", None
+                        return True, "Valid JSON", parsed_data
+                    except json.JSONDecodeError:
+                        return False, "Invalid JSON format", None
+                
+                return True, "Valid JSON", input_data
+            
+            else:
+                return False, f"Unsupported input type: {input_type}", None
+                
+        except Exception as e:
+            self.log_security_event(
+                "INPUT_VALIDATION_ERROR",
+                ThreatLevel.MEDIUM,
+                description=f"Error during input validation: {str(e)}"
+            )
+            return False, "Validation error", None
+    
+    def _check_advanced_injection_patterns(self, input_str: str) -> bool:
+        """Check for advanced injection patterns"""
+        advanced_patterns = [
+            # SQL injection patterns
+            r"(union\s+select|union\s+all\s+select)",
+            r"(insert\s+into|update\s+set|delete\s+from)",
+            r"(drop\s+table|truncate\s+table|alter\s+table)",
+            r"(exec\s*\(|execute\s*\(|sp_executesql)",
+            r"(xp_cmdshell|xp_regread|xp_regwrite)",
+            
+            # NoSQL injection patterns
+            r"(\$where|\$ne|\$in|\$nin|\$regex)",
+            r"(this\s*\.\s*constructor|prototype\s*\[)",
+            
+            # Command injection patterns
+            r"(;\s*cat\s+|;\s*ls\s+|;\s*pwd|;\s*id\s*;)",
+            r"(\|\s*nc\s+|\|\s*netcat\s+|\|\s*telnet\s+)",
+            r"(&&\s*curl\s+|&&\s*wget\s+|&&\s*python\s+)",
+            r"(`.*`|\$\(.*\))",
+            
+            # XSS patterns
+            r"(on\w+\s*=|javascript\s*:|vbscript\s*:)",
+            r"(<\s*script|<\s*iframe|<\s*object)",
+            r"(expression\s*\(|url\s*\(|import\s*\()",
+            
+            # Path traversal patterns
+            r"(\.\./|\.\.\\|%2e%2e%2f|%2e%2e%5c)",
+            r"(\/etc\/passwd|\/etc\/shadow|\/windows\/system32)",
+            
+            # LDAP injection patterns
+            r"(\(\s*\|\s*\(|\)\s*\(\s*\|)",
+            r"(\*\s*\)\s*\(\s*\||=\s*\*\s*\))",
+            
+            # XML/XXE injection patterns
+            r"(<!ENTITY|<!DOCTYPE|SYSTEM\s+[\"'])",
+            r"(&\w+;|%\w+;)",
+            
+            # Template injection patterns
+            r"(\{\{\s*.*\s*\}\}|\{%\s*.*\s*%\})",
+            r"(\$\{.*\}|#\{.*\})",
+        ]
+        
+        for pattern in advanced_patterns:
+            if re.search(pattern, input_str, re.IGNORECASE):
+                self.log_security_event(
+                    "ADVANCED_INJECTION_DETECTED",
+                    ThreatLevel.HIGH,
+                    description=f"Advanced injection pattern detected: {pattern}"
+                )
+                return False
+        
+        return True
+    
+    def _check_dangerous_json(self, json_data: Any) -> bool:
+        """Check for dangerous content in JSON data"""
+        if isinstance(json_data, dict):
+            for key, value in json_data.items():
+                if isinstance(key, str) and self._is_dangerous_key(key):
+                    return True
+                if self._check_dangerous_json(value):
+                    return True
+        elif isinstance(json_data, list):
+            for item in json_data:
+                if self._check_dangerous_json(item):
+                    return True
+        elif isinstance(json_data, str):
+            return not self._check_advanced_injection_patterns(json_data)
+        
+        return False
+    
+    def _is_dangerous_key(self, key: str) -> bool:
+        """Check if JSON key is potentially dangerous"""
+        dangerous_keys = [
+            "__proto__", "constructor", "prototype", 
+            "eval", "exec", "function", "require",
+            "import", "module", "exports", "global",
+            "process", "Buffer", "child_process"
+        ]
+        return key.lower() in [k.lower() for k in dangerous_keys]
+    
+    def validate_file_upload(self, file_data: bytes, filename: str, 
+                           max_size: int = 10 * 1024 * 1024,  # 10MB default
+                           allowed_extensions: List[str] = None) -> Tuple[bool, str]:
+        """Validate uploaded file"""
+        try:
+            # Check file size
+            if len(file_data) > max_size:
+                self.log_security_event(
+                    "FILE_SIZE_EXCEEDED",
+                    ThreatLevel.MEDIUM,
+                    description=f"File size {len(file_data)} exceeds limit {max_size}"
+                )
+                return False, f"File too large, maximum size is {max_size} bytes"
+            
+            # Check filename
+            if not filename or len(filename) > 255:
+                return False, "Invalid filename"
+            
+            # Sanitize filename
+            sanitized_filename = self._sanitize_filename(filename)
+            if not sanitized_filename:
+                return False, "Invalid filename after sanitization"
+            
+            # Check file extension
+            if allowed_extensions:
+                file_ext = sanitized_filename.split('.')[-1].lower()
+                if file_ext not in [ext.lower() for ext in allowed_extensions]:
+                    return False, f"File extension not allowed: {file_ext}"
+            
+            # Check for dangerous file types
+            if self._is_dangerous_file_type(sanitized_filename):
+                self.log_security_event(
+                    "DANGEROUS_FILE_UPLOAD",
+                    ThreatLevel.HIGH,
+                    description=f"Dangerous file type detected: {sanitized_filename}"
+                )
+                return False, "Dangerous file type detected"
+            
+            # Check file content
+            if not self._scan_file_content(file_data, sanitized_filename):
+                return False, "File content validation failed"
+            
+            return True, "File validation successful"
+            
+        except Exception as e:
+            self.log_security_event(
+                "FILE_VALIDATION_ERROR",
+                ThreatLevel.MEDIUM,
+                description=f"Error during file validation: {str(e)}"
+            )
+            return False, "File validation error"
+    
+    def _sanitize_filename(self, filename: str) -> str:
+        """Sanitize filename to prevent path traversal"""
+        # Remove path separators and dangerous characters
+        sanitized = re.sub(r'[<>:"/\\|?*]', '_', filename)
+        sanitized = re.sub(r'\.\.+', '.', sanitized)
+        sanitized = sanitized.strip('. ')
+        
+        # Remove null bytes and control characters
+        sanitized = ''.join(char for char in sanitized if ord(char) >= 32)
+        
+        # Limit length
+        if len(sanitized) > 255:
+            name_part, ext_part = sanitized.rsplit('.', 1)
+            sanitized = name_part[:250] + '.' + ext_part
+        
+        return sanitized
+    
+    def _is_dangerous_file_type(self, filename: str) -> bool:
+        """Check if file type is potentially dangerous"""
+        dangerous_extensions = [
+            'exe', 'bat', 'cmd', 'com', 'pif', 'scr', 'vbs', 'js', 'jse',
+            'jar', 'msi', 'dll', 'sh', 'bash', 'ps1', 'php', 'jsp', 'asp',
+            'aspx', 'py', 'pl', 'rb', 'go', 'rs', 'c', 'cpp', 'java',
+            'class', 'dex', 'apk', 'ipa', 'dmg', 'pkg', 'deb', 'rpm'
+        ]
+        
+        file_ext = filename.split('.')[-1].lower()
+        return file_ext in dangerous_extensions
+    
+    def _scan_file_content(self, file_data: bytes, filename: str) -> bool:
+        """Scan file content for malicious patterns"""
+        try:
+            # Check for executable signatures
+            executable_signatures = [
+                b'MZ',  # Windows PE
+                b'\x7fELF',  # Linux ELF
+                b'\xCA\xFE\xBA\xBE',  # Java class file
+                b'\xDE\xAD\xBE\xEF',  # Some malware signatures
+                b'<!DOCTYPE html',  # HTML (could be XSS)
+                b'<script',  # JavaScript
+                b'<?php',  # PHP
+                b'#!/bin/sh',  # Shell script
+                b'#!/bin/bash',  # Bash script
+            ]
+            
+            for signature in executable_signatures:
+                if file_data.startswith(signature):
+                    self.log_security_event(
+                        "EXECUTABLE_FILE_DETECTED",
+                        ThreatLevel.HIGH,
+                        description=f"Executable file signature detected in: {filename}"
+                    )
+                    return False
+            
+            # Check for malicious patterns in text files
+            if self._is_text_file(filename):
+                text_content = file_data.decode('utf-8', errors='ignore')
+                if not self._check_advanced_injection_patterns(text_content):
+                    return False
+            
+            return True
+            
+        except Exception as e:
+            logger.warning(f"Error scanning file content: {str(e)}")
+            return True  # Allow if scanning fails
+    
+    def _is_text_file(self, filename: str) -> bool:
+        """Check if file is a text file"""
+        text_extensions = [
+            'txt', 'csv', 'json', 'xml', 'yaml', 'yml', 'md', 'rst',
+            'log', 'conf', 'cfg', 'ini', 'properties', 'sql'
+        ]
+        
+        file_ext = filename.split('.')[-1].lower()
+        return file_ext in text_extensions
+    
+    def validate_parameter_dict(self, params: Dict[str, Any], 
+                              validation_rules: Dict[str, Dict[str, Any]]) -> Tuple[bool, str, Dict[str, Any]]:
+        """Validate a dictionary of parameters against validation rules"""
+        validated_params = {}
+        
+        try:
+            for param_name, rules in validation_rules.items():
+                # Check if required parameter is present
+                if rules.get('required', False) and param_name not in params:
+                    return False, f"Required parameter '{param_name}' missing", {}
+                
+                # Skip validation if parameter is not present and not required
+                if param_name not in params:
+                    continue
+                
+                param_value = params[param_name]
+                
+                # Validate parameter
+                valid, message, validated_value = self.validate_comprehensive_input(
+                    param_value,
+                    rules.get('type', 'string'),
+                    rules.get('max_length', 1000),
+                    rules.get('allowed_patterns', None)
+                )
+                
+                if not valid:
+                    self.log_security_event(
+                        "PARAMETER_VALIDATION_FAILED",
+                        ThreatLevel.MEDIUM,
+                        description=f"Parameter '{param_name}' validation failed: {message}"
+                    )
+                    return False, f"Parameter '{param_name}': {message}", {}
+                
+                validated_params[param_name] = validated_value
+            
+            return True, "All parameters validated successfully", validated_params
+            
+        except Exception as e:
+            self.log_security_event(
+                "PARAMETER_VALIDATION_ERROR",
+                ThreatLevel.MEDIUM,
+                description=f"Error during parameter validation: {str(e)}"
+            )
+            return False, "Parameter validation error", {}
+    
     def sanitize_input(self, input_str: str) -> str:
         """Sanitize input string"""
         # Remove null bytes
