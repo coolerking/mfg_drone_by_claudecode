@@ -1,0 +1,115 @@
+# ConfigMap for MCP Server Phase 6-3
+# Non-sensitive configuration data
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcp-server-config
+  namespace: mcp-server
+  labels:
+    app: mcp-server
+    environment: production
+    version: phase6-3
+data:
+  # Basic Configuration
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  DEBUG: "false"
+  
+  # Network Configuration
+  HOST: "0.0.0.0"
+  PORT: "8003"
+  WORKERS: "4"
+  
+  # Security Configuration
+  JWT_EXPIRY_MINUTES: "60"
+  MAX_FAILED_ATTEMPTS: "5"
+  LOCKOUT_DURATION: "15"
+  
+  # Monitoring Configuration
+  ENABLE_MONITORING: "true"
+  ENABLE_AUDIT_LOGGING: "true"
+  MONITORING_INTERVAL: "30"
+  
+  # Backend Configuration
+  BACKEND_API_URL: "http://backend-service:8000"
+  
+  # SSL/TLS Configuration
+  SSL_ENABLED: "true"
+  SSL_CERT_PATH: "/app/certs/cert.pem"
+  SSL_KEY_PATH: "/app/certs/key.pem"
+  
+  # Redis Configuration
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+  
+  # Application Configuration
+  UVICORN_HOST: "0.0.0.0"
+  UVICORN_PORT: "8003"
+  UVICORN_WORKERS: "4"
+  UVICORN_LOG_LEVEL: "info"
+
+---
+# Prometheus Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: mcp-server
+  labels:
+    app: prometheus
+    environment: production
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    scrape_configs:
+      - job_name: 'mcp-server'
+        static_configs:
+          - targets: ['mcp-server-service:8003']
+        metrics_path: '/metrics'
+        scrape_interval: 15s
+        
+      - job_name: 'redis'
+        static_configs:
+          - targets: ['redis-service:6379']
+        metrics_path: '/metrics'
+        
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+
+---
+# Grafana Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+  namespace: mcp-server
+  labels:
+    app: grafana
+    environment: production
+data:
+  grafana.ini: |
+    [server]
+    protocol = http
+    http_addr = 0.0.0.0
+    http_port = 3000
+    
+    [security]
+    admin_user = admin
+    secret_key = SW2YcwTIb9zpOOhoPsMm
+    
+    [users]
+    allow_sign_up = false
+    allow_org_create = false
+    
+    [auth]
+    disable_login_form = false
+    
+    [log]
+    mode = console
+    level = info
