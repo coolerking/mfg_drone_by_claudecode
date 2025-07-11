@@ -1,6 +1,6 @@
 # MFG Drone Backend API Server
 
-FastAPI-based comprehensive backend system for autonomous drone control, computer vision, and machine learning model management.
+ドローンの自律制御、コンピュータビジョン、機械学習モデル管理のためのFastAPIベースの包括的なバックエンドシステム。
 
 ## 🎯 概要
 
