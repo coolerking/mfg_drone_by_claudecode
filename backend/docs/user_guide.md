@@ -108,9 +108,18 @@ export LOG_LEVEL=INFO
 export MFG_DATASETS_ROOT=/app/data/datasets
 export MFG_MODELS_ROOT=/app/data/models
 
+# ドローン動作モード設定
+export DRONE_MODE=simulation        # simulation, auto, real
+export TELLO_AUTO_DETECT=false      # シミュレーション時は自動検出無効
+
 # セキュリティ設定
 export MFG_DRONE_ADMIN_KEY=mfg-drone-admin-key-2024
 export MFG_DRONE_READONLY_KEY=mfg-drone-readonly-2024
+
+# パフォーマンス・監視設定（オプション）
+export NETWORK_SCAN_INTERVAL=60     # 自動スキャン間隔(秒)  
+export MAX_WORKER_THREADS=10        # 最大ワーカースレッド数
+export CACHE_TTL=30                 # キャッシュ有効期限(秒)
 
 # サーバー起動
 python start_api_server.py
@@ -150,6 +159,14 @@ python start_api_server.py
 export DRONE_MODE=auto              # auto, simulation, real
 export TELLO_AUTO_DETECT=true       # 自動検出有効
 export TELLO_CONNECTION_TIMEOUT=10  # 接続タイムアウト(秒)
+export NETWORK_SCAN_INTERVAL=60     # 自動スキャン間隔(秒)
+
+# セキュリティ・API設定
+export MFG_DRONE_ADMIN_KEY=mfg-drone-admin-key-2024
+export MFG_DRONE_READONLY_KEY=mfg-drone-readonly-2024
+
+# ログ・監視設定
+export LOG_LEVEL=INFO               # ログレベル（DEBUG, INFO, WARNING, ERROR）
 
 # 2. 手動IPアドレス確認
 ping 192.168.10.1  # Tello EDU標準IP
@@ -166,6 +183,14 @@ Tello EDU実機用の設定ファイルを編集：
 # config/drone_config.yaml
 global:
   default_mode: "auto"  # 実機優先、フォールバック有効
+  space_bounds: [20.0, 20.0, 10.0]  # シミュレーション空間境界 (幅, 奥行き, 高さ)
+  auto_detection:
+    enabled: true
+    timeout: 5.0
+    scan_interval: 30.0  # 再スキャン間隔（秒）
+  fallback:
+    enabled: true
+    simulation_on_failure: true
 
 drones:
   # 自動検出モード（推奨）
@@ -174,25 +199,99 @@ drones:
     mode: "auto"
     ip_address: null     # 自動検出
     auto_detect: true
+    initial_position: [0.0, 0.0, 0.0]
     fallback_to_simulation: true
+    settings:
+      max_altitude: 3.0  # 最大高度（メートル）
+      speed_limit: 2.0   # 最大速度（m/s）
+      battery_warning: 20  # バッテリー警告レベル（%）
     
   # 手動IP指定モード
   - id: "drone_002"
     name: "Tello EDU #2"
-    mode: "real"
+    mode: "auto"
     ip_address: "192.168.10.1"
     auto_detect: false
+    initial_position: [2.0, 2.0, 0.0]
+    fallback_to_simulation: true
+    settings:
+      max_altitude: 3.0
+      speed_limit: 2.0
+      battery_warning: 20
+  
+  # シミュレーション専用ドローン
+  - id: "drone_003"
+    name: "Simulator #1"
+    mode: "simulation"
+    ip_address: null
+    auto_detect: false
+    initial_position: [-2.0, 2.0, 0.0]
     fallback_to_simulation: false
+    settings:
+      max_altitude: 10.0  # シミュレーションでは高度制限緩和
+      speed_limit: 5.0
+      battery_warning: 10
 
 network:
   discovery:
     default_ips:
       - "192.168.10.1"  # Tello EDU標準IP
       - "192.168.1.1"   # 一般的なIP
+      - "192.168.4.1"
     scan_ranges:
       - "192.168.1.0/24"
       - "192.168.10.0/24"
+      - "192.168.4.0/24"
     connection_timeout: 3.0
+    retry_attempts: 3
+    retry_delay: 1.0
+  
+  # セキュリティ設定
+  security:
+    allowed_ip_ranges:
+      - "192.168.0.0/16"
+      - "10.0.0.0/8"
+    max_concurrent_connections: 5
+    connection_rate_limit: 10  # 秒あたり
+
+# 監視・ログ設定
+monitoring:
+  # 状態更新間隔
+  update_intervals:
+    real_drone_state: 0.1      # 実機状態更新間隔（秒）
+    simulation_state: 0.01     # シミュレーション更新間隔（秒）
+    health_check: 5.0          # ヘルスチェック間隔（秒）
+  
+  # アラート設定
+  alerts:
+    battery_low: 15            # 低バッテリーアラート（%）
+    connection_lost: true      # 接続切断アラート
+    collision_detected: true   # 衝突検出アラート
+  
+  # ログ設定
+  logging:
+    level: "INFO"
+    real_drone_events: true
+    simulation_events: false
+    network_events: true
+
+# パフォーマンス設定
+performance:
+  # スレッド・処理設定
+  threading:
+    max_worker_threads: 10
+    state_update_workers: 2
+    network_scan_workers: 2
+  
+  # キャッシュ設定
+  cache:
+    drone_state_ttl: 1.0       # ドローン状態キャッシュ有効期限（秒）
+    network_scan_ttl: 30.0     # ネットワークスキャン結果キャッシュ（秒）
+  
+  # リソース制限
+  limits:
+    max_flight_time: 900       # 最大飛行時間（秒）
+    max_simultaneous_drones: 5 # 同時制御可能ドローン数
 ```
 
 #### 3.2.4 実機対応バックエンド起動
@@ -203,6 +302,13 @@ export DRONE_MODE=auto              # 自動モード（実機優先）
 export TELLO_AUTO_DETECT=true       # 自動検出有効
 export TELLO_CONNECTION_TIMEOUT=10  # 接続タイムアウト
 export NETWORK_SCAN_INTERVAL=60     # 自動スキャン間隔(秒)
+
+# セキュリティ・API設定
+export MFG_DRONE_ADMIN_KEY=mfg-drone-admin-key-2024
+export MFG_DRONE_READONLY_KEY=mfg-drone-readonly-2024
+
+# ログ・監視設定
+export LOG_LEVEL=INFO               # ログレベル（DEBUG, INFO, WARNING, ERROR）
 
 # 2. APIサーバー起動
 python start_api_server.py
