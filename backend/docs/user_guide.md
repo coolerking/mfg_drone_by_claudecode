@@ -1,4 +1,4 @@
-# MFG Drone Backend API Server - クイックスタートガイド
+# MFG Drone Backend API Server - ユーザガイド
 
 本ガイドでは、MFG Drone Backend API Serverのインストールから動作確認まで、Tello EDU実機の有無に応じた詳細な手順を説明します。
 
