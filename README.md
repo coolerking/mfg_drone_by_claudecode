@@ -1,553 +1,379 @@
-# MFG ドローン - 自動追従撮影システム Phase 6 🚁
+# MFG ドローン - 自動追従撮影システム
 
-**Tello EDU実機・シミュレーション統合対応版**
+Tello EDU ドローンを使用した自動追従撮影システムです。物体認識AI、実機制御、シミュレーション機能を統合した包括的なドローン制御プラットフォームを提供します。
 
-Tello EDU ドローンを使って移動する対象物を自動的に追跡・撮影するシステムです。Phase 6では実機ドローンとシミュレーションの完全統合を実現し、開発・テスト・本番運用をシームレスに切り替え可能です。
+## 概要（Description）
 
-## ✨ 主要機能
+このプロジェクトは、Tello EDU ドローンを使って移動する対象物を自動的に追跡・撮影するシステムです。手動制御から自動追従まで、幅広い撮影ニーズに対応できる高機能なドローン制御システムを実現しています。
 
-### 1. 🎮 手動運転機能
-- ユーザが指示したとおりにドローンを操作する
-- **NEW** 実機・シミュレーション統一制御API
-- **NEW** リアルタイム状態監視・WebSocket配信
+### 主な特徴
+- **実機・シミュレーション統合**: 開発からテスト、本番運用まで一貫したワークフロー
+- **AI物体追跡**: YOLOv8ベースの高精度物体検出・追跡システム
+- **Webベース管理**: React製の直感的な管理インターフェース
+- **自然言語制御**: Claude統合によるAI支援ドローン制御
+- **包括的監視**: リアルタイム状態監視・アラート機能
 
-### 2. 🔍 物体追随機能
-#### 追随物体学習データ管理
-- ドローンのカメラ機能をつかって、対象の写真を撮る
-- 複数撮影し学習データセットとして管理する
-- 外部撮影画像の登録・管理機能
-- **NEW** 実機カメラからのリアルタイム学習データ収集
+### 解決する課題
+- 手動でのドローン撮影における操作の複雑さ
+- 移動する被写体の追跡・撮影の困難さ
+- 複数ドローンの同時管理・制御の複雑さ
+- 実機テストの効率化（シミュレーション環境での事前検証）
 
-#### 追随物体モデル管理
-- 学習データセットを選択して追随物体モデルを学習する
-- 学習済みのモデルを管理する
-- **NEW** ライブカメラフィードによる物体検出
+## 目次（Table of Contents）
 
-### 3. 🤖 自動運転機能（物体追随）
-- ユーザが指示したモデルを使って物体を正面に捉えるように自動的に移動する
-- ユーザが指示したら手動運転に戻る
-- 追随物体が見当たらない場合の安全な緊急停止
-- **NEW** 実機カメラを使用したリアルタイム物体追跡
-- **NEW** 高精度位置制御とVPS（Vision Positioning System）対応
+1. [概要（Description）](#概要description)
+2. [インストール方法（Installation）](#インストール方法installation)
+3. [使い方（Usage）](#使い方usage)
+4. [動作環境・要件（Requirements）](#動作環境要件requirements)
+5. [ディレクトリ構成（Directory Structure）](#ディレクトリ構成directory-structure)
+6. [貢献方法（Contributing）](#貢献方法contributing)
+7. [ライセンス（License）](#ライセンスlicense)
+8. [謝辞・参考情報（Acknowledgements/References）](#謝辞参考情報acknowledgementsreferences)
+9. [更新履歴（Changelog/History）](#更新履歴changeloghistory)
 
-### 4. 🔧 ドローン管理機能
-- 複数のドローンを登録・管理
-- **NEW** 実機・シミュレーション自動検出・切り替え
-- **NEW** LAN内ドローン自動スキャン機能
-- **NEW** ハイブリッド運用（実機+シミュレーション同時制御）
-- 現在の動作状態を確認するダッシュボード画面
-
-### 5. 🌐 Phase 6 新機能
-#### 実機統合機能
-- **Tello EDU自動検出**: LAN内の実機ドローンを自動発見
-- **シームレス切り替え**: 実機↔シミュレーション間の透明な切り替え
-- **フォールバック機能**: 実機接続失敗時の自動シミュレーション切り替え
-- **ネットワーク監視**: 接続品質・信号強度のリアルタイム監視
-
-#### 統合ビジョンシステム
-- **リアルタイム物体検出**: 実機カメラからのライブ検出
-- **拡張追跡システム**: ドローン移動制御との統合
-- **カメラ統合管理**: 実機・仮想カメラの統一インターフェース
-
-#### 開発・運用支援
-- **包括的テストスイート**: API互換性・切り替え機能の自動検証
-- **詳細監視・診断**: ネットワーク状態・ドローン健全性監視
-- **運用ドキュメント**: トラブルシューティング・設定ガイド完備
-
-## 🏗 システム構成 (Phase 6対応)
-
-### アーキテクチャ概要
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  フロントエンド   │◄──►│  バックエンドAPI  │◄──►│   実機ドローン    │
-│  (Web UI)      │    │  (統合制御)      │    │  (Tello EDU)   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                        │                        │
-         ▼                        ▼                        ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   MCPサーバー    │    │ シミュレーション  │    │  ネットワーク監視  │
-│  (Claude統合)   │    │  (仮想ドローン)   │    │   (自動検出)     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
-### 主要コンポーネント
-
-#### 1. **バックエンドAPI** (Raspberry Pi 5 / サーバー)
-**Core機能:**
-- 🚁 **統合ドローン制御**: 実機・シミュレーション統一API
-- 📷 **ビジョンシステム**: リアルタイム物体検出・追跡
-- 🌐 **ネットワーク管理**: 自動検出・接続品質監視
-- 🔄 **状態同期**: WebSocketリアルタイム配信
-
-**Phase 6新機能:**
-- **DroneFactory**: 実機・シミュレーション透明切り替え
-- **NetworkService**: LAN内ドローン自動スキャン
-- **EnhancedVisionService**: 実機カメラ統合
-- **ConfigService**: YAML駆動設定管理
-
-#### 2. **管理者用フロントエンド** (Windows PC / Web)
-**管理機能:**
-- 🎛 **統合制御パネル**: 複数ドローン同時制御
-- 📊 **リアルタイム監視**: 状態・カメラ・ネットワーク
-- 🤖 **AI学習**: 物体認識モデル訓練・管理
-- 📈 **ダッシュボード**: パフォーマンス・健全性監視
-
-#### 3. **MCPサーバー** (Windows PC)
-- 🤖 **Claude統合**: AI支援による高度な制御
-- 📜 **自動スクリプト**: 複雑な飛行パターン生成
-- 🧠 **インテリジェント操作**: 自然言語によるドローン制御
-
-#### 4. **ドローンエコシステム**
-**実機ドローン (Tello EDU):**
-- 📡 **WiFi制御**: 2.4GHz直接通信
-- 📹 **720p HDカメラ**: リアルタイムストリーミング
-- 🔋 **バッテリー監視**: 自動警告・安全着陸
-- 📍 **VPS位置制御**: 高精度ホバリング
-
-**シミュレーション環境:**
-- 🎮 **仮想物理エンジン**: リアルな飛行動作
-- 🎭 **仮想カメラ**: テスト用映像生成
-- 🎯 **デバッグモード**: 開発・テスト支援
-
-### ネットワーク構成
-
-```
-┌───────── LAN (192.168.1.0/24) ─────────┐
-│                                        │
-│  ┌─────────────┐    ┌──────────────┐   │
-│  │  開発PC     │    │ Tello EDU #1 │   │
-│  │ 192.168.1.10│◄──►│192.168.1.100 │   │
-│  └─────────────┘    └──────────────┘   │
-│         │                              │
-│         ▼                              │
-│  ┌─────────────┐    ┌──────────────┐   │
-│  │ APIサーバー  │    │ Tello EDU #2 │   │
-│  │ 192.168.1.11│◄──►│192.168.1.101 │   │
-│  └─────────────┘    └──────────────┘   │
-└────────────────────────────────────────┘
-```
-
-## 🚀 クイックスタート (Phase 6対応)
+## インストール方法（Installation）
 
 ### 前提条件
 - **Python 3.9+** (バックエンド)
 - **Node.js 18+** (フロントエンド)
-- **Tello EDU** (実機テスト用、オプション)
+- **Docker & Docker Compose** (本番環境)
+- **Tello EDU ドローン** (実機テスト用、オプション)
 
-### 開発環境セットアップ
+### 基本セットアップ
 
-#### 1. リポジトリクローン
+#### 1. リポジトリのクローン
 ```bash
 git clone https://github.com/coolerking/mfg_drone_by_claudecode.git
 cd mfg_drone_by_claudecode
 ```
 
-#### 2. バックエンド環境構築
+#### 2. バックエンドのセットアップ
 ```bash
 cd backend
-
-# 依存関係インストール
 pip install -r requirements.txt
 
-# Phase 6設定ファイル作成
+# 設定ファイルの作成
 cp config/drone_config.yaml.example config/drone_config.yaml
 
-# 環境変数設定
-export DRONE_MODE=auto           # auto, simulation, real
-export TELLO_AUTO_DETECT=true    # 自動検出有効
+# 環境変数の設定
+export DRONE_MODE=auto              # auto, simulation, real
+export TELLO_AUTO_DETECT=true       # 自動検出有効
 export LOG_LEVEL=INFO
+
+# サーバーの起動
+python start_api_server.py
 ```
 
-#### 3. フロントエンド環境構築
+#### 3. フロントエンドのセットアップ
 ```bash
-cd ../frontend
+cd frontend
 npm install
 npm run dev
 ```
 
-#### 4. 起動・確認
+#### 4. MCPサーバーのセットアップ（オプション）
 ```bash
-# バックエンド起動（別ターミナル）
-cd backend
-python main.py
-
-# アクセス確認
-curl http://localhost:8000/health
-curl http://localhost:8000/api/drones  # ドローン一覧取得
+cd mcp-server
+pip install -r requirements.txt
+python start_mcp_server.py
 ```
 
-### Phase 6: 実機ドローン統合
-
-#### 実機接続モード
+### Docker環境での起動
 ```bash
-# 実機優先モード
-export DRONE_MODE=real
-export TELLO_IP_ADDRESS=192.168.1.100  # 手動IP指定
+# 開発環境
+docker-compose -f docker-compose.dev.yml up
 
-# 自動検出モード（推奨）
-export DRONE_MODE=auto
-export TELLO_AUTO_DETECT=true
-
-python main.py
+# 本番環境
+docker-compose -f docker-compose.prod.yml up
 ```
 
-#### ハイブリッドモード（実機+シミュレーション）
-```yaml
-# config/drone_config.yaml
-global:
-  drone_mode: "hybrid"
+## 使い方（Usage）
 
-drones:
-  - id: "real_drone_001"
-    mode: "real"
-    ip_address: "192.168.1.100"
-  - id: "sim_drone_001"
-    mode: "simulation"
-    position: [0, 0, 0]
-```
+### 基本的な使用方法
 
-### プロダクション環境
+#### 1. システムの起動
 ```bash
-# 環境設定
-cp .env.production .env
-# .envファイルを編集（認証情報・ネットワーク設定）
+# バックエンドAPI
+cd backend && python start_api_server.py
 
-# Phase 6対応設定
-cat >> .env << EOF
-DRONE_MODE=auto
-TELLO_AUTO_DETECT=true
-NETWORK_SCAN_ENABLED=true
-VISION_ENHANCED_MODE=true
-EOF
+# フロントエンド
+cd frontend && npm run dev
 
-# 自動デプロイ
-chmod +x scripts/deploy.sh
-./scripts/deploy.sh
+# ブラウザでアクセス
+# http://localhost:3000
 ```
 
-### 開発・テスト用コマンド
+#### 2. ドローンの接続
+- **シミュレーションモード**: 自動的に仮想ドローンが利用可能
+- **実機モード**: Tello EDU をWiFi接続して自動検出
+- **ハイブリッドモード**: 実機・シミュレーション同時制御
 
-#### システム状態確認
-```bash
-# ネットワーク状態
-curl http://localhost:8000/api/system/network_status
+#### 3. 基本操作
+- **手動制御**: Web画面のコントロールパネルでドローンを操作
+- **物体追跡**: カメラ画像から追跡対象を学習・設定
+- **自動飛行**: 設定したモデルに基づいて自動追従開始
 
-# ドローン検出
-curl -X POST http://localhost:8000/api/drones/scan
+### サンプルコード
 
-# リアルタイム状態（WebSocket）
-# ws://localhost:8000/ws
+#### APIクライアント例
+```python
+import requests
+
+# ドローン一覧取得
+response = requests.get('http://localhost:8000/api/drones')
+drones = response.json()
+
+# ドローンの離陸
+drone_id = drones[0]['id']
+requests.post(f'http://localhost:8000/api/drones/{drone_id}/takeoff')
+
+# 前進指示
+requests.post(f'http://localhost:8000/api/drones/{drone_id}/move', 
+              json={'direction': 'forward', 'distance': 50})
 ```
 
-#### テスト実行
-```bash
-# Phase 6統合テスト
-cd backend
-python -m pytest tests/test_phase6_real_simulation_switching.py -v
+#### WebSocket接続例
+```javascript
+const ws = new WebSocket('ws://localhost:8000/ws');
 
-# API互換性テスト
-python -m pytest tests/test_compatibility.py -v
+ws.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    console.log('ドローン状態:', data);
+};
 
-# 全テスト実行
-python -m pytest tests/ -v
+// コマンド送信
+ws.send(JSON.stringify({
+    type: 'takeoff',
+    drone_id: 'drone_001'
+}));
 ```
 
-詳細は [ユーザーガイド](./backend/docs/user_guide.md) をご覧ください。
+## 動作環境・要件（Requirements）
 
-## 📊 監視・運用
+### ハードウェア要件
 
-システムは包括的な監視スタックを提供します：
+#### 最小構成
+- **CPU**: Intel i3 または AMD Ryzen 3 以上
+- **メモリ**: 8GB RAM
+- **ストレージ**: 10GB 以上の空き容量
+- **ネットワーク**: WiFi 802.11n 以上
 
-- **Prometheus**: メトリクス収集 (http://localhost:9090)
-- **Grafana**: ダッシュボード (http://localhost:3001)
-- **アラート**: 自動通知システム
-- **ログ集約**: 構造化ログ分析
+#### 推奨構成
+- **CPU**: Intel i5 または AMD Ryzen 5 以上
+- **メモリ**: 16GB RAM
+- **ストレージ**: SSD 20GB 以上
+- **GPU**: NVIDIA GTX 1060 以上（AI処理加速用）
 
-## 🔧 開発・運用ツール
+### ソフトウェア要件
 
-### CI/CD パイプライン
-GitHub Actions による自動テスト・デプロイ：
-```bash
-# ワークフローファイル設定
-cp .github-workflows-templates/* .github/workflows/
-```
+#### バックエンド
+- **OS**: Windows 10/11, macOS 12+, Ubuntu 20.04+
+- **Python**: 3.9以上
+- **必要ライブラリ**: 
+  - FastAPI 0.104.1+
+  - OpenCV 4.8.1+
+  - djitellopy 2.5.0+
+  - ultralytics 8.0.196+ (YOLOv8)
 
-### 自動デプロイスクリプト
-```bash
-# 各種操作
-./scripts/deploy.sh deploy    # フルデプロイ
-./scripts/deploy.sh rollback  # ロールバック
-./scripts/deploy.sh status    # 状態確認
-./scripts/deploy.sh logs      # ログ表示
-```
+#### フロントエンド
+- **Node.js**: 18.0以上
+- **必要ライブラリ**:
+  - React 18.2+
+  - TypeScript 4.9+
+  - Material-UI 5.11+
+  - Redux Toolkit 1.9+
 
-## 🏗 技術スタック (Phase 6拡張版)
+#### データベース
+- **PostgreSQL**: 13以上 (推奨)
+- **Redis**: 6以上 (キャッシュ・セッション用)
 
-### フロントエンド
-- **React 18** + TypeScript
-- **Material-UI (MUI)** - UIコンポーネント
-- **Redux Toolkit** - 状態管理
-- **Vite** - ビルドツール
-- **Vitest + Playwright** - テスト
-- **WebSocket** - リアルタイム通信
+### ネットワーク要件
+- **LAN環境**: 1Gbps以上推奨
+- **Tello EDU接続**: 2.4GHz WiFi
+- **インターネット**: モデル更新・外部API用
 
-### バックエンド Core
-- **FastAPI** - Webフレームワーク
-- **asyncio** - 非同期処理
-- **Pydantic** - データバリデーション
-- **SQLAlchemy** - ORM
-- **Alembic** - データベースマイグレーション
-
-### Phase 6: ドローン制御・統合
-- **djitellopy 2.5.0** - Tello EDU制御ライブラリ
-- **DroneFactory** - 実機・シミュレーション抽象化
-- **NetworkService** - 自動検出・ネットワーク管理
-- **ConfigService** - YAML駆動設定管理
-- **WebSocket Broadcasting** - リアルタイム状態配信
-
-### ビジョン・AI
-- **YOLO v8** - 物体検出（MockModel含む）
-- **OpenCV 4.8+** - 画像処理・カメラ制御
-- **NumPy** - 数値計算
-- **Pillow** - 画像操作
-- **Enhanced Vision Service** - 実機カメラ統合
-
-### ネットワーク・通信
-- **UDP Broadcast** - ドローン自動検出
-- **Ping Scan** - ネットワーク診断
-- **WebSocket** - リアルタイム双方向通信
-- **HTTP/2** - 高性能API通信
-
-### データ・ストレージ
-- **PostgreSQL** - メインデータベース
-- **Redis** - キャッシュ・セッション
-- **YAML** - 設定ファイル
-- **JSON** - API通信・ログ
-
-### インフラ・運用
-- **Docker + Docker Compose** - コンテナ化
-- **nginx** - リバースプロキシ
-- **Prometheus + Grafana** - 監視
-- **GitHub Actions** - CI/CD
-
-## 📚 Phase 6 ドキュメント
-
-### 実機統合ガイド
-- **[ユーザーガイド](./backend/docs/user_guide.md)** - 基本操作・設定手順
-- **[API仕様書](./backend/docs/real_drone_api_specification.md)** - 実機対応API詳細
-- **[ネットワーク設定ガイド](./backend/docs/network_configuration_guide.md)** - LAN設定・自動検出設定
-- **[トラブルシューティング](./backend/docs/troubleshooting_real_drone.md)** - 問題解決・診断手順
-
-### 技術仕様書
-- **[Phase 6統合仕様](./backend/docs/plan/PHASE6_TELLO_INTEGRATION_README.md)** - 設計・実装詳細
-- **[テスト仕様書](./backend/tests/test_phase6_real_simulation_switching.py)** - 包括的テストスイート
-
-### 設定ファイル
-```yaml
-# config/drone_config.yaml - メイン設定
-global:
-  drone_mode: "auto"              # auto, simulation, real, hybrid
-  space_bounds: [20.0, 20.0, 10.0]
-
-drones:
-  - id: "tello_001" 
-    name: "メインドローン"
-    mode: "real"                  # real, simulation, auto
-    ip_address: "192.168.1.100"  # 手動指定またはnull（自動検出）
-    auto_detect: true
-```
-
-### 環境変数
-```bash
-# Phase 6環境変数
-DRONE_MODE=auto                   # 動作モード
-TELLO_AUTO_DETECT=true           # 自動検出有効
-TELLO_CONNECTION_TIMEOUT=10      # 接続タイムアウト（秒）
-NETWORK_SCAN_ENABLED=true       # ネットワークスキャン有効
-VISION_ENHANCED_MODE=true        # 拡張ビジョンモード
-LOG_LEVEL=INFO                   # ログレベル
-```
-
-## ディレクトリ構成
-
-このリポジトリは以下のディレクトリ構成で管理されています：
+## ディレクトリ構成（Directory Structure）
 
 ```
-/
-├── backend/                    # バックエンドAPI (Raspberry Pi)
-│   ├── src/
-│   │   ├── api/               # FastAPI ルート定義
-│   │   │   ├── __init__.py
-│   │   │   ├── drone.py       # ドローン操作API (飛行制御、カメラ制御)
-│   │   │   ├── vision.py      # 物体認識・追跡API (学習データ管理、推論)
-│   │   │   ├── models.py      # モデル管理API (学習、保存、読み込み)
-│   │   │   └── dashboard.py   # ダッシュボードAPI (状態監視、制御)
-│   │   ├── core/              # コアロジック
-│   │   │   ├── drone_control.py   # ドローン制御機能 (djitellopy制御)
-│   │   │   ├── vision_engine.py  # 映像処理・物体認識エンジン
-│   │   │   ├── model_manager.py  # モデル管理機能 (学習、保存、読み込み)
-│   │   │   └── dummy_drone.py    # ダミードローンシステム (テスト用)
-│   │   ├── models/            # データモデル
-│   │   │   ├── drone.py      # ドローン関連データモデル
-│   │   │   ├── tracking.py   # 追跡関連データモデル
-│   │   │   └── training.py   # 学習関連データモデル
-│   │   ├── utils/             # ユーティリティ関数
-│   │   └── config/            # 設定ファイル管理
-│   ├── tests/                 # バックエンド単体テスト
-│   │   ├── unit/             # 単体テストケース
-│   │   ├── fixtures/         # テストデータ・フィクスチャ
-│   │   └── conftest.py       # pytest設定
-│   ├── requirements.txt       # Python依存関係
-│   ├── Dockerfile            # Docker設定
-│   └── README.md             # バックエンド開発ガイド
-│
-├── frontend/                   # 管理者用フロントエンド
-│   ├── src/
-│   │   ├── components/        # UIコンポーネント (React/Vue等)
-│   │   ├── pages/             # ページコンポーネント
-│   │   ├── services/          # API呼び出しサービス
-│   │   ├── utils/            # フロントエンドユーティリティ
-│   │   └── config/           # フロントエンド設定
-│   ├── tests/                 # フロントエンド単体テスト
-│   ├── public/                # 静的ファイル (HTML、画像等)
-│   ├── doc/                   # フロントエンド設計ドキュメント
-│   │   └── sample/            # サンプルHTML/CSS
-│   │       └── README.md      # 画面設計提案書
-│   ├── package.json           # Node.js依存関係 (Node.jsの場合)
-│   ├── requirements.txt       # Python依存関係 (Pythonの場合)
-│   └── README.md             # フロントエンド開発ガイド
-│
-├── mcp-server/                # MCPサーバ
-│   ├── src/
-│   │   ├── server.py          # MCPサーバメイン処理
-│   │   ├── handlers/          # MCP要求ハンドラ
-│   │   ├── clients/           # バックエンドAPIクライアント
-│   │   └── config/           # MCP設定管理
-│   ├── tests/                # MCPサーバテスト
-│   ├── requirements.txt      # Python依存関係
-│   └── README.md            # MCPサーバ開発ガイド
-│
+mfg_drone_by_claudecode/
+├── backend/                    # バックエンドAPI
+│   ├── api_server/            # FastAPI アプリケーション
+│   │   ├── main.py           # メインアプリケーション
+│   │   ├── api/              # APIエンドポイント
+│   │   ├── core/             # コアサービス
+│   │   └── models/           # データモデル
+│   ├── src/                   # シミュレーションシステム
+│   ├── tests/                 # テストスイート
+│   ├── config/               # 設定ファイル
+│   ├── docs/                 # ドキュメント
+│   └── requirements.txt      # Python依存関係
+├── frontend/                   # フロントエンド
+│   ├── src/                   # Reactアプリケーション
+│   │   ├── components/       # UIコンポーネント
+│   │   ├── pages/            # ページコンポーネント
+│   │   ├── services/         # API呼び出し
+│   │   └── hooks/            # カスタムフック
+│   ├── package.json          # Node.js依存関係
+│   └── docs/                 # フロントエンド仕様
+├── mcp-server/                # MCPサーバー
+│   ├── src/                   # MCPサーバーコード
+│   ├── tests/                # テスト
+│   └── requirements.txt      # Python依存関係
 ├── shared/                    # 共有リソース
-│   ├── api-specs/             # OpenAPI定義
-│   │   ├── backend-api.yaml  # バックエンドAPI仕様
-│   │   └── mcp-api.yaml      # MCP API仕様
-│   ├── config/                # 共通設定ファイル
-│   │   ├── development.yaml  # 開発環境設定
-│   │   ├── production.yaml   # 本番環境設定
-│   │   └── test.yaml         # テスト環境設定
-│   ├── schemas/               # データスキーマ定義
-│   └── utils/                 # 共通ユーティリティ
-│
-├── tests/                     # 結合・システムテスト
-│   ├── integration/           # 結合テスト
-│   │   ├── api_integration/  # API結合テスト
-│   │   ├── ui_integration/   # UI結合テスト
-│   │   └── mcp_integration/  # MCP結合テスト
-│   ├── system/                # システムテスト
-│   │   ├── with_drone/        # ドローン接続テスト
-│   │   └── without_drone/     # ドローンなしテスト
-│   ├── fixtures/              # テストデータ・フィクスチャ
-│   └── utils/                 # テストユーティリティ
-│
-├── docs/                      # ドキュメント
-│   ├── api/                   # API仕様書・ドキュメント
-│   ├── architecture/          # アーキテクチャ設計書
-│   ├── deployment/            # デプロイ手順書
-│   ├── development/           # 開発手順書
-│   └── dummy_drone.md         # ダミードローンシステム設計書
-│
-├── deployment/                # デプロイ設定
-│   ├── raspberry-pi/          # Raspberry Pi用設定
-│   ├── windows/               # Windows用設定
-│   ├── docker/                # Docker設定ファイル
-│   └── kubernetes/            # Kubernetes設定（将来用）
-│
+│   ├── api-specs/            # OpenAPI仕様
+│   └── config/               # 共通設定
+├── tests/                     # 統合テスト
+├── docs/                      # プロジェクトドキュメント
 ├── scripts/                   # ビルド・デプロイスクリプト
-│   ├── build.sh              # ビルドスクリプト
-│   ├── deploy.sh             # デプロイスクリプト
-│   ├── test.sh               # テストスクリプト
-│   └── setup/                 # 環境セットアップスクリプト
-│
-├── .github/                   # GitHub Actions
-│   └── workflows/
-│       ├── ci.yml            # CI/CDワークフロー
-│       ├── deploy-backend.yml # バックエンドデプロイ
-│       └── deploy-frontend.yml # フロントエンドデプロイ
-│
-├── README.md                  # プロジェクト概要（このファイル）
-├── CONTRIBUTING.md            # 開発ガイドライン
-├── .gitignore                # Git除外設定
-└── LICENSE                   # ライセンス
+├── docker-compose.yml        # Docker設定
+└── README.md                 # このファイル
 ```
 
-### ディレクトリ構成の特徴
+### 主要コンポーネント
 
-1. **明確な分離**: 各コンポーネント（backend, frontend, mcp-server）を独立したディレクトリに配置し、それぞれが独立して開発・デプロイできる構成
+- **backend/api_server/**: FastAPIベースのメインAPIサーバー
+- **frontend/**: React + TypeScriptのWeb管理インターフェース  
+- **mcp-server/**: Claude統合のためのMCPサーバー
+- **shared/**: 共通定義・設定ファイル
 
-2. **テスト階層**: 
-   - 単体テストは各コンポーネント内に配置
-   - 結合・システムテストは専用ディレクトリで管理
-   - ドローンあり/なしテストの両方に対応
+## 貢献方法（Contributing）
 
-3. **共有リソース**: 
-   - OpenAPI定義や共通設定を `shared/` で一元管理
-   - 各コンポーネント間での重複を排除
+このプロジェクトへの貢献を歓迎します。以下の手順に従ってください：
 
-4. **開発要件対応**: 
-   - OpenAPI定義を `shared/api-specs/` で管理
-   - 包括的テスト構造（単体・結合・システム）
-   - ドローンなしテスト環境の構築
+### 開発ワークフロー
 
-5. **デプロイ対応**: 
-   - プラットフォーム別（Raspberry Pi, Windows）デプロイ設定
-   - Docker/Kubernetes対応
+1. **リポジトリのフォーク**
+   ```bash
+   # GitHub上でフォーク後
+   git clone https://github.com/your-username/mfg_drone_by_claudecode.git
+   ```
 
-6. **ドキュメント管理**: 
-   - API仕様書、アーキテクチャ、デプロイ手順を体系的に管理
-   - 各コンポーネントごとのREADMEで詳細な開発ガイドを提供
+2. **開発ブランチの作成**
+   ```bash
+   git checkout -b feature/new-feature
+   ```
 
-## 非機能要件
+3. **開発・テスト**
+   ```bash
+   # バックエンドテスト
+   cd backend && python -m pytest tests/
 
-- ネットワーク
-    - 家庭用ルータに接続するものとする
-    - インターネット接続可能
-    - 一般ユーザのデバイスは同一ネットワーク上に存在するものとする
+   # フロントエンドテスト
+   cd frontend && npm test
+   ```
 
-- 対象とするドローン
-    - [Tello EDU](https://www.ryzerobotics.com/jp/tello-edu)
+4. **コミット・プッシュ**
+   ```bash
+   git commit -m "Add: 新機能の追加"
+   git push origin feature/new-feature
+   ```
 
-- ドローンからの画像を受信し、AIモデルをもとに次の行動を決定、指示をドローンに送信するバックエンドシステム（APIサーバ）
-    - [Raspberry Pi 5 8MB](https://www.raspberrypi.com/products/raspberry-pi-5/)
-        - [Raspberry Pi OS Lite 64bit May 6th 2025](https://www.raspberrypi.com/software/operating-systems/)
-            - [Python 3.11](https://www.python.org/downloads/release/python-3110/)
-            - [FastAPI](https://fastapi.tiangolo.com/ja/)
-            - [djitellopy](https://github.com/damiafuentes/DJITelloPy)
+5. **プルリクエスト作成**
+   - 変更内容の詳細説明
+   - テスト結果の報告
+   - 関連issueのリンク
 
-- フロントエンドシステム
-    - Windows11 Pro 64bit
-        - NodeでもPythonでもよい
+### 開発ガイドライン
 
-- 一般ユーザクライアント
-    - iPad Air 13インチ第5世代
-        - iOS 17.0.3
-          - Safari
+- **コーディング規約**: PEP8 (Python), ESLint (TypeScript)
+- **テスト**: 新機能には必ず単体テストを追加
+- **ドキュメント**: APIの変更時はOpenAPI仕様も更新
+- **レビュー**: プルリクエストには必ずレビューが必要
 
-## 開発方針
+### 報告・質問
 
-- 作業は冒頭にまず計画をたて、実施許可を受けること
-- 作業は完了したら必ずレビューを行う
-- APIサーバはかならずOpenAPI定義を設計してから行うこと
-- 単体テストは必ず実施
-    - パブリック関数を極値・異常値すべてのケースを実施
-    - カバレッジテストも別途行う
-- 結合テストも必ず実施
-    - すべての機能を全網羅
-    - 画面操作の場合は、極値・異常値すべてのケースを実施
-    - ドローンなしテストとする
-        - 基本ドローンがなくてもテストできるようにモック・ドライバを作成する
-- システムテストは簡単に実施できるような状態にしておく
-    - ドローンを繋いだ状態でのテスト
-    - 結合テストとおなじシナリオ、ケースを実施する
+- **バグ報告**: GitHub Issues にてバグレポートを作成
+- **機能要求**: GitHub Issues にて機能要求を作成
+- **質問**: GitHub Discussions または Issues を利用
 
-<p align="right">以上</p>
+## ライセンス（License）
+
+このプロジェクトは MIT ライセンスの下で公開されています。
+
+```
+MIT License
+
+Copyright (c) 2025 Tasuku Hori
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+詳細は [LICENSE](LICENSE) ファイルをご参照ください。
+
+## 謝辞・参考情報（Acknowledgements/References）
+
+### 利用技術・ライブラリ
+
+- **[DJI Tello EDU](https://www.ryzerobotics.com/jp/tello-edu)**: 実機ドローンプラットフォーム
+- **[djitellopy](https://github.com/damiafuentes/DJITelloPy)**: Python Tello SDKライブラリ
+- **[FastAPI](https://fastapi.tiangolo.com/)**: 高性能WebAPIフレームワーク
+- **[React](https://react.dev/)**: フロントエンドUIライブラリ
+- **[YOLOv8](https://github.com/ultralytics/ultralytics)**: 物体検出AIモデル
+- **[OpenCV](https://opencv.org/)**: コンピュータビジョンライブラリ
+
+### 参考プロジェクト
+
+- **[TelloPy](https://github.com/hanyazou/TelloPy)**: Tello制御の先駆的実装
+- **[OpenDroneMap](https://www.opendronemap.org/)**: ドローン画像処理参考
+- **[AirSim](https://github.com/Microsoft/AirSim)**: ドローンシミュレーション参考
+
+### 開発支援
+
+- **[Claude Code](https://claude.ai/code)**: AI支援開発環境
+- **[GitHub Copilot](https://copilot.github.com/)**: コーディング支援
+- **[Cursor](https://cursor.sh/)**: AI統合開発環境
+
+## 更新履歴（Changelog/History）
+
+### Version 1.0.0 - Phase 6 (2025-01-15)
+- ✅ **実機統合**: Tello EDU実機制御機能の完全統合
+- ✅ **ハイブリッド運用**: 実機・シミュレーション同時制御
+- ✅ **自動検出**: LAN内ドローン自動発見機能
+- ✅ **API拡張**: 実機制御用API追加（100%後方互換性）
+- ✅ **包括的テスト**: 実機・シミュレーション統合テストスイート
+
+### Version 0.9.0 - Phase 5 (2024-12-20)
+- ✅ **Webダッシュボード**: リアルタイム監視インターフェース
+- ✅ **Docker化**: 本番環境対応コンテナ構成
+- ✅ **包括的監視**: Prometheus + Grafana統合
+
+### Version 0.8.0 - Phase 4 (2024-12-10)
+- ✅ **セキュリティ**: API認証・レート制限・セキュリティヘッダー
+- ✅ **アラート**: 閾値ベース監視・通知システム
+- ✅ **パフォーマンス**: システム監視・最適化
+
+### Version 0.7.0 - Phase 3 (2024-11-25)
+- ✅ **ビジョンAI**: YOLOv8物体検出・追跡システム
+- ✅ **自動追従**: リアルタイム物体追従機能
+- ✅ **データセット管理**: 学習データ作成・管理システム
+
+### Version 0.6.0 - Phase 2 (2024-11-10)
+- ✅ **WebSocket**: リアルタイム双方向通信
+- ✅ **カメラ制御**: 仮想カメラストリーミング
+- ✅ **並行処理**: 複数ドローン同時制御
+
+### Version 0.5.0 - Phase 1 (2024-10-25)
+- ✅ **基盤システム**: FastAPI + React基盤構築
+- ✅ **ドローンシミュレーション**: 3D物理シミュレーション
+- ✅ **基本制御**: 離着陸・移動・回転制御
+- ✅ **RESTful API**: OpenAPI仕様準拠API設計
+
+---
+
+**🚁 Happy Flying!**
