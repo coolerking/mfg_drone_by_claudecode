@@ -116,16 +116,17 @@ export MFG_DRONE_READONLY_KEY=mfg-drone-readonly-2024
 python start_api_server.py
 ```
 
-### 3.2 【実機あり】Tello EDU実機との接続（将来対応予定）
+### 3.2 【実機あり】Tello EDU実機との接続（Phase 6対応）
 
-> **注意**: 現在のバージョンでは実機接続は未実装です。将来のアップデートで対応予定です。
+> **Phase 6実装完了**: Tello EDU実機との完全統合が実装されました。ハイブリッドモード（実機・シミュレーション）をサポートします。
 
 #### 3.2.1 Tello EDU の準備
 
-1. **電源投入**
+1. **電源投入と基本確認**
    ```bash
-   # Tello EDUの電源ボタンを押して起動
-   # LEDが点滅から点灯に変わるまで待機（約30秒）
+   # 1. Tello EDUの電源ボタンを押して起動
+   # 2. LEDが点滅から点灯に変わるまで待機（約30秒）
+   # 3. バッテリー残量が20%以上であることを確認
    ```
 
 2. **WiFi接続の確認**
@@ -142,35 +143,184 @@ python start_api_server.py
    - WiFi設定から「TELLO-XXXXXX」を選択
    - パスワードなしで接続
 
-#### 3.2.2 IPアドレスの取得と確認
+#### 3.2.2 実機自動検出とIPアドレス確認
 
 ```bash
-# 1. Tello EDUのIPアドレス確認（標準: 192.168.10.1）
+# 1. 自動検出用環境変数（オプション）
+export DRONE_MODE=auto              # auto, simulation, real
+export TELLO_AUTO_DETECT=true       # 自動検出有効
+export TELLO_CONNECTION_TIMEOUT=10  # 接続タイムアウト(秒)
+
+# 2. 手動IPアドレス確認
+ping 192.168.10.1  # Tello EDU標準IP
+
+# 3. 複数Tello EDUの検出テスト
+nmap -sn 192.168.10.0/24 | grep -B2 "Nmap scan report"
+```
+
+#### 3.2.3 実機対応設定ファイル
+
+Tello EDU実機用の設定ファイルを編集：
+
+```yaml
+# config/drone_config.yaml
+global:
+  default_mode: "auto"  # 実機優先、フォールバック有効
+
+drones:
+  # 自動検出モード（推奨）
+  - id: "drone_001"
+    name: "Tello EDU #1"
+    mode: "auto"
+    ip_address: null     # 自動検出
+    auto_detect: true
+    fallback_to_simulation: true
+    
+  # 手動IP指定モード
+  - id: "drone_002"
+    name: "Tello EDU #2"
+    mode: "real"
+    ip_address: "192.168.10.1"
+    auto_detect: false
+    fallback_to_simulation: false
+
+network:
+  discovery:
+    default_ips:
+      - "192.168.10.1"  # Tello EDU標準IP
+      - "192.168.1.1"   # 一般的なIP
+    scan_ranges:
+      - "192.168.1.0/24"
+      - "192.168.10.0/24"
+    connection_timeout: 3.0
+```
+
+#### 3.2.4 実機対応バックエンド起動
+
+```bash
+# 1. 環境変数設定（オプション）
+export DRONE_MODE=auto              # 自動モード（実機優先）
+export TELLO_AUTO_DETECT=true       # 自動検出有効
+export TELLO_CONNECTION_TIMEOUT=10  # 接続タイムアウト
+export NETWORK_SCAN_INTERVAL=60     # 自動スキャン間隔(秒)
+
+# 2. APIサーバー起動
+python start_api_server.py
+
+# 3. 起動ログの確認
+# 以下のようなログが表示されることを確認:
+# INFO: DroneManager initialized with Phase 6 integration
+# INFO: NetworkService initialized
+# INFO: Real drone detected: 192.168.10.1
+# INFO: Drone initialized from config: drone_001 (auto)
+```
+
+#### 3.2.5 実機接続確認
+
+```bash
+# 1. 実機ドローン検出API
+curl -X GET "http://localhost:8000/api/drones/detect?timeout=10"
+
+# 期待する出力:
+# [
+#   {
+#     "ip_address": "192.168.10.1",
+#     "battery_level": 85,
+#     "signal_strength": 90,
+#     "is_available": true,
+#     "detection_method": "tello_command"
+#   }
+# ]
+
+# 2. ドローン一覧（実機・シミュレーション混在）
+curl -H "X-API-Key: mfg-drone-admin-key-2024" \
+     http://localhost:8000/api/drones
+
+# 3. ドローンタイプ情報確認
+curl -X GET "http://localhost:8000/api/drones/drone_001/type-info"
+
+# 期待する出力:
+# {
+#   "drone_id": "drone_001",
+#   "is_real_drone": true,
+#   "drone_class": "real",
+#   "real_ip_address": "192.168.10.1",
+#   "connection_state": "connected"
+# }
+```
+
+#### 3.2.6 実機ドローン操作テスト
+
+```bash
+# 1. 実機ドローンに接続
+curl -X POST -H "X-API-Key: mfg-drone-admin-key-2024" \
+     "http://localhost:8000/api/drones/drone_001/connect"
+
+# 2. 実機状態確認
+curl -X GET -H "X-API-Key: mfg-drone-admin-key-2024" \
+     "http://localhost:8000/api/drones/drone_001/status"
+
+# 3. 離陸テスト（注意: 安全な場所で実行）
+curl -X POST -H "X-API-Key: mfg-drone-admin-key-2024" \
+     "http://localhost:8000/api/drones/drone_001/takeoff"
+
+# 4. 着陸
+curl -X POST -H "X-API-Key: mfg-drone-admin-key-2024" \
+     "http://localhost:8000/api/drones/drone_001/land"
+
+# 5. 切断
+curl -X POST -H "X-API-Key: mfg-drone-admin-key-2024" \
+     "http://localhost:8000/api/drones/drone_001/disconnect"
+```
+
+#### 3.2.7 自動スキャン機能
+
+```bash
+# 1. 自動スキャン開始（60秒間隔）
+curl -X POST "http://localhost:8000/api/system/auto-scan/start?interval_seconds=60"
+
+# 2. ネットワーク状態確認
+curl -X GET "http://localhost:8000/api/system/network-status"
+
+# 3. 自動スキャン停止
+curl -X POST "http://localhost:8000/api/system/auto-scan/stop"
+```
+
+#### 3.2.8 トラブルシューティング
+
+**実機が検出されない場合:**
+
+```bash
+# 1. 基本的な接続確認
 ping 192.168.10.1
 
-# 2. 接続テスト
-curl -v http://192.168.10.1:8889 2>/dev/null || echo "UDP接続のためHTTPは失敗しますが、これは正常です"
+# 2. 手動接続検証
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"ip_address": "192.168.10.1"}' \
+     "http://localhost:8000/api/drones/verify-connection"
 
-# 3. ネットワーク情報確認
-# Windows:
-ipconfig
-# Linux/macOS:
-ifconfig
+# 3. ログ確認
+tail -f /var/log/drone_api.log | grep -E "(real_drone|network|tello)"
+
+# 4. 設定確認
+curl -X GET "http://localhost:8000/api/system/network-status"
 ```
 
-#### 3.2.3 実機対応バックエンド起動（将来実装）
+**一般的な問題と解決方法:**
 
-```bash
-# 実機接続用環境変数（将来対応）
-export TELLO_REAL_MODE=true
-export TELLO_IP=192.168.10.1
-export TELLO_COMMAND_PORT=8889
-export TELLO_VIDEO_PORT=11111
-export TELLO_STATE_PORT=8890
+1. **WiFi接続問題**
+   - Tello EDUの電源を再投入
+   - 他のWiFiネットワークから切断
+   - WiFiアダプターのリセット
 
-# バックエンド起動
-python start_api_server.py
-```
+2. **IP検出問題**
+   - スキャン範囲の設定確認
+   - ファイアウォールの無効化（一時的）
+   - 手動IP指定への切り替え
+
+3. **バッテリー不足**
+   - 20%以上の充電確認
+   - 充電後の再起動
 
 ---
 

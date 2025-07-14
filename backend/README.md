@@ -60,7 +60,7 @@ backend/
 │   │   ├── phase4.py            # Phase 4専用API
 │   │   └── websocket.py         # WebSocket API
 │   ├── core/                     # コアサービス
-│   │   ├── drone_manager.py     # ドローン管理
+│   │   ├── drone_manager.py     # ドローン管理（Phase 6統合対応）
 │   │   ├── enhanced_drone_manager.py # 拡張ドローン管理
 │   │   ├── camera_service.py    # カメラサービス
 │   │   ├── vision_service.py    # ビジョンサービス (Phase 3)
@@ -72,6 +72,7 @@ backend/
 │   │   ├── performance_service.py # パフォーマンスサービス (Phase 4)
 │   │   ├── tello_edu_controller.py # Tello EDU実機制御 (Phase 6)
 │   │   ├── drone_factory.py     # ドローンファクトリー (Phase 6)
+│   │   ├── network_service.py   # ネットワーク検出サービス (Phase 6)
 │   │   └── config_service.py    # 設定管理サービス (Phase 6)
 │   └── models/                   # Pydanticモデル
 │       ├── common_models.py     # 共通モデル
@@ -91,6 +92,7 @@ backend/
 │   └── drone_config.yaml        # ドローン設定
 ├── docs/                         # ドキュメント
 │   ├── user_guide.md            # ユーザガイド
+│   ├── real_drone_api_specification.md # 実機API仕様書 (Phase 6)
 │   └── plan/                    # 各フェーズの計画書
 │       └── PHASE6_TELLO_INTEGRATION_README.md # Phase 6技術仕様
 ├── web_dashboard/               # Webダッシュボード (Phase 5)
@@ -108,6 +110,45 @@ backend/
 ├── start_api_server.py         # サーバー起動スクリプト
 └── run_tests.py                # テスト実行スクリプト
 ```
+
+## 🆕 Phase 6: 実機ドローンAPI機能
+
+### 新規APIエンドポイント
+
+| エンドポイント | メソッド | 説明 |
+|---------------|----------|------|
+| `/api/drones/detect` | GET | LAN内実機ドローン自動検出 |
+| `/api/drones/{id}/type-info` | GET | ドローンタイプ情報取得（実機/シミュレーション） |
+| `/api/drones/verify-connection` | POST | 実機ドローン接続検証 |
+| `/api/system/network-status` | GET | ネットワーク統計情報取得 |
+| `/api/system/auto-scan/start` | POST | 自動スキャン開始 |
+| `/api/system/auto-scan/stop` | POST | 自動スキャン停止 |
+
+### 拡張WebSocketメッセージ
+
+| メッセージタイプ | 説明 |
+|-----------------|------|
+| `scan_real_drones` | 実機ドローンスキャン要求 |
+| `get_network_status` | ネットワーク状態取得 |
+| `verify_drone_connection` | 接続検証要求 |
+| `get_drone_type_info` | ドローンタイプ情報取得 |
+| `start_auto_scan` / `stop_auto_scan` | 自動スキャン制御 |
+
+### 自動ブロードキャストイベント
+
+- `network_status_update`: ネットワーク状態変更通知
+- `real_drone_detected`: 実機ドローン検出通知
+- `real_drone_disconnected`: 実機ドローン切断通知
+- `drone_status_update`: 実機ドローン状態更新（拡張情報付き）
+
+### ハイブリッド運用機能
+
+- **自動フォールバック**: 実機接続失敗時のシミュレーション自動切り替え
+- **統一API**: 実機・シミュレーション共通インターフェース
+- **設定駆動**: YAML設定による動作モード制御
+- **リアルタイム監視**: 実機接続状態の継続監視
+
+詳細は [実機API仕様書](docs/real_drone_api_specification.md) を参照してください。
 
 ## 🛠️ セットアップ
 
