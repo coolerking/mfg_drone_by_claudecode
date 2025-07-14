@@ -1,0 +1,136 @@
+# Phase 6: Tello EDU Real Drone Integration Configuration
+# ドローン設定ファイル
+
+# グローバル設定
+global:
+  # デフォルトの動作モード
+  # auto: 実機優先、フォールバック有効
+  # simulation: シミュレーションのみ
+  # real: 実機のみ
+  # hybrid: 実機・シミュレーション混在（未実装）
+  default_mode: "auto"
+  
+  # シミュレーション空間の境界 (幅, 奥行き, 高さ) メートル
+  space_bounds: [20.0, 20.0, 10.0]
+  
+  # 自動検出設定
+  auto_detection:
+    enabled: true
+    timeout: 5.0
+    scan_interval: 30.0  # 再スキャン間隔（秒）
+  
+  # フォールバック設定
+  fallback:
+    enabled: true
+    simulation_on_failure: true
+
+# ドローン個別設定
+drones:
+  # Tello EDU #1 - 自動検出モード
+  - id: "drone_001"
+    name: "Tello EDU #1"
+    mode: "auto"
+    ip_address: null  # 自動検出
+    auto_detect: true
+    initial_position: [0.0, 0.0, 0.0]
+    fallback_to_simulation: true
+    settings:
+      max_altitude: 3.0  # 最大高度（メートル）
+      speed_limit: 2.0   # 最大速度（m/s）
+      battery_warning: 20  # バッテリー警告レベル（%）
+  
+  # Tello EDU #2 - 手動IP指定
+  - id: "drone_002" 
+    name: "Tello EDU #2"
+    mode: "auto"
+    ip_address: "192.168.10.1"  # 手動指定
+    auto_detect: false
+    initial_position: [2.0, 2.0, 0.0]
+    fallback_to_simulation: true
+    settings:
+      max_altitude: 3.0
+      speed_limit: 2.0
+      battery_warning: 20
+  
+  # シミュレーション専用ドローン
+  - id: "drone_003"
+    name: "Simulator #1"
+    mode: "simulation"
+    ip_address: null
+    auto_detect: false
+    initial_position: [-2.0, 2.0, 0.0]
+    fallback_to_simulation: false
+    settings:
+      max_altitude: 10.0  # シミュレーションでは高度制限緩和
+      speed_limit: 5.0
+      battery_warning: 10
+
+# ネットワーク設定
+network:
+  # Tello EDU検出用設定
+  discovery:
+    # 一般的なTello EDU IPアドレス
+    default_ips:
+      - "192.168.10.1"  # Tello EDUデフォルト
+      - "192.168.1.1"
+      - "192.168.4.1"
+    
+    # スキャン範囲（CIDR表記）
+    scan_ranges:
+      - "192.168.1.0/24"
+      - "192.168.10.0/24"
+      - "192.168.4.0/24"
+    
+    # 接続設定
+    connection_timeout: 3.0
+    retry_attempts: 3
+    retry_delay: 1.0
+  
+  # セキュリティ設定
+  security:
+    allowed_ip_ranges:
+      - "192.168.0.0/16"
+      - "10.0.0.0/8"
+    
+    # 接続制限
+    max_concurrent_connections: 5
+    connection_rate_limit: 10  # 秒あたり
+
+# 監視・ログ設定
+monitoring:
+  # 状態更新間隔
+  update_intervals:
+    real_drone_state: 0.1      # 実機状態更新間隔（秒）
+    simulation_state: 0.01     # シミュレーション更新間隔（秒）
+    health_check: 5.0          # ヘルスチェック間隔（秒）
+  
+  # アラート設定
+  alerts:
+    battery_low: 15            # 低バッテリーアラート（%）
+    connection_lost: true      # 接続切断アラート
+    collision_detected: true   # 衝突検出アラート
+  
+  # ログ設定
+  logging:
+    level: "INFO"
+    real_drone_events: true
+    simulation_events: false
+    network_events: true
+
+# パフォーマンス設定
+performance:
+  # スレッド・処理設定
+  threading:
+    max_worker_threads: 10
+    state_update_workers: 2
+    network_scan_workers: 2
+  
+  # キャッシュ設定
+  cache:
+    drone_state_ttl: 1.0       # ドローン状態キャッシュ有効期限（秒）
+    network_scan_ttl: 30.0     # ネットワークスキャン結果キャッシュ（秒）
+  
+  # リソース制限
+  limits:
+    max_flight_time: 900       # 最大飛行時間（秒）
+    max_simultaneous_drones: 5 # 同時制御可能ドローン数
