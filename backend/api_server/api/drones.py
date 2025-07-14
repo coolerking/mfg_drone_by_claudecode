@@ -337,3 +337,126 @@ async def take_photo(
     except Exception as e:
         logger.error(f"Error capturing photo for drone {drone_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="写真撮影に失敗しました")
+
+
+# Phase 6: Real Drone Detection and Management Endpoints
+
+@router.get("/drones/detect", response_model=List[dict])
+async def detect_real_drones(
+    timeout: float = 5.0,
+    drone_manager: DroneManager = Depends(get_drone_manager)
+) -> List[dict]:
+    """
+    実機ドローン検出
+    
+    LAN内の実機ドローンを自動検出します。
+    """
+    try:
+        detected_drones = await drone_manager.scan_for_real_drones(timeout)
+        logger.info(f"Detected {len(detected_drones)} real drones")
+        return detected_drones
+    except Exception as e:
+        logger.error(f"Error detecting real drones: {str(e)}")
+        raise HTTPException(status_code=500, detail="実機ドローンの検出に失敗しました")
+
+
+@router.get("/drones/{drone_id}/type-info", response_model=dict)
+async def get_drone_type_info(
+    drone_id: str = Path(..., description="ドローンID", regex="^[a-zA-Z0-9_-]+$"),
+    drone_manager: DroneManager = Depends(get_drone_manager)
+) -> dict:
+    """
+    ドローンタイプ情報取得
+    
+    ドローンが実機かシミュレーションかの詳細情報を取得します。
+    """
+    try:
+        type_info = drone_manager.get_drone_type_info(drone_id)
+        logger.debug(f"Retrieved type info for drone {drone_id}")
+        return type_info
+    except ValueError as e:
+        if "not found" in str(e):
+            raise HTTPException(status_code=404, detail="指定されたドローンが見つかりません")
+        else:
+            raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error getting type info for drone {drone_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="ドローンタイプ情報の取得に失敗しました")
+
+
+@router.post("/drones/verify-connection", response_model=dict)
+async def verify_real_drone_connection(
+    ip_address: str,
+    drone_manager: DroneManager = Depends(get_drone_manager)
+) -> dict:
+    """
+    実機ドローン接続検証
+    
+    指定されたIPアドレスの実機ドローンへの接続を検証します。
+    """
+    try:
+        verification_result = await drone_manager.verify_real_drone_connection(ip_address)
+        logger.info(f"Verified connection to {ip_address}: {verification_result['is_reachable']}")
+        return verification_result
+    except Exception as e:
+        logger.error(f"Error verifying connection to {ip_address}: {str(e)}")
+        raise HTTPException(status_code=500, detail="接続検証に失敗しました")
+
+
+@router.get("/system/network-status", response_model=dict)
+async def get_network_status(
+    drone_manager: DroneManager = Depends(get_drone_manager)
+) -> dict:
+    """
+    ネットワーク状態取得
+    
+    ドローン検出に関するネットワーク統計情報を取得します。
+    """
+    try:
+        network_status = await drone_manager.get_network_status()
+        logger.debug("Retrieved network status")
+        return network_status
+    except Exception as e:
+        logger.error(f"Error getting network status: {str(e)}")
+        raise HTTPException(status_code=500, detail="ネットワーク状態の取得に失敗しました")
+
+
+@router.post("/system/auto-scan/start", response_model=SuccessResponse)
+async def start_auto_scan(
+    interval_seconds: float = 60.0,
+    drone_manager: DroneManager = Depends(get_drone_manager)
+) -> SuccessResponse:
+    """
+    自動スキャン開始
+    
+    実機ドローンの自動検出スキャンを開始します。
+    """
+    try:
+        result = await drone_manager.start_auto_scan(interval_seconds)
+        logger.info(f"Auto scan started with {interval_seconds}s interval")
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error starting auto scan: {str(e)}")
+        raise HTTPException(status_code=500, detail="自動スキャンの開始に失敗しました")
+
+
+@router.post("/system/auto-scan/stop", response_model=SuccessResponse)
+async def stop_auto_scan(
+    drone_manager: DroneManager = Depends(get_drone_manager)
+) -> SuccessResponse:
+    """
+    自動スキャン停止
+    
+    実機ドローンの自動検出スキャンを停止します。
+    """
+    try:
+        result = await drone_manager.stop_auto_scan()
+        logger.info("Auto scan stopped")
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error stopping auto scan: {str(e)}")
+        raise HTTPException(status_code=500, detail="自動スキャンの停止に失敗しました")
