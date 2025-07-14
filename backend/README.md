@@ -6,6 +6,8 @@
 
 MFG Drone Backend API Server は、Tello EDU ドローンを使った自動追従撮影システムのバックエンドAPI。OpenAPI仕様に準拠したRESTful APIとWebSocket通信でドローン制御、物体認識・追跡、モデル管理機能を提供します。
 
+**🆕 Phase 6対応**: シミュレーション環境と実機Tello EDUドローンの**ハイブリッド運用**に対応。既存APIとの100%互換性を維持しながら、実機制御機能を統合しました。
+
 ## 🚀 主要機能
 
 ### Phase 1: 基盤実装
@@ -33,6 +35,15 @@ MFG Drone Backend API Server は、Tello EDU ドローンを使った自動追�
 - **📊 パフォーマンス監視**: システム監視・キャッシュ最適化・パフォーマンス分析
 - **🚀 プロダクション対応**: 包括的テスト・エラーハンドリング・本番環境対応
 
+### 🆕 Phase 6: Tello EDU実機統合
+- **🚁 実機ドローン制御**: Tello EDUとの直接通信・制御
+- **🔄 ハイブリッド運用**: 実機・シミュレーション同時制御
+- **🔍 自動検出**: LAN内Tello EDU自動発見
+- **🔧 設定駆動**: YAML設定による動作モード切り替え
+- **🛡️ フォールバック**: 実機接続失敗時の自動シミュレーション切り替え
+- **📡 ネットワーク管理**: IP管理・接続状態監視
+- **🔌 API互換性**: 既存API 100%互換性維持
+
 ## 📁 プロジェクト構造
 
 ```
@@ -58,7 +69,10 @@ backend/
 │   │   ├── model_service.py     # モデル管理サービス (Phase 3)
 │   │   ├── system_service.py    # システム監視サービス (Phase 3)
 │   │   ├── alert_service.py     # アラートサービス (Phase 4)
-│   │   └── performance_service.py # パフォーマンスサービス (Phase 4)
+│   │   ├── performance_service.py # パフォーマンスサービス (Phase 4)
+│   │   ├── tello_edu_controller.py # Tello EDU実機制御 (Phase 6)
+│   │   ├── drone_factory.py     # ドローンファクトリー (Phase 6)
+│   │   └── config_service.py    # 設定管理サービス (Phase 6)
 │   └── models/                   # Pydanticモデル
 │       ├── common_models.py     # 共通モデル
 │       ├── drone_models.py      # ドローンモデル
@@ -73,9 +87,12 @@ backend/
 │       └── virtual_camera.py    # 仮想カメラ
 ├── tests/                        # テストスイート
 │   └── fixtures/                # テスト用データ
+├── config/                       # 設定ファイル (Phase 6)
+│   └── drone_config.yaml        # ドローン設定
 ├── docs/                         # ドキュメント
 │   ├── user_guide.md            # ユーザガイド
 │   └── plan/                    # 各フェーズの計画書
+│       └── PHASE6_TELLO_INTEGRATION_README.md # Phase 6技術仕様
 ├── web_dashboard/               # Webダッシュボード (Phase 5)
 │   ├── index.html               # メインページ
 │   ├── dashboard.js             # JavaScript
@@ -94,7 +111,70 @@ backend/
 
 ## 🛠️ セットアップ
 
+### 基本セットアップ
+
 - [ユーザガイド](docs/user_guide.md)を参照してください。
+
+### 🆕 実機ドローン対応セットアップ (Phase 6)
+
+#### 1. 依存関係インストール
+
+```bash
+# djitellopyライブラリを含む全依存関係をインストール
+pip install -r requirements.txt
+```
+
+#### 2. 動作モード設定
+
+環境変数または設定ファイルで動作モードを指定：
+
+```bash
+# 環境変数での設定
+export DRONE_MODE=auto              # auto, simulation, real
+export TELLO_AUTO_DETECT=true       # 自動検出有効
+export TELLO_CONNECTION_TIMEOUT=10  # 接続タイムアウト(秒)
+```
+
+```yaml
+# config/drone_config.yaml での設定
+global:
+  default_mode: "auto"  # 実機優先、シミュレーションフォールバック
+  auto_detection:
+    enabled: true
+    timeout: 5.0
+
+drones:
+  - id: "drone_001"
+    name: "Tello EDU #1"
+    mode: "auto"
+    ip_address: "192.168.10.1"  # 手動指定またはnull（自動検出）
+```
+
+#### 3. ネットワーク設定
+
+Tello EDUとの通信のため、以下を確認：
+
+- **WiFi接続**: Tello EDUのWiFiネットワークに接続、またはLAN内同一セグメント
+- **ファイアウォール**: UDP通信（ポート8889）の許可
+- **IPアドレス**: Tello EDUのIPアドレス確認（通常192.168.10.1）
+
+#### 4. 動作確認
+
+```bash
+# シミュレーションモードで起動（実機なしでテスト可能）
+export DRONE_MODE=simulation
+python start_api_server.py
+
+# 自動モードで起動（実機検出→フォールバック）
+export DRONE_MODE=auto
+python start_api_server.py
+```
+
+#### 詳細情報
+
+- **技術仕様**: [Phase 6 統合ガイド](docs/plan/PHASE6_TELLO_INTEGRATION_README.md)
+- **トラブルシューティング**: 実機接続問題の解決方法
+- **API仕様**: 既存API + 実機拡張機能
 
 ## 📄 ライセンス
 

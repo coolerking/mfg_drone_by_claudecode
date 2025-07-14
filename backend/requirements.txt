@@ -32,6 +32,20 @@ scipy==1.11.3
 matplotlib==3.7.2
 shapely==2.0.1
 
+# Phase 6: Real Drone Integration Dependencies
+# djitellopy - Official DJI Tello EDU Python SDK
+# 主要機能:
+#   - Tello EDUドローンとのUDP通信による制御
+#   - 離陸・着陸・移動・回転などの基本飛行制御
+#   - バッテリー残量・状態情報の取得
+#   - カメラストリーミング機能（Phase 7で使用予定）
+#   - WiFi経由でのリアルタイム通信
+# 注意事項:
+#   - 実機がない環境では自動的にシミュレーションにフォールバック
+#   - ネットワーク設定でTello EDUとの通信を許可する必要あり
+#   - Python 3.7+対応、Windows/Linux/macOS対応
+djitellopy==2.5.0              # Tello EDU drone control library
+
 # Phase 0: Base Dependencies
 stability-sdk==0.8.4
 requests==2.31.0
