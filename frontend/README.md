@@ -146,30 +146,46 @@ frontend/
 ├── src/                        # ソースコード
 │   ├── components/            # 再利用可能UIコンポーネント
 │   │   ├── common/           # 共通コンポーネント
+│   │   ├── dataset/          # データセット・画像管理コンポーネント
 │   │   ├── drone/            # ドローン関連コンポーネント
-│   │   ├── vision/           # 映像・物体検出コンポーネント
-│   │   └── dashboard/        # ダッシュボード関連
+│   │   ├── model/            # AI・モデル管理コンポーネント
+│   │   └── monitoring/       # システム監視・分析コンポーネント
 │   ├── pages/                 # ページコンポーネント
-│   │   ├── Dashboard.tsx     # メインダッシュボード
-│   │   ├── DroneControl.tsx  # ドローン制御画面
-│   │   ├── Vision.tsx        # 映像・AI機能画面
-│   │   └── Settings.tsx      # 設定画面
+│   │   ├── Dashboard/        # メインダッシュボード
+│   │   ├── DroneManagement/  # ドローン管理画面
+│   │   ├── DatasetManagement/ # データセット管理画面
+│   │   ├── ModelManagement/  # モデル管理画面
+│   │   ├── TrackingControl/  # 追跡制御画面
+│   │   ├── SystemMonitoring/ # システム監視画面
+│   │   ├── ErrorTracking/    # エラー追跡画面
+│   │   ├── Settings/         # 設定画面
+│   │   └── Login/            # ログイン画面
 │   ├── hooks/                 # カスタムReactフック
-│   │   ├── useDrone.ts       # ドローン制御フック
-│   │   ├── useWebSocket.ts   # WebSocket通信フック
-│   │   └── useVision.ts      # 映像・AI機能フック
+│   │   ├── useAuth.ts        # 認証関連フック
+│   │   ├── useNotification.ts # 通知機能フック
+│   │   ├── useOffline.ts     # オフライン対応フック
+│   │   └── useWebSocket.ts   # WebSocket通信フック
 │   ├── services/              # 外部サービス・API
-│   │   ├── api.ts            # バックエンドAPI
-│   │   ├── websocket.ts      # WebSocket管理
-│   │   └── vision.ts         # 映像・AI機能API
+│   │   ├── api/              # API関連
+│   │   │   ├── apiClient.ts  # APIクライアント
+│   │   │   ├── droneApi.ts   # ドローンAPI
+│   │   │   ├── modelApi.ts   # モデルAPI
+│   │   │   ├── visionApi.ts  # 映像・AI機能API
+│   │   │   └── dashboardApi.ts # ダッシュボードAPI
+│   │   └── websocket/        # WebSocket管理
+│   │       └── wsClient.ts   # WebSocketクライアント
 │   ├── store/                 # Redux状態管理
 │   │   ├── index.ts          # ストア設定
-│   │   ├── droneSlice.ts     # ドローン状態管理
-│   │   ├── visionSlice.ts    # 映像・AI状態管理
-│   │   └── uiSlice.ts        # UI状態管理
+│   │   ├── api/              # API関連状態管理
+│   │   │   └── apiSlice.ts   # RTK Query APIスライス
+│   │   └── slices/           # 各機能の状態管理
+│   │       ├── authSlice.ts  # 認証状態管理
+│   │       ├── droneSlice.ts # ドローン状態管理
+│   │       └── dashboardSlice.ts # ダッシュボード状態管理
 │   ├── types/                 # TypeScript型定義
+│   │   ├── common.ts         # 共通型定義
 │   │   ├── drone.ts          # ドローン関連型
-│   │   ├── vision.ts         # 映像・AI関連型
+│   │   └── monitoring.ts     # 監視・分析関連型
 │   │   └── api.ts            # API関連型
 │   ├── utils/                 # ユーティリティ関数
 │   │   ├── constants.ts      # 定数定義
@@ -181,7 +197,7 @@ frontend/
 │   ├── App.tsx               # メインアプリケーション
 │   ├── main.tsx              # エントリーポイント
 │   └── vite-env.d.ts         # Vite型定義
-├── tests/                      # テストファイル
+├── src/test/                   # テストファイル
 │   ├── components/           # コンポーネントテスト
 │   ├── hooks/                # フックテスト
 │   ├── e2e/                  # E2Eテスト
