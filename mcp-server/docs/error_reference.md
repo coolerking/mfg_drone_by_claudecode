@@ -4,6 +4,18 @@
 
 このドキュメントは、MCPドローン制御システムで発生する可能性のあるすべてのエラーと対処方法を網羅しています。
 
+**🔒 最新アップデート (2025年7月15日):**
+- 新しいセキュリティエラー対応
+- 詳細なエラーメッセージと復旧手順
+- 重要度別エラー分類
+- 自動復旧機能の実装
+
+**🎯 新しいエラー対応システム:**
+- **詳細なエラーメッセージ**: ユーザー向けの分かりやすい説明
+- **具体的な解決方法**: 段階的な対処手順
+- **復旧アクション**: 自動復旧の提案
+- **コンテキスト情報**: エラー発生時の詳細な状況
+
 ## 🎯 エラーコード体系
 
 ### コード構造
@@ -18,10 +30,141 @@ XXXX - [カテゴリ][詳細番号]
 - **3000番台**: 飛行制御エラー
 - **4000番台**: カメラ・ビジョンエラー
 - **5000番台**: システム・サーバーエラー
-- **6000番台**: セキュリティ・認証エラー
+- **6000番台**: セキュリティ・認証エラー (**強化済み**)
 - **7000番台**: データ・ファイルエラー
 - **8000番台**: ネットワーク・通信エラー
 - **9000番台**: ハードウェア・デバイスエラー
+
+### 重要度レベル
+- **🔴 CRITICAL**: システム停止、セキュリティ違反
+- **🟠 HIGH**: 機能停止、ハードウェア障害
+- **🟡 MEDIUM**: 操作失敗、データ検証エラー
+- **🟢 LOW**: 軽微な問題、情報提供
+
+## 🔒 セキュリティエラー（新規追加）
+
+### SECURITY_VIOLATION: セキュリティ違反
+```yaml
+error_id: SECURITY_VIOLATION
+severity: 🔴 CRITICAL
+category: SECURITY
+user_message: "セキュリティ違反が検出されました"
+technical_message: "Security validation failed"
+
+causes:
+  - 無効なドローンID形式
+  - 危険なファイル名パターン
+  - 自然言語コマンドの悪意のあるパターン
+  - パストラバーサル攻撃の試み
+  - 不正なJSONスキーマ
+
+recovery_actions:
+  - MANUAL_INTERVENTION
+
+recovery_suggestions:
+  - "入力内容を確認してください"
+  - "危険なパターンが含まれていないか確認してください"
+  - "管理者に連絡してください"
+
+example_messages:
+  - "ドローンIDは英数字、ハイフン、アンダースコアのみ使用可能です"
+  - "ファイル名に無効な文字が含まれています"
+  - "危険なパターンが検出されました"
+  - "パス トラバーサル攻撃が検出されました"
+```
+
+### INVALID_DRONE_ID: 無効なドローンID
+```yaml
+error_id: INVALID_DRONE_ID
+severity: 🟡 MEDIUM
+category: VALIDATION
+user_message: "無効なドローンIDです"
+technical_message: "Drone ID format validation failed"
+
+causes:
+  - ドローンIDに無効な文字が含まれている
+  - ドローンIDが長すぎる（50文字超）
+  - ドローンIDが空文字
+
+recovery_actions:
+  - RETRY
+
+recovery_suggestions:
+  - "ドローンIDは英数字、ハイフン、アンダースコアのみ使用可能です"
+  - "ドローンIDは50文字以内にしてください"
+  - "利用可能なドローンIDを確認してください"
+
+valid_examples:
+  - "drone1"
+  - "drone-AA"
+  - "test_drone_01"
+  - "DroNe123"
+
+invalid_examples:
+  - "drone@123"    # 無効な文字
+  - "drone#1"      # 無効な文字
+  - "drone 1"      # スペース
+  - "drone<script>" # 危険なパターン
+```
+
+### INVALID_COMMAND: 無効なコマンド
+```yaml
+error_id: INVALID_COMMAND
+severity: 🟡 MEDIUM
+category: USER
+user_message: "コマンドの解析に失敗しました"
+technical_message: "Natural language command parsing failed"
+
+causes:
+  - 自然言語コマンドの信頼度が低い
+  - コマンドが長すぎる（1000文字超）
+  - 危険なパターンが含まれている
+  - 構文解析エラー
+
+recovery_actions:
+  - RETRY
+
+recovery_suggestions:
+  - "コマンドを言い換えてください"
+  - "より具体的な指示を入力してください"
+  - "サポートされているコマンドを確認してください"
+
+dangerous_patterns:
+  - "<script>": スクリプトタグ
+  - "javascript:": JavaScript URL
+  - "eval(": eval関数呼び出し
+  - "exec(": exec関数呼び出し
+```
+
+### SYSTEM_OVERLOAD: システム過負荷
+```yaml
+error_id: SYSTEM_OVERLOAD
+severity: 🟠 HIGH
+category: SYSTEM
+user_message: "システムが過負荷状態です"
+technical_message: "System resource utilization exceeded limits"
+
+causes:
+  - CPU使用率が高い
+  - メモリ使用量が上限に達している
+  - 同時実行数が多すぎる
+  - ネットワーク帯域が不足している
+
+recovery_actions:
+  - FALLBACK
+  - RESTART
+
+recovery_suggestions:
+  - "しばらく待ってから再試行してください"
+  - "同時実行数を減らしてください"
+  - "システムを再起動してください"
+
+monitoring_metrics:
+  - CPU使用率: 90%以上で警告
+  - メモリ使用率: 85%以上で警告
+  - 同時接続数: 100以上で警告
+  - 応答時間: 5秒以上で警告
+```
 
 ## 🔌 1000番台: 接続・通信エラー
 

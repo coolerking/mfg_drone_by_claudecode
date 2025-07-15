@@ -4,6 +4,18 @@
 
 このドキュメントは、MCPドローン制御システムでサポートされるすべての自然言語コマンドパターンを網羅しています。
 
+**🔒 最新アップデート (2025年7月15日):**
+- セキュリティ検証機能追加
+- 危険なパターンの自動検出
+- 入力値制限の明確化
+- プログレス・インジケータ対応
+
+**🛡️ セキュリティ制限:**
+- コマンド長制限: 1000文字以内
+- 危険なパターンの禁止（スクリプトタグ、JavaScript URL等）
+- 特殊文字の制限
+- 悪意のあるコードの検出
+
 ## 🎯 基本概念
 
 ### コマンド構造
@@ -22,6 +34,65 @@
 - **高度**: "1メートル", "150cm", "2m"
 - **方向**: "右", "左", "前", "後", "上", "下"
 - **速度**: "ゆっくり", "普通", "速く"
+
+### 🔒 セキュリティ制限事項
+
+#### 禁止されるパターン
+```yaml
+script_injection:
+  - "<script>.*</script>"
+  - "javascript:"
+  - "eval\\s*\\("
+  - "exec\\s*\\("
+  - "data:"
+
+xss_patterns:
+  - "<iframe"
+  - "<object"
+  - "<embed"
+  - "onload="
+  - "onerror="
+
+command_injection:
+  - "&&"
+  - "||"
+  - ";"
+  - "|"
+  - "`"
+  - "$("
+```
+
+#### 長さ制限
+```yaml
+limits:
+  max_command_length: 1000  # 文字
+  max_drone_id_length: 50   # 文字
+  max_filename_length: 255  # 文字
+  max_context_length: 500   # 文字
+```
+
+#### 無効な文字
+```yaml
+invalid_chars:
+  drone_id: "@#$%^&*()+=[]{}|\\:;\"'<>?/"
+  filename: "<>:\"/\\|?*"
+  general: 制御文字（ASCII 0-31）
+```
+
+#### 安全な例
+```yaml
+safe_examples:
+  - "ドローンを前に50センチ移動して"
+  - "右に90度回転して写真を撮って"
+  - "高度を1メートルにして左に進んで"
+  - "ゆっくり着陸して"
+
+dangerous_examples:
+  - "<script>alert('xss')</script>"
+  - "javascript:alert('hack')"
+  - "eval(malicious_code)"
+  - "'; DROP TABLE drones; --"
+```
 
 ## 📡 1. 接続・切断系統
 
