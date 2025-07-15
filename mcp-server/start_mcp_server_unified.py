@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-統合起動スクリプト - FastAPIモードとMCPモードの両方をサポート
+統合起動スクリプト - FastAPIモード、MCPモード、ハイブリッドモードをサポート
+Phase 3: ハイブリッド運用対応版
 """
 
 import os
@@ -23,7 +24,7 @@ from config.logging import setup_logging, get_logger
 def main():
     """メイン関数"""
     parser = argparse.ArgumentParser(
-        description="MFG Drone MCP Server - 統合起動スクリプト",
+        description="MFG Drone MCP Server - 統合起動スクリプト (Phase 3 ハイブリッド運用対応)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 使用例:
@@ -36,6 +37,15 @@ def main():
   # 拡張FastAPIモード
   python start_mcp_server_unified.py --mode fastapi --enhanced
   
+  # ハイブリッドモード（FastAPI + MCP同時実行）
+  python start_mcp_server_unified.py --mode hybrid
+  
+  # 拡張ハイブリッドモード（Enhanced FastAPI + MCP同時実行）
+  python start_mcp_server_unified.py --mode hybrid --enhanced
+  
+  # フルハイブリッドモード（FastAPI + Enhanced FastAPI + MCP同時実行）
+  python start_mcp_server_unified.py --mode hybrid --full
+  
   # カスタムポート
   python start_mcp_server_unified.py --mode fastapi --port 8002
         """
@@ -43,15 +53,21 @@ def main():
     
     parser.add_argument(
         "--mode", "-m",
-        choices=["fastapi", "mcp"],
+        choices=["fastapi", "mcp", "hybrid"],
         required=True,
-        help="サーバーモード選択: fastapi (HTTP API) または mcp (Model Context Protocol)"
+        help="サーバーモード選択: fastapi (HTTP API), mcp (Model Context Protocol), または hybrid (両方同時実行)"
     )
     
     parser.add_argument(
         "--enhanced", "-e",
         action="store_true",
-        help="拡張機能を有効にする（FastAPIモードのみ）"
+        help="拡張機能を有効にする（FastAPIモードまたはハイブリッドモード）"
+    )
+    
+    parser.add_argument(
+        "--full", "-f",
+        action="store_true",
+        help="フル機能を有効にする（ハイブリッドモードのみ - 全サーバー同時実行）"
     )
     
     parser.add_argument(
@@ -91,6 +107,8 @@ def main():
         run_fastapi_server(args, logger)
     elif args.mode == "mcp":
         run_mcp_server(args, logger)
+    elif args.mode == "hybrid":
+        run_hybrid_server(args, logger)
 
 
 def run_fastapi_server(args, logger):
@@ -172,6 +190,80 @@ def run_mcp_server(args, logger):
         logger.info("🛑 MCPサーバーがユーザーにより停止されました")
     except Exception as e:
         logger.error(f"❌ MCPサーバーの起動に失敗しました: {e}")
+        sys.exit(1)
+
+
+def run_hybrid_server(args, logger):
+    """ハイブリッドサーバーを起動（Phase 3 実装）"""
+    logger.info("Starting Hybrid Server (Phase 3 - FastAPI + MCP)")
+    
+    # ハイブリッドモードの決定
+    if args.full:
+        hybrid_mode = "full"
+        mode_description = "フルハイブリッドモード (FastAPI + Enhanced FastAPI + MCP)"
+        features = [
+            "🚀 FastAPI Server (基本機能)",
+            "✨ Enhanced FastAPI Server (高度な機能)",
+            "🤖 MCP Server (Model Context Protocol)",
+            "⚡ 並行実行・統合監視",
+            "🔄 プロセス管理・自動復旧",
+            "📊 統合ステータス監視"
+        ]
+    elif args.enhanced:
+        hybrid_mode = "enhanced"
+        mode_description = "拡張ハイブリッドモード (Enhanced FastAPI + MCP)"
+        features = [
+            "✨ Enhanced FastAPI Server (高度な機能)",
+            "🤖 MCP Server (Model Context Protocol)",
+            "⚡ 並行実行・統合監視",
+            "🔄 プロセス管理・自動復旧",
+            "📊 統合ステータス監視"
+        ]
+    else:
+        hybrid_mode = "basic"
+        mode_description = "基本ハイブリッドモード (FastAPI + MCP)"
+        features = [
+            "🚀 FastAPI Server (基本機能)",
+            "🤖 MCP Server (Model Context Protocol)",
+            "⚡ 並行実行・統合監視",
+            "🔄 プロセス管理・自動復旧",
+            "📊 統合ステータス監視"
+        ]
+    
+    logger.info(f"モード: {mode_description}")
+    logger.info("機能:")
+    for feature in features:
+        logger.info(f"  {feature}")
+    
+    logger.info(f"ログレベル: {args.log_level}")
+    logger.info(f"バックエンドAPI URL: {settings.backend_api_url}")
+    logger.info("ハイブリッドモードでは複数のサーバーが同時に実行されます")
+    logger.info("-" * 60)
+    
+    try:
+        # ハイブリッドサーバーマネージャーを起動
+        from core.hybrid_process_manager import HybridProcessManager
+        from start_hybrid_server import HybridServerManager
+        
+        hybrid_manager = HybridServerManager()
+        
+        # 非同期でハイブリッドモードを実行
+        async def run_hybrid():
+            success = await hybrid_manager.start_hybrid_mode(hybrid_mode)
+            if not success:
+                logger.error("ハイブリッドモードの起動に失敗しました")
+                sys.exit(1)
+            
+            # メインループを実行
+            await hybrid_manager.run_forever()
+        
+        # 実行
+        asyncio.run(run_hybrid())
+        
+    except KeyboardInterrupt:
+        logger.info("🛑 ハイブリッドサーバーがユーザーにより停止されました")
+    except Exception as e:
+        logger.error(f"❌ ハイブリッドサーバーの起動に失敗しました: {e}")
         sys.exit(1)
 
 

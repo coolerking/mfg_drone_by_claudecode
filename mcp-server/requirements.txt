@@ -39,3 +39,8 @@ Pillow==10.1.0  # For image processing
 
 # MCP (Model Context Protocol) SDK
 mcp==1.0.0
+
+# Hybrid system dependencies (Phase 3)
+psutil==5.9.6  # System monitoring
+aiohttp==3.9.1  # Async HTTP client for health checks
+multiprocessing-logging==0.3.4  # Logging for multiprocessing
