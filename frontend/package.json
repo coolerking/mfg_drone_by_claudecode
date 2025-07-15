@@ -1,7 +1,7 @@
 {
   "name": "mfg-drone-frontend",
   "version": "1.0.0",
-  "description": "MFG���������q���� ���Ȩ��",
+  "description": "MFGドローン自動追従撮影システム フロントエンドアプリケーション",
   "type": "module",
   "scripts": {
     "dev": "vite",
