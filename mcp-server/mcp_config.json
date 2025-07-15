@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "mfg-drone-mcp-server": {
+      "command": "python",
+      "args": [
+        "src/mcp_main.py"
+      ],
+      "env": {
+        "PYTHONPATH": ".",
+        "DRONE_MODE": "auto",
+        "TELLO_AUTO_DETECT": "true",
+        "LOG_LEVEL": "INFO"
+      }
+    }
+  }
+}
