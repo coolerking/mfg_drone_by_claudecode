@@ -1,27 +1,45 @@
 # @mcp-drone/types
 
-TypeScript type definitions for MCP Drone Control Server. This package provides comprehensive type definitions for all MCP API endpoints, models, and client configurations.
+MCPドローン制御サーバー用TypeScript型定義。全MCPAPIエンドポイント、モデル、クライアント設定の包括的型定義を提供します。
 
-## Features
+## 概要（Description）
 
-- 🔷 **Complete Type Coverage**: All MCP API endpoints and models
-- 🔍 **Type Guards**: Runtime type checking utilities
-- 📝 **IntelliSense Support**: Full autocomplete and documentation
-- 🏗️ **Modular Design**: Import only what you need
-- 📊 **Validation Constraints**: Built-in validation rules
-- 🌐 **WebSocket Types**: Real-time event type definitions
-- 🛠️ **Utility Types**: Helper types for common patterns
-- 🔧 **Constants**: API endpoints and configuration defaults
+@mcp-drone/types は、MCPドローン制御サーバー向けのTypeScript型定義パッケージです。全MCPAPIエンドポイント・モデルの完全型カバレッジ、型ガード・バリデーション機能、IntelliSense完全対応、モジュラー設計、WebSocketイベント型定義、ユーティリティ型・定数定義を提供します。開発効率向上とコード品質確保により、TypeScript開発者に最適な包括的型システムソリューションです。
 
-## Installation
+## 目次（Table of Contents）
+
+- [概要（Description）](#概要description)
+- [インストール方法（Installation）](#インストール方法installation)
+- [使い方（Usage）](#使い方usage)
+- [動作環境・要件（Requirements）](#動作環境要件requirements)
+- [ディレクトリ構成（Directory Structure）](#ディレクトリ構成directory-structure)
+- [更新履歴（Changelog/History）](#更新履歴changeloghistory)
+
+## インストール方法（Installation）
+
+### NPMインストール
 
 ```bash
 npm install @mcp-drone/types
 ```
 
-## Usage
+### 開発環境セットアップ
 
-### Basic Types
+```bash
+# リポジトリクローン
+git clone https://github.com/coolerking/mfg_drone_by_claudecode.git
+cd mfg_drone_by_claudecode/client-libraries/types
+
+# 依存関係インストール
+npm install
+
+# 型定義ビルド
+npm run build
+```
+
+## 使い方（Usage）
+
+### 基本型定義
 
 ```typescript
 import { 
@@ -30,17 +48,17 @@ import {
   NaturalLanguageCommand 
 } from '@mcp-drone/types';
 
-// Drone information
+// ドローン情報
 const drone: DroneInfo = {
   id: 'drone_001',
-  name: 'Test Drone',
+  name: 'テストドローン',
   type: 'real',
   status: 'available',
   capabilities: ['camera', 'movement'],
   last_seen: '2023-01-01T12:00:00Z'
 };
 
-// Natural language command
+// 自然言語コマンド
 const command: NaturalLanguageCommand = {
   command: 'ドローンAAに接続して',
   context: {
@@ -54,7 +72,7 @@ const command: NaturalLanguageCommand = {
 };
 ```
 
-### Client Configuration
+### クライアント設定
 
 ```typescript
 import { MCPClientConfig } from '@mcp-drone/types';
@@ -66,7 +84,7 @@ const config: MCPClientConfig = {
 };
 ```
 
-### API Responses
+### APIレスポンス型
 
 ```typescript
 import { 
@@ -75,12 +93,12 @@ import {
   BatchCommandResponse 
 } from '@mcp-drone/types';
 
-// Drone list response
+// ドローン一覧レスポンス
 const droneList: DroneListResponse = {
   drones: [
     {
       id: 'drone_001',
-      name: 'Test Drone',
+      name: 'テストドローン',
       type: 'real',
       status: 'available',
       capabilities: ['camera', 'movement']
@@ -90,10 +108,10 @@ const droneList: DroneListResponse = {
   timestamp: '2023-01-01T12:00:00Z'
 };
 
-// Command response
+// コマンドレスポンス
 const response: CommandResponse = {
   success: true,
-  message: 'Command executed successfully',
+  message: 'コマンドが正常に実行されました',
   parsed_intent: {
     action: 'connect_drone',
     parameters: { drone_id: 'drone_001' },
@@ -103,7 +121,7 @@ const response: CommandResponse = {
 };
 ```
 
-### Control Commands
+### 制御コマンド型
 
 ```typescript
 import { 
@@ -113,33 +131,33 @@ import {
   AltitudeCommand 
 } from '@mcp-drone/types';
 
-// Takeoff command
+// 離陸コマンド
 const takeoff: TakeoffCommand = {
   target_height: 100,
   safety_check: true
 };
 
-// Move command
+// 移動コマンド
 const move: MoveCommand = {
   direction: 'forward',
   distance: 100,
   speed: 50
 };
 
-// Rotate command
+// 回転コマンド
 const rotate: RotateCommand = {
   direction: 'clockwise',
   angle: 90
 };
 
-// Altitude command
+// 高度コマンド
 const altitude: AltitudeCommand = {
   target_height: 150,
   mode: 'absolute'
 };
 ```
 
-### Camera Operations
+### カメラ操作型
 
 ```typescript
 import { 
@@ -148,7 +166,7 @@ import {
   LearningDataCommand 
 } from '@mcp-drone/types';
 
-// Photo command
+// 写真撮影コマンド
 const photo: PhotoCommand = {
   filename: 'aerial_shot.jpg',
   quality: 'high',
@@ -158,14 +176,14 @@ const photo: PhotoCommand = {
   }
 };
 
-// Streaming command
+// ストリーミングコマンド
 const streaming: StreamingCommand = {
   action: 'start',
   quality: 'high',
   resolution: '720p'
 };
 
-// Learning data command
+// 学習データコマンド
 const learning: LearningDataCommand = {
   object_name: 'product_sample',
   capture_positions: ['front', 'back', 'left', 'right'],
@@ -174,7 +192,7 @@ const learning: LearningDataCommand = {
 };
 ```
 
-### Vision & AI
+### ビジョン・AI型
 
 ```typescript
 import { 
@@ -183,14 +201,14 @@ import {
   DetectionResponse 
 } from '@mcp-drone/types';
 
-// Object detection
+// 物体検出コマンド
 const detection: DetectionCommand = {
   drone_id: 'drone_001',
   model_id: 'yolo_v8',
   confidence_threshold: 0.7
 };
 
-// Object tracking
+// 物体追跡コマンド
 const tracking: TrackingCommand = {
   action: 'start',
   drone_id: 'drone_001',
@@ -199,10 +217,10 @@ const tracking: TrackingCommand = {
   confidence_threshold: 0.8
 };
 
-// Detection response
+// 検出結果
 const detectionResult: DetectionResponse = {
   success: true,
-  message: 'Objects detected',
+  message: '物体が検出されました',
   detections: [
     {
       label: 'person',
@@ -220,88 +238,44 @@ const detectionResult: DetectionResponse = {
 };
 ```
 
-### System Information
+### 型ガード・バリデーション
 
 ```typescript
 import { 
-  SystemStatusResponse, 
-  HealthResponse 
+  isMCPError, 
+  isSuccessResponse, 
+  isDroneInfo, 
+  isCommandResponse 
 } from '@mcp-drone/types';
 
-// System status
-const systemStatus: SystemStatusResponse = {
-  mcp_server: {
-    status: 'running',
-    uptime: 3600,
-    version: '1.0.0',
-    active_connections: 1
-  },
-  backend_system: {
-    connection_status: 'connected',
-    api_endpoint: 'http://backend:8000',
-    response_time: 50
-  },
-  connected_drones: 1,
-  active_operations: 0,
-  system_health: 'healthy',
-  timestamp: '2023-01-01T12:00:00Z'
-};
-
-// Health check
-const health: HealthResponse = {
-  status: 'healthy',
-  checks: [
-    {
-      name: 'database',
-      status: 'pass',
-      message: 'Database connection healthy',
-      response_time: 10
-    }
-  ],
-  timestamp: '2023-01-01T12:00:00Z'
-};
-```
-
-### Error Handling
-
-```typescript
-import { MCPError, ErrorCode } from '@mcp-drone/types';
-
-// MCP error
-const error: MCPError = {
-  error: true,
-  error_code: 'DRONE_NOT_FOUND',
-  message: 'Drone not found',
-  details: {
-    suggested_corrections: ['Check drone ID']
-  },
-  timestamp: '2023-01-01T12:00:00Z'
-};
-
-// Using error codes
-function handleError(errorCode: ErrorCode) {
-  switch (errorCode) {
-    case 'DRONE_NOT_FOUND':
-      console.log('Drone not found');
-      break;
-    case 'DRONE_NOT_READY':
-      console.log('Drone not ready');
-      break;
-    case 'AUTHENTICATION_FAILED':
-      console.log('Authentication failed');
-      break;
-    default:
-      console.log('Unknown error');
+// 型ガード使用例
+function processResponse(response: any) {
+  if (isMCPError(response)) {
+    console.error('エラー:', response.error_code, response.message);
+    return;
   }
+  
+  if (isSuccessResponse(response)) {
+    console.log('成功:', response.message);
+  }
+  
+  if (isCommandResponse(response)) {
+    console.log('コマンド結果:', response.parsed_intent);
+  }
+}
+
+// ドローン情報検証
+function validateDrone(data: any): data is DroneInfo {
+  return isDroneInfo(data);
 }
 ```
 
-### WebSocket Events
+### WebSocketイベント型
 
 ```typescript
 import { WebSocketEvent, WebSocketEventType } from '@mcp-drone/types';
 
-// WebSocket event
+// WebSocketイベント
 const event: WebSocketEvent = {
   type: 'drone_status_changed',
   data: {
@@ -312,57 +286,80 @@ const event: WebSocketEvent = {
   timestamp: '2023-01-01T12:00:00Z'
 };
 
-// Handle events
+// イベントハンドリング
 function handleWebSocketEvent(event: WebSocketEvent) {
   switch (event.type) {
     case 'drone_connected':
-      console.log('Drone connected:', event.data);
+      console.log('ドローン接続:', event.data);
       break;
     case 'drone_disconnected':
-      console.log('Drone disconnected:', event.data);
+      console.log('ドローン切断:', event.data);
       break;
     case 'command_executed':
-      console.log('Command executed:', event.data);
+      console.log('コマンド実行:', event.data);
       break;
     default:
-      console.log('Unknown event:', event);
+      console.log('不明なイベント:', event);
   }
 }
 ```
 
-### Type Guards
+## 動作環境・要件（Requirements）
 
-```typescript
-import { 
-  isMCPError, 
-  isSuccessResponse, 
-  isDroneInfo, 
-  isCommandResponse 
-} from '@mcp-drone/types';
+### システム要件
 
-// Type guard usage
-function processResponse(response: any) {
-  if (isMCPError(response)) {
-    console.error('Error:', response.error_code, response.message);
-    return;
-  }
-  
-  if (isSuccessResponse(response)) {
-    console.log('Success:', response.message);
-  }
-  
-  if (isCommandResponse(response)) {
-    console.log('Command result:', response.parsed_intent);
-  }
-}
+- **TypeScript**: 5.0+
+- **Node.js**: 16+ (開発環境)
+- **ビルドツール**: tsc, webpack, vite等
 
-// Validate drone info
-function validateDrone(data: any): data is DroneInfo {
-  return isDroneInfo(data);
-}
+### 開発要件
+
+- **型検証**: 完全なIntelliSense対応
+- **モジュラー設計**: 必要な型のみインポート可能
+- **拡張性**: カスタム型拡張対応
+
+### サポート対象
+
+- **IDE**: VS Code, WebStorm, Vim/Neovim等
+- **フレームワーク**: React, Vue, Angular, Node.js等
+- **バンドラー**: webpack, vite, rollup等
+
+## ディレクトリ構成（Directory Structure）
+
+```
+types/
+├── package.json           # NPMパッケージ定義
+├── src/                   # 型定義ソース
+│   └── index.ts          # 包括的型定義
+├── tsconfig.json         # TypeScript設定
+└── README.md             # 型定義ドキュメント
 ```
 
-### Constants & Endpoints
+### 主要型カテゴリ
+
+#### コア型定義
+- **MCPClientConfig**: クライアント設定
+- **DroneInfo**: ドローン情報
+- **CommandResponse**: コマンドレスポンス
+- **ErrorCode**: エラーコード定義
+
+#### 制御コマンド型
+- **NaturalLanguageCommand**: 自然言語コマンド
+- **TakeoffCommand**: 離陸コマンド
+- **MoveCommand**: 移動コマンド
+- **RotateCommand**: 回転コマンド
+
+#### ビジョン・AI型
+- **DetectionCommand**: 物体検出コマンド
+- **TrackingCommand**: 物体追跡コマンド
+- **DetectionResponse**: 検出結果
+
+#### システム型
+- **SystemStatusResponse**: システム状態
+- **HealthResponse**: ヘルスチェック結果
+- **WebSocketEvent**: WebSocketイベント
+
+### 定数・エンドポイント
 
 ```typescript
 import { 
@@ -372,151 +369,47 @@ import {
   VALIDATION_CONSTRAINTS 
 } from '@mcp-drone/types';
 
-// API endpoints
+// APIエンドポイント
 const droneStatusUrl = API_ENDPOINTS.GET_DRONE_STATUS('drone_001');
 const commandUrl = API_ENDPOINTS.EXECUTE_COMMAND;
 
-// WebSocket endpoint
+// WebSocketエンドポイント
 const wsUrl = WEBSOCKET_ENDPOINTS.EVENTS;
 
-// Default configuration
+// デフォルト設定
 const config = {
   baseURL: 'http://localhost:8001',
   ...DEFAULT_CONFIG
 };
 
-// Validation constraints
+// バリデーション制約
 const isValidHeight = (height: number) => {
   return height >= VALIDATION_CONSTRAINTS.TARGET_HEIGHT.min && 
          height <= VALIDATION_CONSTRAINTS.TARGET_HEIGHT.max;
 };
 ```
 
-### Utility Types
+## 更新履歴（Changelog/History）
 
-```typescript
-import { 
-  APIResponse, 
-  PaginationParams, 
-  PaginatedResponse, 
-  FilterParams 
-} from '@mcp-drone/types';
+### 1.0.0: 初期リリース（最新）
+- **完全な型定義**: 全MCP APIの型カバレッジ
+- **型ガード・バリデーション**: ランタイム型チェック機能
+- **定数・エンドポイント定義**: API・WebSocket定数
+- **WebSocketイベント型**: リアルタイムイベント定義
+- **包括的ドキュメント**: 詳細な使用例とガイド
 
-// API response wrapper
-const apiResponse: APIResponse<DroneListResponse> = {
-  data: {
-    drones: [],
-    count: 0,
-    timestamp: '2023-01-01T12:00:00Z'
-  },
-  status: 200,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-};
+### 0.9.0: ベータ版
+- **基本型定義**: コアAPI型の実装
+- **ユーティリティ型**: 共通パターンのヘルパー型
+- **バリデーション**: 基本的な型検証機能
 
-// Pagination
-const paginationParams: PaginationParams = {
-  page: 1,
-  limit: 10,
-  sort: 'name',
-  order: 'asc'
-};
+### 0.8.0: アルファ版
+- **プロトタイプ実装**: 基本型定義システム
+- **TypeScript設定**: 型安全な開発環境
+- **ビルドシステム**: npm ビルドパイプライン
 
-// Filters
-const filterParams: FilterParams = {
-  type: 'real',
-  status: 'available',
-  search: 'test'
-};
-```
+---
 
-## Advanced Usage
+**ライセンス**: MIT License
 
-### Custom Type Extensions
-
-```typescript
-import { DroneInfo, NaturalLanguageCommand } from '@mcp-drone/types';
-
-// Extend existing types
-interface ExtendedDroneInfo extends DroneInfo {
-  customField: string;
-  metadata: {
-    location: string;
-    owner: string;
-  };
-}
-
-// Create command templates
-interface CommandTemplate {
-  name: string;
-  command: string;
-  description: string;
-  parameters: string[];
-}
-
-const commandTemplates: CommandTemplate[] = [
-  {
-    name: 'connect',
-    command: 'ドローン{drone_id}に接続して',
-    description: 'Connect to drone',
-    parameters: ['drone_id']
-  },
-  {
-    name: 'takeoff',
-    command: '高度{height}センチで離陸して',
-    description: 'Takeoff to specified height',
-    parameters: ['height']
-  }
-];
-```
-
-### Type-Safe API Client
-
-```typescript
-import { 
-  MCPClientConfig, 
-  CommandResponse, 
-  DroneListResponse 
-} from '@mcp-drone/types';
-
-class TypeSafeMCPClient {
-  constructor(private config: MCPClientConfig) {}
-  
-  async executeCommand(command: NaturalLanguageCommand): Promise<CommandResponse> {
-    // Implementation with type safety
-    throw new Error('Not implemented');
-  }
-  
-  async getDrones(): Promise<DroneListResponse> {
-    // Implementation with type safety
-    throw new Error('Not implemented');
-  }
-}
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-MIT License
-
-## Support
-
-For issues and questions, please open an issue in the [GitHub repository](https://github.com/coolerking/mfg_drone_by_claudecode/issues).
-
-## Changelog
-
-### 1.0.0
-- Initial release
-- Complete type definitions for MCP API
-- Type guards and validation utilities
-- Constants and endpoint definitions
-- WebSocket event types
-- Comprehensive documentation
+**サポート**: 問題・質問は[GitHub Issues](https://github.com/coolerking/mfg_drone_by_claudecode/issues)までお寄せください。

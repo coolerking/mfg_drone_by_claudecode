@@ -1,34 +1,36 @@
-# MCP Drone CLI
+# MCPドローンCLI
 
-Command Line Interface for MCP Drone Control Server. This CLI tool provides a convenient way to control drones using natural language commands or direct API calls from the command line.
+MCPドローン制御サーバー用のコマンドラインインターフェース。自然言語コマンドやダイレクトAPI呼び出しでドローンを操作できる便利なツールです。
 
-## Features
+## 概要（Description）
 
-- 🗣️ **Natural Language Commands**: Execute drone operations using Japanese natural language
-- 🚁 **Complete Drone Control**: Connect, takeoff, move, rotate, land, emergency stop
-- 📸 **Camera Operations**: Photo capture, streaming control
-- 📊 **System Monitoring**: Health checks, status monitoring, real-time events
-- 🔧 **Easy Configuration**: Simple setup with configuration file
-- 🌐 **WebSocket Support**: Real-time event monitoring
-- 💡 **Interactive Mode**: Guided prompts for complex operations
-- 🎨 **Beautiful Output**: Colorized output with progress indicators
+MCP Drone CLI は、MCPドローン制御サーバー向けのコマンドラインインターフェースです。日本語自然言語コマンドによる直感的なドローン操作、完全なドローン制御機能、カメラ・システム監視、WebSocketリアルタイム通信をサポートします。対話的設定、バッチ処理、並列実行、美しいカラー出力により、効率的なドローン制御体験を提供し、開発者・研究者・業務利用者に最適なCLIツールです。
 
-## Installation
+## 目次（Table of Contents）
 
-### Global Installation
+- [概要（Description）](#概要description)
+- [インストール方法（Installation）](#インストール方法installation)
+- [使い方（Usage）](#使い方usage)
+- [動作環境・要件（Requirements）](#動作環境要件requirements)
+- [ディレクトリ構成（Directory Structure）](#ディレクトリ構成directory-structure)
+- [更新履歴（Changelog/History）](#更新履歴changeloghistory)
+
+## インストール方法（Installation）
+
+### グローバルインストール
 
 ```bash
 npm install -g mcp-drone-cli
 ```
 
-### Local Installation
+### ローカルインストール
 
 ```bash
 npm install mcp-drone-cli
 npx mcp-drone --help
 ```
 
-### From Source
+### ソースからインストール
 
 ```bash
 git clone https://github.com/coolerking/mfg_drone_by_claudecode.git
@@ -38,35 +40,36 @@ npm run build
 npm link
 ```
 
-## Quick Start
+## 使い方（Usage）
 
-### 1. Configure the CLI
+### 基本セットアップ
 
 ```bash
+# CLI設定
 mcp-drone configure
 ```
 
-This will prompt you for:
-- MCP Server URL (default: http://localhost:8001)
-- API Key (optional)
-- Bearer Token (optional)
-- Request timeout (default: 30000ms)
+設定項目：
+- MCPサーバーURL (デフォルト: http://localhost:8001)
+- API Key (オプション)
+- Bearer Token (オプション)
+- リクエストタイムアウト (デフォルト: 30000ms)
 
-### 2. Check System Status
+### システム状態確認
 
 ```bash
 mcp-drone system
 mcp-drone health
 ```
 
-### 3. List Available Drones
+### ドローン一覧表示
 
 ```bash
 mcp-drone drones
 mcp-drone drones --available
 ```
 
-### 4. Execute Natural Language Commands
+### 自然言語コマンド実行
 
 ```bash
 mcp-drone exec "ドローンAAに接続して"
@@ -76,308 +79,145 @@ mcp-drone exec "写真を撮って"
 mcp-drone exec "着陸して"
 ```
 
-## Command Reference
-
-### Configuration
+### ダイレクトコマンド実行
 
 ```bash
-# Configure CLI settings
-mcp-drone configure
-```
-
-### Natural Language Commands
-
-```bash
-# Execute single command
-mcp-drone exec "ドローンAAに接続して"
-
-# Execute with context
-mcp-drone exec "離陸して" --context '{"drone_id": "drone_001"}'
-
-# Dry run mode
-mcp-drone exec "緊急停止して" --dry-run
-
-# Confirm before execution
-mcp-drone exec "離陸して" --confirm
-```
-
-### Batch Commands
-
-```bash
-# Execute multiple commands sequentially
-mcp-drone batch "ドローンAAに接続して" "離陸して" "写真を撮って"
-
-# Execute in parallel
-mcp-drone batch "写真を撮って" "高度を確認して" --mode parallel
-
-# Continue on error
-mcp-drone batch "command1" "command2" --no-stop-on-error
-
-# Verbose output
-mcp-drone batch "command1" "command2" --verbose
-```
-
-### Drone Management
-
-```bash
-# List all drones
-mcp-drone drones
-
-# List only available drones
-mcp-drone drones --available
-
-# Get drone status
-mcp-drone status drone_001
-
-# Connect to drone
+# ドローン管理
 mcp-drone connect drone_001
-
-# Disconnect from drone
+mcp-drone status drone_001
 mcp-drone disconnect drone_001
-```
 
-### Flight Control
-
-```bash
-# Takeoff
-mcp-drone takeoff drone_001
+# 飛行制御
 mcp-drone takeoff drone_001 --height 100
-
-# Land
-mcp-drone land drone_001
-
-# Move
 mcp-drone move drone_001 forward 100
-mcp-drone move drone_001 right 50 --speed 30
-
-# Rotate
 mcp-drone rotate drone_001 clockwise 90
-mcp-drone rotate drone_001 left 45
-
-# Emergency stop
+mcp-drone land drone_001
 mcp-drone emergency drone_001
-```
 
-### Camera Operations
-
-```bash
-# Take photo
-mcp-drone photo drone_001
+# カメラ操作
 mcp-drone photo drone_001 --filename "photo.jpg" --quality high
 ```
 
-### System Operations
+### バッチコマンド実行
 
 ```bash
-# Get system status
-mcp-drone system
+# 順次実行
+mcp-drone batch "ドローンAAに接続して" "離陸して" "写真を撮って"
 
-# Health check
-mcp-drone health
+# 並列実行
+mcp-drone batch "写真を撮って" "高度を確認して" --mode parallel
 
-# Watch real-time events
-mcp-drone watch
+# エラー時続行
+mcp-drone batch "command1" "command2" --no-stop-on-error
 ```
 
-## Natural Language Commands
-
-The CLI supports a wide range of Japanese natural language commands:
-
-### Connection Commands
-- `ドローンAAに接続して`
-- `ドローンに繋げて`
-- `ドローンから切断して`
-
-### Flight Control Commands
-- `離陸して`
-- `ドローンを起動して`
-- `飛び立って`
-- `着陸して`
-- `降りて`
-- `緊急停止して`
-
-### Movement Commands
-- `右に50センチ移動して`
-- `前に1メートル進んで`
-- `上に30センチ上がって`
-- `後ろに20センチ下がって`
-
-### Rotation Commands
-- `右に90度回転して`
-- `左に45度向きを変えて`
-- `180度回って`
-
-### Altitude Commands
-- `高度を1メートルにして`
-- `2メートルの高さまで上がって`
-- `高度を50センチ下げて`
-
-### Camera Commands
-- `写真を撮って`
-- `撮影して`
-- `カメラで撮って`
-- `ストリーミングを開始して`
-- `ストリーミングを停止して`
-
-## Configuration File
-
-The CLI stores its configuration in `~/.mcp-drone-cli.yaml`:
-
-```yaml
-baseURL: http://localhost:8001
-apiKey: your-api-key
-bearerToken: your-jwt-token
-timeout: 30000
-```
-
-You can manually edit this file or use the `mcp-drone configure` command.
-
-## Environment Variables
-
-You can also configure the CLI using environment variables:
+### 高度な使用法
 
 ```bash
-export MCP_DRONE_BASE_URL=http://localhost:8001
-export MCP_DRONE_API_KEY=your-api-key
-export MCP_DRONE_BEARER_TOKEN=your-jwt-token
-export MCP_DRONE_TIMEOUT=30000
-```
-
-## Examples
-
-### Basic Drone Operation
-
-```bash
-# Configure CLI
-mcp-drone configure
-
-# Check system status
-mcp-drone health
-
-# List available drones
-mcp-drone drones --available
-
-# Connect and operate drone
-mcp-drone connect drone_001
-mcp-drone takeoff drone_001 --height 100
-mcp-drone photo drone_001 --filename "aerial_shot.jpg"
-mcp-drone move drone_001 forward 200
-mcp-drone rotate drone_001 clockwise 180
-mcp-drone land drone_001
-mcp-drone disconnect drone_001
-```
-
-### Natural Language Workflow
-
-```bash
-# Execute a complete workflow using natural language
-mcp-drone batch \
-  "ドローンAAに接続して" \
-  "離陸して" \
-  "高度を1.5メートルにして" \
-  "右に1メートル移動して" \
-  "写真を撮って" \
-  "元の位置に戻って" \
-  "着陸して"
-```
-
-### Real-time Monitoring
-
-```bash
-# Watch real-time events in one terminal
-mcp-drone watch
-
-# Execute commands in another terminal
-mcp-drone exec "ドローンAAに接続して"
-mcp-drone exec "離陸して"
-```
-
-### Advanced Usage
-
-```bash
-# Use dry run to test commands
+# ドライラン実行
 mcp-drone exec "緊急停止して" --dry-run
 
-# Use context for specific drone
-mcp-drone exec "離陸して" --context '{"drone_id": "drone_002"}'
+# コンテキスト指定
+mcp-drone exec "離陸して" --context '{"drone_id": "drone_001"}'
 
-# Execute with confirmation
-mcp-drone exec "危険な操作" --confirm
+# 実行前確認
+mcp-drone exec "離陸して" --confirm
 
-# Parallel batch execution
-mcp-drone batch \
-  "ドローンAAの状態を確認して" \
-  "ドローンBBの状態を確認して" \
-  --mode parallel
+# リアルタイム監視
+mcp-drone watch
 ```
 
-## Error Handling
+## 動作環境・要件（Requirements）
 
-The CLI provides clear error messages and appropriate exit codes:
+### システム要件
 
-```bash
-# Exit codes:
-# 0 - Success
-# 1 - General error
-# 2 - Configuration error
-# 3 - Network error
-# 4 - Authentication error
+- **Node.js**: 16+
+- **npm**: 6+
+- **OS**: Linux, Windows, macOS
+- **ターミナル**: UTF-8対応コマンドライン環境
+
+### ネットワーク要件
+
+- **MCPサーバー**: ポート8001での通信
+- **WebSocket**: リアルタイム通信用
+- **ファイアウォール**: localhost通信許可
+
+### 依存関係
+
+- **TypeScript**: 5.0+
+- **Commander.js**: CLI フレームワーク
+- **Inquirer.js**: 対話的プロンプト
+- **Chalk**: カラー出力
+- **WebSocket**: リアルタイム通信
+
+## ディレクトリ構成（Directory Structure）
+
+```
+cli/
+├── package.json           # NPMパッケージ定義
+├── src/                   # ソースコード
+│   └── index.ts          # メインCLIアプリケーション
+├── bin/                   # 実行可能ファイル
+│   └── mcp-drone         # CLIエントリーポイント
+├── tsconfig.json         # TypeScript設定
+└── README.md             # CLIドキュメント
 ```
 
-## Development
+### 主要機能
 
-### Setup Development Environment
+#### 自然言語処理
+- **日本語コマンドサポート**: 自然な日本語フレーズでドローン操作
+- **意図認識**: コマンドの自動解析と信頼度スコアリング
+- **パラメータ抽出**: 距離・角度・高度の自動抽出
+- **エラー修正提案**: 誤解されたコマンドの修正支援
 
-```bash
-git clone https://github.com/coolerking/mfg_drone_by_claudecode.git
-cd mfg_drone_by_claudecode/client-libraries/cli
-npm install
-```
+#### ドローン制御
+- **接続管理**: ドローン接続・切断・状態監視
+- **飛行制御**: 安全チェック付き離着陸・緊急停止
+- **移動制御**: cm精度での正確な位置決め
+- **回転制御**: 度単位精度での回転制御
+- **高度制御**: 絶対・相対高度調整
 
-### Build
+#### システム機能
+- **バッチ処理**: 複数コマンドの順次・並列実行
+- **リアルタイム監視**: WebSocketによるイベント監視
+- **設定管理**: YAML・環境変数による設定
+- **エラーハンドリング**: 詳細エラーメッセージと終了コード
 
-```bash
-npm run build
-```
+### 自然言語コマンド例
 
-### Development Mode
+| コマンドタイプ | 例 |
+|-------------|---|
+| 接続 | `ドローンAAに接続して`, `ドローンに繋げて` |
+| 離陸 | `離陸して`, `ドローンを起動して`, `飛び立って` |
+| 移動 | `右に50センチ移動して`, `前に1メートル進んで` |
+| 回転 | `右に90度回転して`, `左に45度向きを変えて` |
+| 高度 | `高度を1メートルにして`, `2メートルの高さまで上がって` |
+| カメラ | `写真を撮って`, `撮影して`, `カメラで撮って` |
+| 着陸 | `着陸して`, `降りて`, `ドローンを着陸させて` |
+| 緊急 | `緊急停止して`, `止まって`, `ストップ` |
 
-```bash
-# Run in development mode
-npm run dev -- --help
+## 更新履歴（Changelog/History）
 
-# Set development environment
-NODE_ENV=development ./bin/mcp-drone --help
-```
+### 1.0.0: 初期リリース（最新）
+- **MCPサーバー統合**: 完全なMCP API対応
+- **自然言語処理**: 日本語コマンド認識・解析
+- **リアルタイム監視**: WebSocketイベント監視
+- **設定管理**: YAML・環境変数対応
+- **美しいCLI**: カラー出力・プログレス表示
 
-### Testing
+### 0.9.0: ベータ版
+- **コア機能実装**: 基本ドローン制御コマンド
+- **バッチ処理**: 複数コマンド実行機能
+- **エラーハンドリング**: 包括的エラー処理
 
-```bash
-npm test
-```
+### 0.8.0: アルファ版
+- **プロトタイプ実装**: 基本CLI フレームワーク
+- **TypeScript対応**: 型安全な実装
+- **テスト環境**: 単体テスト基盤
 
-## Contributing
+---
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+**ライセンス**: MIT License
 
-## License
-
-MIT License
-
-## Support
-
-For issues and questions, please open an issue in the [GitHub repository](https://github.com/coolerking/mfg_drone_by_claudecode/issues).
-
-## Changelog
-
-### 1.0.0
-- Initial release
-- Complete MCP API support
-- Natural language command processing
-- Real-time event monitoring
-- Configuration management
-- Beautiful CLI interface
+**サポート**: 問題・質問は[GitHub Issues](https://github.com/coolerking/mfg_drone_by_claudecode/issues)までお寄せください。
