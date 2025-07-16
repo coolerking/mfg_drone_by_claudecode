@@ -98,6 +98,29 @@ class Settings(BaseSettings):
     max_concurrent_requests: int = Field(default=100, env="MAX_CONCURRENT_REQUESTS")
     request_timeout: int = Field(default=60, env="REQUEST_TIMEOUT")
     
+    # Hybrid System Settings
+    hybrid_monitor_interval: int = Field(default=30, env="HYBRID_MONITOR_INTERVAL")
+    hybrid_max_metrics_history: int = Field(default=100, env="HYBRID_MAX_METRICS_HISTORY")
+    hybrid_startup_timeout: float = Field(default=30.0, env="HYBRID_STARTUP_TIMEOUT")
+    hybrid_shutdown_timeout: float = Field(default=15.0, env="HYBRID_SHUTDOWN_TIMEOUT")
+    hybrid_health_check_interval: float = Field(default=10.0, env="HYBRID_HEALTH_CHECK_INTERVAL")
+    hybrid_max_restart_attempts: int = Field(default=3, env="HYBRID_MAX_RESTART_ATTEMPTS")
+    
+    # Hybrid Alert Thresholds
+    hybrid_cpu_threshold: float = Field(default=80.0, env="HYBRID_CPU_THRESHOLD")
+    hybrid_memory_threshold: float = Field(default=85.0, env="HYBRID_MEMORY_THRESHOLD")
+    hybrid_disk_threshold: float = Field(default=90.0, env="HYBRID_DISK_THRESHOLD")
+    hybrid_response_time_threshold: float = Field(default=5.0, env="HYBRID_RESPONSE_TIME_THRESHOLD")
+    hybrid_error_rate_threshold: float = Field(default=5.0, env="HYBRID_ERROR_RATE_THRESHOLD")
+    
+    # Hybrid Server Ports
+    hybrid_fastapi_port: int = Field(default=8000, env="HYBRID_FASTAPI_PORT")
+    hybrid_fastapi_enhanced_port: int = Field(default=8001, env="HYBRID_FASTAPI_ENHANCED_PORT")
+    
+    # Hybrid Health Check Endpoints
+    hybrid_fastapi_health_endpoint: str = Field(default="/mcp/system/health", env="HYBRID_FASTAPI_HEALTH_ENDPOINT")
+    hybrid_fastapi_enhanced_health_endpoint: str = Field(default="/mcp/health/enhanced", env="HYBRID_FASTAPI_ENHANCED_HEALTH_ENDPOINT")
+    
     @validator("allowed_origins", pre=True)
     def parse_allowed_origins(cls, v):
         """Parse allowed origins from environment variable"""
