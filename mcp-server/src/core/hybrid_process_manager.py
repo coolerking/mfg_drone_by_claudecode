@@ -29,6 +29,7 @@ from .progress_indicator import AsyncProgressIndicator, with_progress
 from .error_handler import error_handler, ErrorSeverity, ErrorCategory
 from .security_utils import security_validator
 from ..models.system_models import SystemStatusResponse, HealthResponse, HealthCheck
+from ...config.settings import settings
 
 
 class ServerType(Enum):
@@ -95,6 +96,7 @@ class HybridProcessManager:
         self.process_pool = ThreadPoolExecutor(max_workers=10)
         self.config_path = config_path
         self.shutdown_event = threading.Event()
+        self.main_loop: Optional[asyncio.AbstractEventLoop] = None
         
         # デフォルト設定
         self._setup_default_configs()
@@ -110,7 +112,7 @@ class HybridProcessManager:
                 server_type=ServerType.FASTAPI,
                 name="FastAPI Server",
                 host="0.0.0.0",
-                port=8000,
+                port=settings.hybrid_fastapi_port,
                 app_module="src.main:app",
                 description="Original FastAPI Server (Phase 1)",
                 features=[
@@ -124,7 +126,7 @@ class HybridProcessManager:
                 server_type=ServerType.FASTAPI_ENHANCED,
                 name="Enhanced FastAPI Server",
                 host="0.0.0.0", 
-                port=8001,
+                port=settings.hybrid_fastapi_enhanced_port,
                 app_module="src.enhanced_main:app",
                 description="Enhanced FastAPI Server (Phase 2)",
                 features=[
@@ -245,14 +247,8 @@ class HybridProcessManager:
             status.process = process
             status.pid = process.pid
             
-            # プロセスの起動確認
-            await asyncio.sleep(2)
-            if process.is_alive():
-                progress.update(1, "プロセス起動確認完了")
-                return True
-            else:
-                self.logger.error("FastAPIプロセスが起動に失敗しました")
-                return False
+            # プロセスの起動確認（より確実な方法）
+            return await self._wait_for_server_ready(status, progress, timeout=30.0)
                 
         except Exception as e:
             self.logger.error(f"FastAPIサーバーの起動中にエラーが発生しました: {e}")
@@ -284,14 +280,8 @@ class HybridProcessManager:
             status.process = process
             status.pid = process.pid
             
-            # プロセスの起動確認
-            await asyncio.sleep(2)
-            if process.is_alive():
-                progress.update(1, "MCPプロセス起動確認完了")
-                return True
-            else:
-                self.logger.error("MCPプロセスが起動に失敗しました")
-                return False
+            # プロセスの起動確認（より確実な方法）
+            return await self._wait_for_server_ready(status, progress, timeout=30.0)
                 
         except Exception as e:
             self.logger.error(f"MCPサーバーの起動中にエラーが発生しました: {e}")
@@ -353,8 +343,11 @@ class HybridProcessManager:
             if not results[server_id]:
                 self.logger.error(f"サーバー '{server_id}' の起動に失敗しました")
             
-            # 少し待機してポート競合を回避
-            await asyncio.sleep(1)
+            # ポート競合を回避するための少しの待機（最適化済み）
+            if not results[server_id]:
+                await asyncio.sleep(1)  # 失敗時のみ待機
+            else:
+                await asyncio.sleep(0.1)  # 成功時は短い待機
         
         return results
     
@@ -398,6 +391,13 @@ class HybridProcessManager:
         self.logger.info(f"サーバー '{server_id}' が正常に再起動しました")
         return True
     
+    async def _restart_server_async(self, server_id: str):
+        """非同期での再起動処理（監視スレッドから呼び出し用）"""
+        try:
+            await self.restart_server(server_id)
+        except Exception as e:
+            self.logger.error(f"サーバー '{server_id}' の自動再起動に失敗しました: {e}")
+    
     def get_server_status(self, server_id: str) -> Optional[ServerStatus]:
         """サーバーステータスを取得"""
         return self.servers.get(server_id)
@@ -430,6 +430,7 @@ class HybridProcessManager:
         """監視を開始"""
         self.running = True
         self.start_time = time.time()
+        self.main_loop = asyncio.get_event_loop()
         
         # 監視スレッドを開始
         self.monitor_thread = threading.Thread(target=self._monitor_processes)
@@ -454,13 +455,14 @@ class HybridProcessManager:
                                 self.logger.info(f"サーバー '{server_id}' を自動再起動します...")
                                 status.restart_count += 1
                                 
-                                # 再起動を非同期で実行
-                                loop = asyncio.new_event_loop()
-                                asyncio.set_event_loop(loop)
-                                try:
-                                    loop.run_until_complete(self.restart_server(server_id))
-                                finally:
-                                    loop.close()
+                                # 再起動を非同期で実行（メインループを利用）
+                                if self.main_loop and not self.main_loop.is_closed():
+                                    asyncio.run_coroutine_threadsafe(
+                                        self._restart_server_async(server_id),
+                                        self.main_loop
+                                    )
+                                else:
+                                    self.logger.error(f"メインループが利用できません。サーバー '{server_id}' の自動再起動をスキップします")
                         
                         # ハートビートの更新
                         status.last_heartbeat = datetime.now()
@@ -495,7 +497,7 @@ class HybridProcessManager:
         
         # FastAPIサーバー（ポート8000）
         fastapi_config = self.default_configs["fastapi"]
-        fastapi_config.port = 8000
+        fastapi_config.port = settings.hybrid_fastapi_port
         self.add_server("fastapi", fastapi_config)
         hybrid_servers.append("fastapi")
         
@@ -513,7 +515,7 @@ class HybridProcessManager:
         
         # Enhanced FastAPIサーバー（ポート8001）
         enhanced_config = self.default_configs["fastapi_enhanced"]
-        enhanced_config.port = 8001
+        enhanced_config.port = settings.hybrid_fastapi_enhanced_port
         self.add_server("fastapi_enhanced", enhanced_config)
         enhanced_hybrid_servers.append("fastapi_enhanced")
         
@@ -531,13 +533,13 @@ class HybridProcessManager:
         
         # FastAPIサーバー（ポート8000）
         fastapi_config = self.default_configs["fastapi"]
-        fastapi_config.port = 8000
+        fastapi_config.port = settings.hybrid_fastapi_port
         self.add_server("fastapi", fastapi_config)
         full_hybrid_servers.append("fastapi")
         
         # Enhanced FastAPIサーバー（ポート8001）
         enhanced_config = self.default_configs["fastapi_enhanced"]
-        enhanced_config.port = 8001
+        enhanced_config.port = settings.hybrid_fastapi_enhanced_port
         self.add_server("fastapi_enhanced", enhanced_config)
         full_hybrid_servers.append("fastapi_enhanced")
         
@@ -548,3 +550,40 @@ class HybridProcessManager:
         
         self.logger.info("フルハイブリッドモードのサーバー設定を完了しました")
         return full_hybrid_servers
+    
+    async def _wait_for_server_ready(self, status: ServerStatus, progress: AsyncProgressIndicator, timeout: float = 30.0) -> bool:
+        """サーバーの起動確認を行う"""
+        start_time = time.time()
+        check_interval = 0.5
+        
+        while time.time() - start_time < timeout:
+            # プロセスが生きているかチェック
+            if not status.process or not status.process.is_alive():
+                self.logger.error(f"プロセス {status.config.name} が起動に失敗しました")
+                return False
+            
+            # FastAPIサーバーの場合は実際にAPIを叩いて確認
+            if status.config.server_type != ServerType.MCP:
+                try:
+                    import requests
+                    health_url = f"http://{status.config.host}:{status.config.port}/health"
+                    response = requests.get(health_url, timeout=2)
+                    if response.status_code == 200:
+                        progress.update(1, f"{status.config.name} 起動確認完了")
+                        return True
+                except Exception:
+                    # まだ起動していない場合は続行
+                    pass
+            else:
+                # MCPサーバーの場合はプロセスの状態を確認
+                if status.process.is_alive():
+                    # 少し待機してから再確認
+                    await asyncio.sleep(1)
+                    if status.process.is_alive():
+                        progress.update(1, f"{status.config.name} 起動確認完了")
+                        return True
+            
+            await asyncio.sleep(check_interval)
+        
+        self.logger.error(f"サーバー {status.config.name} の起動確認がタイムアウトしました")
+        return False

@@ -15,10 +15,12 @@ from enum import Enum
 import aiohttp
 import psutil
 import requests
+from collections import deque
 
 from .hybrid_process_manager import HybridProcessManager, ServerStatus, ProcessState
 from .error_handler import error_handler, ErrorSeverity, ErrorCategory
 from ..models.system_models import SystemStatusResponse, HealthResponse, HealthCheck
+from ...config.settings import settings
 
 
 class ServiceHealth(Enum):
@@ -70,26 +72,26 @@ class HybridSystemMonitor:
         self.process_manager = process_manager
         self.start_time = datetime.now()
         self.monitoring_active = False
-        self.monitor_interval = 30  # 30秒間隔
+        self.monitor_interval = settings.hybrid_monitor_interval
         
-        # メトリクス保存
-        self.system_metrics: List[SystemMetrics] = []
-        self.server_metrics: Dict[str, List[ServerMetrics]] = {}
-        self.max_metrics_history = 100  # 最大100個のメトリクスを保存
+        # メトリクス保存（パフォーマンス最適化のためデックを使用）
+        self.max_metrics_history = settings.hybrid_max_metrics_history
+        self.system_metrics: deque = deque(maxlen=self.max_metrics_history)
+        self.server_metrics: Dict[str, deque] = {}
         
-        # アラート設定
+        # アラート設定（設定ファイルから取得）
         self.alert_thresholds = {
-            'cpu_usage': 80.0,  # CPU使用率 80%以上
-            'memory_usage': 85.0,  # メモリ使用率 85%以上
-            'disk_usage': 90.0,  # ディスク使用率 90%以上
-            'response_time': 5.0,  # 応答時間 5秒以上
-            'error_rate': 5.0,  # エラー率 5%以上
+            'cpu_usage': settings.hybrid_cpu_threshold,
+            'memory_usage': settings.hybrid_memory_threshold,
+            'disk_usage': settings.hybrid_disk_threshold,
+            'response_time': settings.hybrid_response_time_threshold,
+            'error_rate': settings.hybrid_error_rate_threshold,
         }
         
-        # ヘルスチェック設定
+        # ヘルスチェック設定（設定ファイルから取得）
         self.health_check_endpoints = {
-            'fastapi': 'http://localhost:8000/mcp/system/health',
-            'fastapi_enhanced': 'http://localhost:8001/mcp/health/enhanced',
+            'fastapi': f'http://localhost:{settings.hybrid_fastapi_port}{settings.hybrid_fastapi_health_endpoint}',
+            'fastapi_enhanced': f'http://localhost:{settings.hybrid_fastapi_enhanced_port}{settings.hybrid_fastapi_enhanced_health_endpoint}',
         }
     
     async def start_monitoring(self):
@@ -163,7 +165,7 @@ class HybridSystemMonitor:
                 uptime=uptime
             )
             
-            # 保存
+            # 保存（デックの自動サイズ管理を利用）
             self.system_metrics.append(metrics)
             
             # デバッグログ
@@ -181,9 +183,9 @@ class HybridSystemMonitor:
                 # サーバーメトリクスを収集
                 metrics = await self._get_server_metrics(server_id, status)
                 
-                # 保存
+                # 保存（デックの自動サイズ管理を利用）
                 if server_id not in self.server_metrics:
-                    self.server_metrics[server_id] = []
+                    self.server_metrics[server_id] = deque(maxlen=self.max_metrics_history)
                 self.server_metrics[server_id].append(metrics)
                 
             except Exception as e:
@@ -222,8 +224,14 @@ class HybridSystemMonitor:
                     metrics.health = health_info.get('health', ServiceHealth.UNKNOWN)
                     metrics.response_time = health_info.get('response_time')
                 else:
-                    # MCPサーバーの場合は プロセス生存で判定
-                    metrics.health = ServiceHealth.HEALTHY if process.is_running() else ServiceHealth.UNHEALTHY
+                    # MCPサーバーの場合は プロセス生存で判定（例外処理を追加）
+                    try:
+                        metrics.health = ServiceHealth.HEALTHY if process.is_running() else ServiceHealth.UNHEALTHY
+                    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                        metrics.health = ServiceHealth.UNHEALTHY
+                    except Exception as e:
+                        self.logger.warning(f"MCPサーバー '{server_id}' のプロセス状態確認中に例外が発生しました: {e}")
+                        metrics.health = ServiceHealth.UNKNOWN
                 
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess) as e:
                 self.logger.warning(f"サーバー '{server_id}' のプロセス情報を取得できませんでした: {e}")
@@ -273,7 +281,7 @@ class HybridSystemMonitor:
                     
         except asyncio.TimeoutError:
             self.logger.warning(f"サーバー '{server_id}' のヘルスチェックがタイムアウトしました")
-            return {'health': ServiceHealth.UNHEALTHY, 'response_time': 10.0}
+            return {'health': ServiceHealth.UNHEALTHY, 'response_time': timeout.total if hasattr(timeout, 'total') else 10.0}
         except Exception as e:
             self.logger.error(f"サーバー '{server_id}' のヘルスチェック中にエラーが発生しました: {e}")
             return {'health': ServiceHealth.UNKNOWN}
@@ -315,15 +323,9 @@ class HybridSystemMonitor:
                     self.logger.warning(f"サーバー '{server_id}' の応答時間が遅いです: {latest_server_metrics.response_time:.2f}秒")
     
     def _cleanup_old_metrics(self):
-        """古いメトリクスを削除"""
-        # システムメトリクスの削除
-        if len(self.system_metrics) > self.max_metrics_history:
-            self.system_metrics = self.system_metrics[-self.max_metrics_history:]
-        
-        # サーバーメトリクスの削除
-        for server_id in self.server_metrics:
-            if len(self.server_metrics[server_id]) > self.max_metrics_history:
-                self.server_metrics[server_id] = self.server_metrics[server_id][-self.max_metrics_history:]
+        """古いメトリクスを削除（デックを使用しているため自動的に管理される）"""
+        # デックのmaxlenで自動的にサイズ管理されるため、明示的な清理は不要
+        pass
     
     def get_system_status(self) -> Dict[str, Any]:
         """システムステータスを取得"""
