@@ -4,7 +4,7 @@ Claude統合による自然言語処理を活用したドローン制御APIサ�
 
 ## 概要（Description）
 
-MCPサーバーは、MFG ドローン自動追従撮影システムの重要な構成要素として、Claude Code AI アシスタントと連携し、自然言語によるドローン制御を可能にします。FastAPIベースの高性能Webサーバーとして実装され、日本語の自然言語処理エンジンを内蔵し、複雑なドローン操作を直感的な日本語コマンドで実行できます。
+MCPサーバーは、MFG ドローン自動追従撮影システムの重要な構成要素として、Claude Code AI アシスタントと連携し、自然言語によるドローン制御を可能にします。Model Context Protocol（MCP）に準拠した高性能サーバーとして実装され、日本語の自然言語処理エンジンを内蔵し、複雑なドローン操作を直感的な日本語コマンドで実行できます。
 
 ### 主な特徴
 - **自然言語処理**: 日本語によるドローン制御コマンドの理解と実行
@@ -50,17 +50,12 @@ cp .env.example .env
 
 #### 3. サーバーの起動
 ```bash
-python start_mcp_server.py
+python start_mcp_server_unified.py
 ```
 
-### 拡張機能付き起動
+### デバッグモード起動
 ```bash
-python start_mcp_server.py --enhanced
-```
-
-### 開発モード起動
-```bash
-python start_mcp_server.py --reload --log-level DEBUG
+python start_mcp_server_unified.py --log-level DEBUG
 ```
 
 ## 使い方（Usage）
@@ -69,39 +64,33 @@ python start_mcp_server.py --reload --log-level DEBUG
 
 #### 1. サーバーの起動
 ```bash
-# 基本バージョン（Phase 1）
-python start_mcp_server.py
-
-# 拡張バージョン（Phase 2）
-python start_mcp_server.py --enhanced
+# MCPサーバーを起動
+python start_mcp_server_unified.py
 ```
 
-#### 2. 自然言語コマンドの実行
+#### 2. MCPクライアントとの接続
 
-```bash
-curl -X POST "http://localhost:8001/mcp/command" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "command": "ドローンを離陸させて前に50センチ進んでください",
-       "context": {"language": "ja"},
-       "options": {"confirm_before_execution": false}
-     }'
-```
+MCPサーバーはModel Context Protocolに準拠しており、Claude Desktop、VS Code、その他のMCPクライアントから利用できます。
 
-#### 3. バッチコマンドの実行
+サーバーが起動すると、以下のツールが利用可能になります：
+- `connect_drone`: ドローンへの接続
+- `takeoff_drone`: ドローンの離陸
+- `land_drone`: ドローンの着陸
+- `move_drone`: ドローンの移動
+- `rotate_drone`: ドローンの回転
+- `take_photo`: 写真撮影
+- `execute_natural_language_command`: 自然言語コマンドの実行
+- `emergency_stop`: 緊急停止
 
-```bash
-curl -X POST "http://localhost:8001/mcp/command/batch" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "commands": [
-         {"command": "ドローンを離陸させて"},
-         {"command": "前進して"},
-         {"command": "着陸してください"}
-       ],
-       "execution_mode": "sequential",
-       "stop_on_error": true
-     }'
+#### 3. 自然言語コマンドの使用例
+
+MCPクライアントから `execute_natural_language_command` ツールを使用して、日本語でドローンを制御できます：
+
+```json
+{
+  "command": "ドローンを離陸させて前に50センチ進んでください",
+  "drone_id": "drone_AA"
+}
 ```
 
 ### サンプルコマンド
@@ -131,12 +120,9 @@ curl -X POST "http://localhost:8001/mcp/command/batch" \
 - "システムの状態を確認"
 - "バッテリー残量を確認"
 
-### API ドキュメント
+### MCP仕様
 
-サーバー起動後、以下のURLでAPI仕様を確認できます：
-- Swagger UI: http://localhost:8001/docs
-- ReDoc: http://localhost:8001/redoc
-- OpenAPI JSON: http://localhost:8001/openapi.json
+MCPサーバーは標準入出力を使用してModel Context Protocolに準拠した通信を行います。HTTP APIは提供されません。MCPクライアント（Claude Desktop、VS Code拡張など）から利用してください。
 
 ## 動作環境・要件（Requirements）
 
@@ -151,7 +137,7 @@ curl -X POST "http://localhost:8001/mcp/command/batch" \
 #### Python環境
 - **Python**: 3.9以上
 - **主要ライブラリ**:
-  - FastAPI 0.104.1+ (Webフレームワーク)
+  - mcp 1.0.0+ (Model Context Protocol SDK)
   - spaCy 3.7.2+ (自然言語処理)
   - mecab-python3 1.0.6+ (日本語形態素解析)
   - pydantic 2.5.0+ (データ検証)
@@ -165,13 +151,9 @@ curl -X POST "http://localhost:8001/mcp/command/batch" \
 
 | 変数名 | デフォルト値 | 説明 |
 |--------|------------|------|
-| `MCP_HOST` | localhost | サーバーバインドホスト |
-| `MCP_PORT` | 8001 | サーバーポート番号 |
-| `MCP_DEBUG` | false | デバッグモード |
 | `BACKEND_API_URL` | http://localhost:8000 | バックエンドAPIのURL |
 | `BACKEND_API_TIMEOUT` | 30 | バックエンドAPI通信タイムアウト |
 | `BACKEND_API_KEY` | - | バックエンドAPIキー |
-| `MCP_API_KEY` | - | MCP APIキー |
 | `DEFAULT_LANGUAGE` | ja | デフォルト言語 |
 | `NLP_CONFIDENCE_THRESHOLD` | 0.7 | 自然言語処理の信頼度閾値 |
 | `LOG_LEVEL` | INFO | ログレベル |
@@ -181,7 +163,6 @@ curl -X POST "http://localhost:8001/mcp/command/batch" \
 ```
 mcp-server/
 ├── src/                        # ソースコード
-│   ├── api/                    # APIエンドポイント
 │   ├── core/                   # コアサービス
 │   │   ├── backend_client.py       # バックエンドAPIクライアント
 │   │   ├── nlp_engine.py           # 自然言語処理エンジン
@@ -191,21 +172,21 @@ mcp-server/
 │   │   ├── drone_models.py         # ドローンモデル
 │   │   ├── camera_models.py        # カメラモデル
 │   │   └── system_models.py        # システムモデル
-│   └── main.py                 # FastAPIアプリケーション
+│   └── mcp_main.py             # MCPサーバーメイン実装
 ├── config/                     # 設定ファイル
 │   ├── settings.py             # アプリケーション設定
 │   └── logging.py              # ロギング設定
 ├── tests/                      # テストファイル
 ├── docs/                       # ドキュメント
 ├── requirements.txt            # Python依存関係
-├── start_mcp_server.py         # 起動スクリプト
+├── start_mcp_server_unified.py # 統合起動スクリプト
 ├── .env.example                # 環境変数テンプレート
 └── README.md                   # このファイル
 ```
 
 ### 主要コンポーネント
 
-- **src/main.py**: FastAPIメインアプリケーション
+- **src/mcp_main.py**: MCPサーバーメイン実装
 - **src/core/nlp_engine.py**: 日本語自然言語処理エンジン
 - **src/core/backend_client.py**: バックエンドAPI通信クライアント
 - **src/core/command_router.py**: コマンドルーティングシステム
@@ -214,7 +195,7 @@ mcp-server/
 ### テスト構成
 
 - **tests/test_nlp_engine.py**: 自然言語処理テスト
-- **tests/test_api.py**: APIエンドポイントテスト
+- **tests/test_mcp_server.py**: MCPサーバーテスト
 - **tests/test_backend_client.py**: バックエンド通信テスト
 
 ## 更新履歴（Changelog/History）
@@ -245,7 +226,7 @@ mcp-server/
 - ✅ **実行分析**: コマンド実行統計・分析機能
 
 ### Version 0.8.0 - Phase 1 基盤実装 (2024-11-10)
-- ✅ **基盤システム**: FastAPIベースサーバー構築
+- ✅ **基盤システム**: MCPベースサーバー構築
 - ✅ **基本NLP**: 日本語自然言語処理（spaCy + MeCab）
 - ✅ **コマンドルーティング**: 基本的なコマンド解釈・実行
 - ✅ **バックエンド連携**: RESTful API通信実装

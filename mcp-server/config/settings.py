@@ -113,13 +113,8 @@ class Settings(BaseSettings):
     hybrid_response_time_threshold: float = Field(default=5.0, env="HYBRID_RESPONSE_TIME_THRESHOLD")
     hybrid_error_rate_threshold: float = Field(default=5.0, env="HYBRID_ERROR_RATE_THRESHOLD")
     
-    # Hybrid Server Ports
-    hybrid_fastapi_port: int = Field(default=8000, env="HYBRID_FASTAPI_PORT")
-    hybrid_fastapi_enhanced_port: int = Field(default=8001, env="HYBRID_FASTAPI_ENHANCED_PORT")
-    
-    # Hybrid Health Check Endpoints
-    hybrid_fastapi_health_endpoint: str = Field(default="/mcp/system/health", env="HYBRID_FASTAPI_HEALTH_ENDPOINT")
-    hybrid_fastapi_enhanced_health_endpoint: str = Field(default="/mcp/health/enhanced", env="HYBRID_FASTAPI_ENHANCED_HEALTH_ENDPOINT")
+    # Note: FastAPI-related settings have been removed as FastAPI server functionality 
+    # has been eliminated from the MCP server implementation
     
     @validator("allowed_origins", pre=True)
     def parse_allowed_origins(cls, v):
