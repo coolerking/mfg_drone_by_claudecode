@@ -38,8 +38,7 @@ mcp-server/
 │   │   ├── backend_client.py           # Backend API communication
 │   │   └── nlp_engine.py              # Original NLP (backward compatibility)
 │   ├── models/                         # Data models (unchanged)
-│   ├── enhanced_main.py               # Enhanced FastAPI application
-│   └── main.py                        # Original main (backward compatibility)
+│   └── mcp_main.py                     # MCP Server main application
 ├── tests/
 │   ├── test_enhanced_nlp_engine.py    # Enhanced NLP tests
 │   ├── test_enhanced_command_router.py # Enhanced router tests
@@ -62,13 +61,13 @@ cd mcp-server
 pip install -r requirements.txt
 ```
 
-### Start Enhanced Server
+### Start MCP Server
 ```bash
-# Enhanced server with Phase 2 features
-python src/enhanced_main.py
+# MCP Server with Phase 2 enhanced features
+python start_mcp_server_unified.py
 
-# Or using the startup script
-python start_mcp_server.py --enhanced
+# Or direct MCP server startup
+python src/mcp_main.py
 ```
 
 ## 🧠 Enhanced Natural Language Processing
