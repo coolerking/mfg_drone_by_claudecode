@@ -42,36 +42,34 @@ MFG Drone システム全体アーキテクチャ:
                        └─────────────────┘    └─────────────────┘
 ```
 
-#### 1.2 API仕様書
+#### 1.2 MCP Tools仕様書
 ```yaml
-# MCP API エンドポイント (25個のAPI)
+# MCP Tools (Model Context Protocol準拠)
 # 基本指令系統
-POST /mcp/command                    # 自然言語コマンド実行
-POST /mcp/command/batch              # バッチ処理
-POST /mcp/command/enhanced           # 強化版処理 (Phase 2+)
+execute_natural_language_command     # 自然言語コマンド実行
+execute_batch_commands               # バッチ処理
 
 # ドローン制御系統
-GET  /mcp/drones                     # ドローン一覧
-POST /mcp/drones/{id}/connect        # 接続
-POST /mcp/drones/{id}/takeoff        # 離陸
-POST /mcp/drones/{id}/land           # 着陸
-POST /mcp/drones/{id}/move           # 移動
-POST /mcp/drones/{id}/rotate         # 回転
-POST /mcp/drones/{id}/altitude       # 高度調整
-POST /mcp/drones/{id}/emergency      # 緊急停止
+connect_drone                        # ドローン接続
+takeoff_drone                        # 離陸
+land_drone                           # 着陸
+move_drone                           # 移動
+rotate_drone                         # 回転
+emergency_stop                       # 緊急停止
 
 # カメラ・ビジョン系統
-POST /mcp/drones/{id}/camera/photo   # 写真撮影
-POST /mcp/drones/{id}/camera/streaming # ストリーミング
-POST /mcp/drones/{id}/learning/collect # 学習データ収集
-POST /mcp/vision/detection           # 物体検出
-POST /mcp/vision/tracking            # 物体追跡
+take_photo                           # 写真撮影
+start_streaming                      # ストリーミング開始
+stop_streaming                       # ストリーミング停止
 
 # システム管理系統
-GET  /mcp/system/status              # システム状態
-GET  /mcp/system/health              # ヘルスチェック
-GET  /mcp/system/performance         # パフォーマンス監視 (Phase 5)
-GET  /mcp/security/summary           # セキュリティ状況 (Phase 5)
+get_system_status                    # システム状態
+get_drone_status                     # ドローン状態
+
+# Resources (リソース)
+drone://available                    # 利用可能なドローン一覧
+drone://status/{drone_id}            # ドローン状態
+system://status                      # システム状態
 ```
 
 #### 1.3 自然言語コマンド辞書
@@ -132,54 +130,51 @@ emergency_patterns:
   - "emergency stop"
 ```
 
-#### 1.4 コードサンプル集
+#### 1.4 MCP Client使用例
 ```python
-# 基本的なMCPクライアント使用例
-import requests
-import json
+# MCP (Model Context Protocol) クライアント使用例
+# 注意: 実際のMCPクライアントはstdio経由で通信します
 
-class MCPClient:
-    def __init__(self, base_url="http://localhost:8001"):
-        self.base_url = base_url
-        self.session = requests.Session()
+from mcp import ClientSession
+import asyncio
+
+class MCPDroneClient:
+    def __init__(self, server_path="src/mcp_main.py"):
+        self.server_path = server_path
     
-    def execute_command(self, command: str) -> dict:
+    async def execute_command(self, command: str) -> dict:
         """自然言語コマンドを実行"""
-        response = self.session.post(
-            f"{self.base_url}/mcp/command",
-            json={"command": command}
-        )
-        return response.json()
+        # MCPクライアントを通じてツールを呼び出し
+        async with ClientSession() as session:
+            result = await session.call_tool(
+                "execute_natural_language_command",
+                {"command": command}
+            )
+            return result
     
-    def batch_execute(self, commands: list) -> dict:
-        """複数コマンドを一括実行"""
-        payload = {
-            "commands": [{"command": cmd} for cmd in commands],
-            "execution_mode": "sequential"
-        }
-        response = self.session.post(
-            f"{self.base_url}/mcp/command/batch",
-            json=payload
-        )
-        return response.json()
+    async def connect_drone(self, drone_type: str = "tello") -> dict:
+        """ドローンに接続"""
+        async with ClientSession() as session:
+            result = await session.call_tool(
+                "connect_drone",
+                {"drone_type": drone_type}
+            )
+            return result
 
 # 使用例
-client = MCPClient()
+async def main():
+    client = MCPDroneClient()
+    
+    # ドローンに接続
+    result = await client.connect_drone("tello")
+    print(f"接続結果: {result}")
+    
+    # 自然言語コマンド実行
+    result = await client.execute_command("ドローンを離陸させて")
+    print(f"実行結果: {result}")
 
-# 単一コマンド実行
-result = client.execute_command("ドローンAAに接続して")
-print(f"結果: {result['success']}")
-
-# バッチ実行
-commands = [
-    "ドローンAAに接続して",
-    "離陸して",
-    "右に50センチ移動して",
-    "写真を撮って",
-    "着陸して"
-]
-result = client.batch_execute(commands)
-print(f"成功: {result['summary']['successful_commands']}/5")
+# 実行
+asyncio.run(main())
 ```
 
 ### 2. 運用者向けドキュメント
@@ -193,7 +188,7 @@ python start_api_server.py
 
 # 2. MCP Server (Windows PC)
 cd mcp-server
-python start_mcp_server.py
+python start_mcp_server_unified.py
 
 # 3. Frontend (Windows PC)
 cd frontend
@@ -208,7 +203,7 @@ kubectl apply -f k8s/
 
 # 3. システムヘルスチェック
 curl http://localhost:8000/health        # Backend
-curl http://localhost:8001/mcp/system/health # MCP Server
+# MCP Server: MCP Protocolで動作（HTTPアクセス不可）
 curl http://localhost:3000               # Frontend
 ```
 
@@ -222,7 +217,7 @@ curl http://localhost:9090/targets
 open http://localhost:3001
 
 # 3. リアルタイム監視
-curl http://localhost:8001/mcp/system/performance
+# MCP Serverはstdio経由でのみ通信（HTTPアクセス不可）
 
 # === ログ管理 ===
 # 1. システムログ確認
@@ -246,24 +241,19 @@ tar -czf config_backup_$(date +%Y%m%d).tar.gz config/
 
 #### 2.3 セキュリティ管理
 ```bash
-# === API Key管理 ===
-# 1. 新しいAPI Key生成
-curl -X POST http://localhost:8001/mcp/auth/api-key \
-  -H "Authorization: Bearer admin-token" \
-  -d '{"user_id": "new_user", "permissions": ["read", "write"]}'
-
-# 2. API Key無効化
-curl -X DELETE http://localhost:8001/mcp/auth/api-key/{key_id} \
-  -H "Authorization: Bearer admin-token"
+# === MCP Server セキュリティ管理 ===
+# MCP Serverはstdio経由でのみ通信するため、
+# HTTPベースのAPIは提供されません
 
 # === セキュリティ監査 ===
-# 1. セキュリティイベント確認
-curl -H "Authorization: Bearer admin-token" \
-  http://localhost:8001/mcp/security/events
+# 1. セキュリティログ確認
+tail -f logs/mcp-security.log
 
-# 2. 脅威分析レポート
-curl -H "Authorization: Bearer admin-token" \
-  http://localhost:8001/mcp/security/threats
+# 2. 監査ログ確認
+grep SECURITY logs/mcp-server.log
+
+# 3. 設定ファイルの確認
+cat config/settings.py | grep -i security
 ```
 
 ### 3. 利用者向けドキュメント
@@ -566,13 +556,13 @@ pytest --cov=src tests/
 ### デバッグ
 ```bash
 # デバッグモード起動
-DEBUG=true python start_mcp_server.py
+DEBUG=true python start_mcp_server_unified.py
 
 # ログレベル調整
-LOG_LEVEL=DEBUG python start_mcp_server.py
+LOG_LEVEL=DEBUG python start_mcp_server_unified.py
 
 # パフォーマンス分析
-python -m cProfile start_mcp_server.py
+python -m cProfile start_mcp_server_unified.py
 ```
 
 ## 📊 システム仕様
