@@ -56,17 +56,17 @@ def test_security_manager_import():
         traceback.print_exc()
         return False
 
-def test_phase5_main_imports():
-    """Test if main application imports work"""
+def test_mcp_server_imports():
+    """Test if unified MCP server imports work"""
     try:
-        # Test individual imports that we modified
+        # Test individual imports that we need for the unified server
         from config.settings import settings
-        from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
-        print("✓ FastAPI imports successful")
+        from src.mcp_main import main
+        print("✓ MCP server imports successful")
         
         return True
     except Exception as e:
-        print(f"✗ Phase5 main imports failed: {e}")
+        print(f"✗ MCP server imports failed: {e}")
         traceback.print_exc()
         return False
 
@@ -90,7 +90,7 @@ def main():
     tests = [
         ("Settings Configuration", test_settings_import),
         ("Security Manager", test_security_manager_import),
-        ("Phase5 Main Imports", test_phase5_main_imports),
+        ("MCP Server Imports", test_mcp_server_imports),
         ("Validation Script", test_validation_script),
     ]
     

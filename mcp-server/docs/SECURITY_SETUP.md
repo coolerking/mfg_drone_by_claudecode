@@ -10,8 +10,7 @@
 
 **問題**： JWT シークレットが複数のファイルにハードコードされていた：
 - `security_manager.py`: `jwt_secret: str = "your-secret-key"`
-- `phase5_main.py`: `jwt_secret=os.getenv("JWT_SECRET", "your-secure-secret-key")`
-- `start_phase5_mcp_server.py`: `jwt_secret=os.getenv("JWT_SECRET", "your-secure-secret-key-change-in-production")`
+- MCP統合前の各種サーバーファイル
 
 **修正**: 
 - すべてのハードコードされたフォールバック値を削除
@@ -21,7 +20,7 @@
 
 ### 2. ❌ ログイン認証がハードコードされていた (修正済み ✅)
 
-**問題**: ログイン認証が `phase5_main.py` にハードコードされていた:
+**問題**: ログイン認証がMCP統合前のサーバーファイルにハードコードされていた:
 ```python
 if username == "admin" and password == "admin123":
 elif username == "operator" and password == "operator123":
@@ -105,10 +104,10 @@ cp .env.example .env
 
 ```bash
 # 設定のテスト
-python start_phase5_mcp_server.py --validate-config
+python start_mcp_server_unified.py --validate-config
 
 # ヘルスチェックの実行
-python start_phase5_mcp_server.py --health-check
+python start_mcp_server_unified.py --health-check
 ```
 
 ### ステップ4：セキュリティ実装のテスト
@@ -205,14 +204,14 @@ pytest tests/test_phase5_integration.py -v
 
 1. **弱い JWT 秘密の拒否をテストする：
    ```bash
-   JWT_SECRET="weak" python start_phase5_mcp_server.py --validate-config
+   JWT_SECRET="weak" python start_mcp_server_unified.py --validate-config
    # バリデーションエラーで失敗するはず
    ```
 
 2. **不足している認証情報をテストする**：
    ```bash
    # 全てのユーザー環境バーを削除する
-   python start_phase5_mcp_server.py --validate-config
+   python start_mcp_server_unified.py --validate-config
    # ユーザ設定エラーで失敗するはず
    ``` 
 
