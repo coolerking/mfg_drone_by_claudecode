@@ -372,77 +372,31 @@ python src/mcp_main.py
 
 ## ハイブリッドシステム運用（Phase 3）
 
-### ハイブリッドモードの概要
+### MCPサーバーの起動
 
-Phase 3では、FastAPIサーバーとMCPサーバーを同時に実行できるハイブリッド運用モードを実装しました。
+Phase 3以降では、MCPサーバーは純粋なModel Context Protocolサーバーとして動作します。
 
-### ハイブリッドモードの種類
-
-#### 1. 基本ハイブリッドモード
 ```bash
-# FastAPI Server (ポート8000) + MCP Server
-python start_hybrid_server.py --mode basic
+# MCPサーバーの起動
+python start_mcp_server_unified.py
 
-# または
-python start_mcp_server_unified.py --mode hybrid
+# カスタムログレベルで起動
+python start_mcp_server_unified.py --log-level DEBUG
 ```
 
-#### 2. 拡張ハイブリッドモード
-```bash
-# Enhanced FastAPI Server (ポート8001) + MCP Server
-python start_hybrid_server.py --mode enhanced
+### MCPサーバーの特徴
 
-# または
-python start_mcp_server_unified.py --mode hybrid --enhanced
-```
-
-#### 3. フルハイブリッドモード
-```bash
-# FastAPI + Enhanced FastAPI + MCP Server
-python start_hybrid_server.py --mode full
-
-# または
-python start_mcp_server_unified.py --mode hybrid --full
-```
-
-### ハイブリッドモードの利点
-
-- **HTTP APIとMCPプロトコルの同時提供**: 複数のクライアントタイプに対応
-- **プロセス独立性**: 各サーバーが独立したプロセスで動作
-- **統合監視**: 全サーバーの統合ステータス監視
-- **自動復旧**: プロセス障害時の自動再起動
-- **リソース管理**: CPU、メモリ、ディスクの統合監視
+- **純粋なMCPプロトコル**: Model Context Protocol専用
+- **軽量**: 不要なHTTP API機能を除去
+- **セキュア**: 最小限の攻撃面
+- **統合性**: バックエンドAPIとHTTP経由で通信
 
 ### アクセス方法
-
-#### HTTP API
-- 基本API: `http://localhost:8000`
-- 拡張API: `http://localhost:8001` (拡張・フルモード)
-- APIドキュメント: `http://localhost:8000/docs`, `http://localhost:8001/docs`
 
 #### MCPサーバー
 - 各MCPホスト（Claude Desktop、VS Code、Claude Code、Dify）から利用可能
 - プロトコル: Model Context Protocol (stdio)
-
-### 監視とメトリクス
-
-ハイブリッドモードでは、以下のメトリクスが監視されます：
-
-- **システムメトリクス**: CPU、メモリ、ディスク使用率
-- **サーバー個別メトリクス**: プロセス状態、応答時間、ヘルス状態
-- **アラート機能**: 閾値超過時の自動アラート
-
-### ステータス確認
-
-```bash
-# ハイブリッドシステムのステータス確認
-python start_hybrid_server.py --status
-
-# 統合テストの実行
-python test_hybrid_system.py
-```
-
-詳細については、[HYBRID_SYSTEM_README.md](../HYBRID_SYSTEM_README.md) を参照してください。
+- バックエンドAPI: HTTP経由でbackendシステムと通信
 
 ## 使用例
 
@@ -485,7 +439,6 @@ python test_hybrid_system.py
 - **FAQ**: [FAQ.md](./FAQ.md)
 - **エラーリファレンス**: [error_reference.md](./error_reference.md)
 - **コマンドリファレンス**: [command_reference.md](./command_reference.md)
-- **ハイブリッドシステム**: [HYBRID_SYSTEM_README.md](../HYBRID_SYSTEM_README.md)
 - **GitHub Issues**: [プロジェクトのIssues](https://github.com/coolerking/mfg_drone_by_claudecode/issues)
 
 ---

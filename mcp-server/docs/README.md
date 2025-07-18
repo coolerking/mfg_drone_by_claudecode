@@ -19,7 +19,7 @@
 ### 既存ユーザー
 1. [**FAQ.md**](./FAQ.md) - よくある質問（35問）
 2. [**error_reference.md**](./error_reference.md) - エラー対応（54種類）
-3. [**HYBRID_SYSTEM_README.md**](../HYBRID_SYSTEM_README.md) - ハイブリッドシステム使用方法
+3. [**MCP_SETUP.md**](../MCP_SETUP.md) - MCPサーバーセットアップ方法
 
 ## 📚 ドキュメント一覧
 
@@ -28,7 +28,7 @@
 #### 1. [setup.md](./setup.md) - 詳細セットアップガイド
 **495行 | 4つのMCPホスト対応**
 - Claude Desktop、VS Code、Claude Code、Dify での設定方法
-- ハイブリッドシステム運用方法
+- MCPサーバー運用方法
 - トラブルシューティング
 - セキュリティ設定
 
@@ -81,7 +81,7 @@
 
 ### 🔧 高度なドキュメント
 
-#### 7. [HYBRID_SYSTEM_README.md](../HYBRID_SYSTEM_README.md) - ハイブリッドシステム
+#### 7. [MCP_SETUP.md](../MCP_SETUP.md) - ハイブリッドシステム
 **298行 | Phase 3 - 同時実行システム**
 - 3つのハイブリッドモード
 - プロセス管理
@@ -128,7 +128,7 @@
 ### 🔧 高度な機能
 | 対象 | 文書 | 説明 |
 |------|------|------|
-| ハイブリッドシステム | [HYBRID_SYSTEM_README.md](../HYBRID_SYSTEM_README.md) | 同時実行システム |
+| ハイブリッドシステム | [MCP_SETUP.md](../MCP_SETUP.md) | 同時実行システム |
 | 高度な設定 | [setup.md](./setup.md)#ハイブリッドシステム | ハイブリッド運用 |
 | システムエラー | [error_reference.md](./error_reference.md) | 5000番台システム |
 
@@ -161,7 +161,7 @@
 | 初心者 | [MCP_SETUP.md](../MCP_SETUP.md) | クイックスタート |
 | 開発者 | [setup.md](./setup.md) | 詳細設定 |
 | 管理者 | [SECURITY_SETUP.md](./SECURITY_SETUP.md) | セキュリティ設定 |
-| 運用者 | [HYBRID_SYSTEM_README.md](../HYBRID_SYSTEM_README.md) | ハイブリッドシステム |
+| 運用者 | [MCP_SETUP.md](../MCP_SETUP.md) | ハイブリッドシステム |
 
 ### 🎯 目的別
 | 目的 | 推奨文書 | 重要度 |
@@ -171,7 +171,7 @@
 | 操作方法 | [command_reference.md](./command_reference.md) | 🔴 必須 |
 | 問題解決 | [error_reference.md](./error_reference.md) | 🟡 推奨 |
 | セキュリティ | [SECURITY_SETUP.md](./SECURITY_SETUP.md) | 🟡 推奨 |
-| 高度な運用 | [HYBRID_SYSTEM_README.md](../HYBRID_SYSTEM_README.md) | 🟢 オプション |
+| 高度な運用 | [MCP_SETUP.md](../MCP_SETUP.md) | 🟢 オプション |
 
 ## 🆘 トラブルシューティング
 
@@ -200,7 +200,7 @@
 3. [SECURITY_SETUP.md](./SECURITY_SETUP.md) - セキュリティ設定（1時間）
 
 ### 🥉 上級レベル（推定時間: 3時間）
-1. [HYBRID_SYSTEM_README.md](../HYBRID_SYSTEM_README.md) - ハイブリッドシステム（2時間）
+1. [MCP_SETUP.md](../MCP_SETUP.md) - ハイブリッドシステム（2時間）
 2. [command_reference.md](./command_reference.md) - 高度なコマンド（1時間）
 
 ## 🔄 ドキュメント更新情報

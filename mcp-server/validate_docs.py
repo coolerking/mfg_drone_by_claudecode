@@ -55,7 +55,6 @@ class DocumentValidator:
             "docs/error_reference.md",
             "docs/SECURITY_SETUP.md",
             "MCP_SETUP.md",
-            "HYBRID_SYSTEM_README.md"
         ]
         
         for file_path in required_files:
@@ -116,7 +115,6 @@ class DocumentValidator:
             "docs/error_reference.md",
             "docs/SECURITY_SETUP.md",
             "MCP_SETUP.md",
-            "HYBRID_SYSTEM_README.md"
         ]
         
         for file_path in doc_files:

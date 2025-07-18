@@ -79,4 +79,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8003/mcp/system/health || exit 1
 
 # Default command
-CMD ["python", "start_phase5_mcp_server.py", "--host", "0.0.0.0", "--port", "8003", "--workers", "4"]
+CMD ["python", "start_mcp_server_unified.py", "--host", "0.0.0.0", "--port", "8003", "--workers", "4"]
