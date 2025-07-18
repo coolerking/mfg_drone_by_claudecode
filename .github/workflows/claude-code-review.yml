@@ -59,7 +59,8 @@ jobs:
                 }
               }
             }
-          allowed_tools: '["mcp__sequential-thinking__sequentialthinking", "mcp__perplexity-ask__perplexityask", "Bash(npm install)", "Bash(npm test)", "Bash(npm run test:*)", "Bash(npm run build)", "Bash(npm run lint)", "Bash(pip install *)", "Bash(pytest)", "Bash(pytest *)", "Bash(python -m pytest)", "Bash(tox)", "Bash(cargo test)", "Bash(cargo build)", "Bash(cargo clippy)"]' 
+          allowed_tools: '["mcp__sequential-thinking__sequentialthinking", "mcp__perplexity-ask__perplexityask", "Bash(npm install)", "Bash(npm test)", "Bash(npm run test:*)", "Bash(npm run build)", "Bash(npm run lint)", "Bash(pip install *)", "Bash(pytest)", "Bash(pytest *)", "Bash(python -m pytest)", "Bash(tox)", "Bash(cargo test)", "Bash(cargo build)", "Bash(cargo clippy)", "Bash(git checkout *)", "Bash(git add *)", "Bash(git commit *)", "Bash(git push *)", "Bash(git status)", "Bash(git diff)", "Bash(git branch *)", "Bash(git config *)", "Bash(git rm *)"]'
+          #allowed_tools: '["mcp__sequential-thinking__sequentialthinking", "mcp__perplexity-ask__perplexityask", "Bash(npm install)", "Bash(npm test)", "Bash(npm run test:*)", "Bash(npm run build)", "Bash(npm run lint)", "Bash(pip install *)", "Bash(pytest)", "Bash(pytest *)", "Bash(python -m pytest)", "Bash(tox)", "Bash(cargo test)", "Bash(cargo build)", "Bash(cargo clippy)"]' 
           # Important: Each MCP tool from your server must be listed here, comma-separated
           # ... other inputs
           
