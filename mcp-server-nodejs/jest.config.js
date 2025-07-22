@@ -20,6 +20,10 @@ export default {
     '^@/utils/(.*)$': '<rootDir>/src/utils/$1',
     '^@/services/(.*)$': '<rootDir>/src/services/$1',
     '^@/config/(.*)$': '<rootDir>/src/config/$1',
+    '^@/clients/(.*)$': '<rootDir>/src/clients/$1',
+    '^@/resources/(.*)$': '<rootDir>/src/resources/$1',
+    '^@/security/(.*)$': '<rootDir>/src/security/$1',
+    '^@/tools/(.*)$': '<rootDir>/src/tools/$1',
     '^(\\.{1,2}/.*)\\.js$': '$1'
   },
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
