@@ -27,8 +27,8 @@
 - **テスト**: Vitest, Playwright
 
 ## MCPサーバー
-- **言語**: Python 3.9+
-- **フレームワーク**: FastAPI
+- **Node.js版（推奨）**: TypeScript 5.0+, @modelcontextprotocol/sdk
+- **Python版（レガシー）**: Python 3.9+, FastAPI
 - **機能**: 自然言語処理、Claude統合、バックエンドAPI連携
 
 ## インフラ・運用
@@ -78,6 +78,22 @@ npm run dev
 ```
 
 ### 4. MCPサーバーセットアップ
+
+**Node.js版（推奨・メイン開発対象）**：
+```bash
+cd mcp-server-nodejs
+npm install
+npm run build
+npm start
+
+# 開発モード（ホットリロード）
+npm run dev
+
+# またはnpxで直接実行
+npx mcp-drone-server-nodejs
+```
+
+**Python版（レガシー・保守のみ）**：
 ```bash
 cd mcp-server
 pip install -r requirements.txt
@@ -212,9 +228,14 @@ mfg_drone_by_claudecode/
 │   ├── src/                   # Reactアプリケーション
 │   ├── tests/                 # テストスイート
 │   └── docs/                 # フロントエンド仕様
-├── mcp-server/                # MCPサーバー
+├── mcp-server/                # MCPサーバー（Python版・レガシー）
 │   ├── src/                   # MCPサーバーコード
 │   └── tests/                # テスト
+├── mcp-server-nodejs/         # MCPサーバー（Node.js版・推奨）
+│   ├── src/                   # TypeScriptソースコード
+│   ├── dist/                 # コンパイル済みJavaScript
+│   ├── Dockerfile           # Dockerコンテナ設定
+│   └── package.json         # Node.js依存関係
 ├── shared/                    # 共有リソース
 │   ├── api-specs/            # OpenAPI仕様
 │   └── config/               # 共通設定

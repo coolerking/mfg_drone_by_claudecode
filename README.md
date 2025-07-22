@@ -72,6 +72,19 @@ npm run dev
 ```
 
 #### 4. MCPサーバーのセットアップ（オプション）
+
+**Node.js版（推奨）**：
+```bash
+cd mcp-server-nodejs
+npm install
+npm run build
+npm start
+
+# またはnpxで直接実行
+npx mcp-drone-server-nodejs
+```
+
+**Python版**：
 ```bash
 cd mcp-server
 pip install -r requirements.txt
@@ -215,10 +228,16 @@ mfg_drone_by_claudecode/
 │   │   └── hooks/            # カスタムフック
 │   ├── package.json          # Node.js依存関係
 │   └── docs/                 # フロントエンド仕様
-├── mcp-server/                # MCPサーバー
+├── mcp-server/                # MCPサーバー（Python版）
 │   ├── src/                   # MCPサーバーコード
 │   ├── tests/                # テスト
 │   └── requirements.txt      # Python依存関係
+├── mcp-server-nodejs/         # MCPサーバー（Node.js版・推奨）
+│   ├── src/                   # TypeScriptソースコード
+│   ├── dist/                 # コンパイル済みJavaScript
+│   ├── tests/                # Jest テスト
+│   ├── package.json          # Node.js依存関係
+│   └── Dockerfile           # Dockerコンテナ設定
 ├── shared/                    # 共有リソース
 │   ├── api-specs/            # OpenAPI仕様
 │   └── config/               # 共通設定
@@ -233,7 +252,8 @@ mfg_drone_by_claudecode/
 
 - **backend/api_server/**: FastAPIベースのメインAPIサーバー
 - **frontend/**: React + TypeScriptのWeb管理インターフェース  
-- **mcp-server/**: Claude統合のためのMCPサーバー
+- **mcp-server-nodejs/**: Claude統合のためのMCPサーバー（Node.js版・推奨）
+- **mcp-server/**: Claude統合のためのMCPサーバー（Python版・レガシー）
 - **shared/**: 共通定義・設定ファイル
 
 ## 貢献方法（Contributing）
