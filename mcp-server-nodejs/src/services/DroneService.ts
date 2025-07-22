@@ -38,7 +38,7 @@ export class DroneService {
       const statuses = await this.backendClient.getDroneStatus(droneId);
       
       // キャッシュを更新
-      if (statuses.length === 1 && droneId) {
+      if (statuses.length === 1 && droneId && statuses[0]) {
         this.statusCache.set(cacheKey, {
           data: statuses[0],
           timestamp: now,

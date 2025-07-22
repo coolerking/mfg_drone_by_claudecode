@@ -3,13 +3,23 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
   type CallToolRequest,
   type ListToolsRequest,
+  type ListResourcesRequest,
+  type ReadResourceRequest,
 } from '@modelcontextprotocol/sdk/types.js';
 import { DroneService } from '@/services/DroneService.js';
 import { logger } from '@/utils/logger.js';
 import { ErrorHandler } from '@/utils/errors.js';
 import { type Config, type MCPToolResponse } from '@/types/index.js';
+import { TOOL_MAP, type ToolName } from '@/tools/index.js';
+import { 
+  DroneStatusResource,
+  SystemLogsResource,
+  ConfigurationResource,
+} from '@/resources/index.js';
 
 /**
  * MCP ドローンサーバー
@@ -20,10 +30,15 @@ export class MCPDroneServer {
   private droneService: DroneService;
   private config: Config;
   private isRunning: boolean = false;
+  private tools: Map<string, any>;
+  private resources: Map<string, any>;
 
   constructor(config: Config) {
     this.config = config;
     this.droneService = new DroneService(config);
+    this.tools = new Map();
+    this.resources = new Map();
+    
     this.server = new Server(
       {
         name: 'mcp-drone-server',
@@ -32,11 +47,36 @@ export class MCPDroneServer {
       {
         capabilities: {
           tools: {},
+          resources: {},
         },
       }
     );
 
+    this.initializeToolsAndResources();
     this.setupHandlers();
+  }
+
+  /**
+   * ツールとリソースを初期化
+   */
+  private initializeToolsAndResources(): void {
+    // ツールを初期化
+    for (const [toolName, ToolClass] of Object.entries(TOOL_MAP)) {
+      const toolInstance = new ToolClass(this.droneService);
+      this.tools.set(toolName, toolInstance);
+      logger.debug(`Initialized tool: ${toolName}`);
+    }
+
+    // リソースを初期化
+    const droneStatusResource = new DroneStatusResource(this.droneService);
+    const systemLogsResource = new SystemLogsResource(this.droneService);
+    const configurationResource = new ConfigurationResource(this.droneService, this.config);
+
+    this.resources.set('drone_status', droneStatusResource);
+    this.resources.set('system_logs', systemLogsResource);
+    this.resources.set('configuration', configurationResource);
+
+    logger.info(`Initialized ${this.tools.size} tools and ${this.resources.size} resources`);
   }
 
   /**
@@ -46,47 +86,95 @@ export class MCPDroneServer {
     // List tools handler
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       logger.debug('Received list tools request');
-      return {
-        tools: [
-          {
-            name: 'get_drone_status',
-            description: 'Get the current status of drones. Optionally specify a drone ID.',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                droneId: {
-                  type: 'string',
-                  description: 'Optional drone ID to get status for specific drone',
-                },
+      
+      const tools = [];
+      
+      // 新しいツール（Phase 2で追加）
+      for (const [toolName, toolInstance] of this.tools.entries()) {
+        tools.push({
+          name: toolName,
+          description: toolInstance.getDescription(),
+          inputSchema: toolInstance.getInputSchema(),
+        });
+      }
+      
+      // 既存のレガシーツール（Phase 1からの継承）
+      tools.push(
+        {
+          name: 'get_drone_status',
+          description: 'Get the current status of drones. Optionally specify a drone ID.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              droneId: {
+                type: 'string',
+                description: 'Optional drone ID to get status for specific drone',
               },
             },
           },
-          {
-            name: 'scan_drones',
-            description: 'Scan for available drones on the network.',
-            inputSchema: {
-              type: 'object',
-              properties: {},
-            },
+        },
+        {
+          name: 'scan_drones',
+          description: 'Scan for available drones on the network.',
+          inputSchema: {
+            type: 'object',
+            properties: {},
           },
-          {
-            name: 'health_check',
-            description: 'Check the health status of the drone system.',
-            inputSchema: {
-              type: 'object',
-              properties: {},
-            },
+        },
+        {
+          name: 'health_check',
+          description: 'Check the health status of the drone system.',
+          inputSchema: {
+            type: 'object',
+            properties: {},
           },
-          {
-            name: 'get_system_status',
-            description: 'Get comprehensive system status including all services and drones.',
-            inputSchema: {
-              type: 'object',
-              properties: {},
-            },
+        },
+        {
+          name: 'get_system_status',
+          description: 'Get comprehensive system status including all services and drones.',
+          inputSchema: {
+            type: 'object',
+            properties: {},
           },
-        ],
-      };
+        }
+      );
+      
+      logger.debug(`Returning ${tools.length} tools`);
+      return { tools };
+    });
+
+    // List resources handler
+    this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
+      logger.debug('Received list resources request');
+      
+      const resources = [];
+      for (const [resourceName, resourceInstance] of this.resources.entries()) {
+        resources.push({
+          uri: resourceInstance.getUri(),
+          name: resourceName,
+          description: resourceInstance.getDescription(),
+          mimeType: resourceInstance.getMimeType(),
+        });
+      }
+      
+      logger.debug(`Returning ${resources.length} resources`);
+      return { resources };
+    });
+
+    // Read resource handler
+    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+      const uri = request.params.uri;
+      logger.debug(`Reading resource: ${uri}`);
+      
+      // リソースURI からリソース名を抽出
+      for (const [resourceName, resourceInstance] of this.resources.entries()) {
+        if (resourceInstance.getUri() === uri) {
+          const contents = await resourceInstance.getContents();
+          return contents;
+        }
+      }
+      
+      throw new Error(`Resource not found: ${uri}`);
     });
 
     // Call tool handler
@@ -103,6 +191,14 @@ export class MCPDroneServer {
     try {
       const { name, arguments: args } = request.params;
 
+      // 新しいツール（Phase 2）を優先してチェック
+      if (this.tools.has(name)) {
+        const toolInstance = this.tools.get(name);
+        logger.debug(`Executing Phase 2 tool: ${name}`);
+        return await toolInstance.execute(args);
+      }
+
+      // レガシーツール（Phase 1）のフォールバック
       switch (name) {
         case 'get_drone_status':
           return await this.handleGetDroneStatus(args);
