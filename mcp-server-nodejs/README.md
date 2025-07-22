@@ -9,11 +9,16 @@ Tello EDU ドローン制御システム用のMCP (Model Context Protocol) サ�
 ## 主な機能
 
 - **MCP Protocol対応**: Model Context Protocolを使用したClaude統合
-- **ドローン状態管理**: Tello EDUドローンの状態監視・制御
+- **包括的ドローン制御**: 離陸・着陸・移動・回転・緊急停止
+- **カメラ操作**: 写真撮影・ストリーミング制御
+- **ビジョンAPI**: 物体検出・追跡・データセット管理
+- **モデル管理**: AI学習モデルの作成・管理・学習ジョブ監視
+- **ダッシュボード機能**: システム状態・ドローン群監視
 - **自動スキャン**: ネットワーク上のドローン自動検出
 - **ヘルスチェック**: システム健全性監視
+- **接続テスト**: バックエンドAPI連携の自動検証
 - **TypeScript厳密設定**: 型安全性を重視した実装
-- **包括的テスト**: 単体テスト・統合テストによる品質保証
+- **包括的テスト**: 単体テスト・統合テスト・接続テストによる品質保証
 
 ## 技術スタック
 
@@ -88,6 +93,9 @@ npm run test:watch
 
 # カバレッジレポート
 npm run test:coverage
+
+# バックエンドAPI接続テスト
+npm run test:connection
 ```
 
 ### コード品質チェック
@@ -166,14 +174,16 @@ src/
 ├── clients/                 # 外部API通信
 │   └── BackendClient.ts
 ├── types/                   # 型定義
-│   └── index.ts
+│   ├── index.ts             # 基本型定義
+│   └── api_types.ts         # バックエンドAPI型定義
 ├── utils/                   # ユーティリティ
 │   ├── logger.ts
 │   └── errors.ts
 ├── config/                  # 設定管理
 │   └── index.ts
-└── test/                    # テスト共通設定
-    └── setup.ts
+└── test/                    # テスト関連
+    ├── setup.ts             # テスト共通設定
+    └── connection-test.ts   # バックエンド接続テスト
 ```
 
 ### 主要コンポーネント
@@ -221,6 +231,15 @@ Error: Backend connection failed: http://localhost:8000
 - FastAPIサーバーが起動していることを確認
 - `BACKEND_URL`環境変数が正しく設定されていることを確認
 - ファイアウォールの設定を確認
+
+**接続テストの実行**:
+```bash
+# バックエンドとの接続を包括的にテスト
+npm run test:connection
+
+# 特定のバックエンドURLでテスト
+BACKEND_URL=http://localhost:8001 npm run test:connection
+```
 
 #### 2. MCP SDK エラー
 
