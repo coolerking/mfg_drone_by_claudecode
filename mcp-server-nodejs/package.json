@@ -1,0 +1,62 @@
+{
+  "name": "mcp-drone-server-nodejs",
+  "version": "1.0.0",
+  "description": "MCP (Model Context Protocol) server for drone control with Node.js/TypeScript",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint 'src/**/*.{ts,js}'",
+    "lint:fix": "eslint 'src/**/*.{ts,js}' --fix",
+    "format": "prettier --write 'src/**/*.{ts,js}'",
+    "format:check": "prettier --check 'src/**/*.{ts,js}'",
+    "clean": "rimraf dist",
+    "prestart": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.0",
+    "winston": "^3.11.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.0.0",
+    "rimraf": "^5.0.0",
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "drone",
+    "tello",
+    "typescript",
+    "nodejs"
+  ],
+  "author": "Tasuku Hori",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coolerking/mfg_drone_by_claudecode.git",
+    "directory": "mcp-server-nodejs"
+  }
+}
