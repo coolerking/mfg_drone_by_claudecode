@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { config } from '@/config/index.js';
 import { logger } from '@/utils/logger.js';
 import { MCPDroneServer } from '@/server/MCPDroneServer.js';

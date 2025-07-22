@@ -4,6 +4,14 @@
   "description": "MCP (Model Context Protocol) server for drone control with Node.js/TypeScript",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "mcp-drone-server": "dist/index.js"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "package.json"
+  ],
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
@@ -17,7 +25,11 @@
     "format": "prettier --write 'src/**/*.{ts,js}'",
     "format:check": "prettier --check 'src/**/*.{ts,js}'",
     "clean": "rimraf dist",
-    "prestart": "npm run build"
+    "prestart": "npm run build",
+    "prepublishOnly": "npm run clean && npm run build && npm test",
+    "postinstall": "npm run build",
+    "global-start": "node dist/index.js",
+    "verify-install": "npm run test:connection"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
@@ -67,5 +79,12 @@
     "type": "git",
     "url": "https://github.com/coolerking/mfg_drone_by_claudecode.git",
     "directory": "mcp-server-nodejs"
+  },
+  "bugs": {
+    "url": "https://github.com/coolerking/mfg_drone_by_claudecode/issues"
+  },
+  "homepage": "https://github.com/coolerking/mfg_drone_by_claudecode#readme",
+  "publishConfig": {
+    "access": "public"
   }
 }
