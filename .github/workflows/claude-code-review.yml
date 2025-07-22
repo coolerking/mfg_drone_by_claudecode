@@ -59,7 +59,7 @@ jobs:
                 }
               }
             }
-          allowed_tools: "Bash(*), View, GlobTool, GrepTool, BatchTool, mcp__sequential-thinking__sequentialthinking, mcp__perplexity-ask__perplexity_ask" 
+          allowed_tools: "Bash, View, GlobTool, GrepTool, BatchTool, mcp__sequential-thinking__sequentialthinking, mcp__perplexity-ask__perplexity_ask" 
           
           # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
           # model: "claude-opus-4-20250514"
