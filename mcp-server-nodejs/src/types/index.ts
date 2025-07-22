@@ -58,34 +58,374 @@ export const MCPToolResponseSchema = z.object({
 
 export type MCPToolResponse = z.infer<typeof MCPToolResponseSchema>;
 
-// Error types
-export class DroneError extends Error {
+// Error types with enhanced error handling
+export interface ErrorContext {
+  timestamp: Date;
+  requestId?: string;
+  userId?: string;
+  operation?: string;
+  metadata?: Record<string, any>;
+  stackTrace?: string;
+  correlationId?: string;
+}
+
+export interface ErrorResponse {
+  error: {
+    code: string;
+    message: string;
+    details?: any;
+    timestamp: string;
+    requestId?: string;
+    correlationId?: string;
+  };
+  success: false;
+}
+
+export abstract class BaseError extends Error {
+  public readonly code: string;
+  public readonly statusCode: number;
+  public readonly context: ErrorContext;
+  public readonly retryable: boolean;
+  public readonly userMessage: string;
+
   constructor(
     message: string,
-    public code: string = 'DRONE_ERROR',
-    public statusCode: number = 500
+    code: string,
+    statusCode: number = 500,
+    userMessage?: string,
+    retryable: boolean = false,
+    context?: Partial<ErrorContext>
   ) {
     super(message);
-    this.name = 'DroneError';
+    this.name = this.constructor.name;
+    this.code = code;
+    this.statusCode = statusCode;
+    this.retryable = retryable;
+    this.userMessage = userMessage || message;
+    this.context = {
+      timestamp: new Date(),
+      stackTrace: this.stack,
+      ...context,
+    };
+
+    // Ensure proper prototype chain
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+
+  public toJSON(): ErrorResponse {
+    return {
+      error: {
+        code: this.code,
+        message: this.userMessage,
+        details: this.getDetails(),
+        timestamp: this.context.timestamp.toISOString(),
+        requestId: this.context.requestId,
+        correlationId: this.context.correlationId,
+      },
+      success: false,
+    };
+  }
+
+  public toLogFormat(): Record<string, any> {
+    return {
+      error: this.message,
+      code: this.code,
+      statusCode: this.statusCode,
+      retryable: this.retryable,
+      context: this.context,
+    };
+  }
+
+  protected abstract getDetails(): any;
+}
+
+export class DroneError extends BaseError {
+  constructor(
+    message: string,
+    code: string = 'DRONE_ERROR',
+    statusCode: number = 500,
+    userMessage?: string,
+    public droneId?: string,
+    public droneStatus?: string,
+    context?: Partial<ErrorContext>
+  ) {
+    super(
+      message, 
+      code, 
+      statusCode, 
+      userMessage, 
+      true, // Drone errors are usually retryable
+      { ...context, metadata: { droneId, droneStatus, ...context?.metadata } }
+    );
+  }
+
+  protected getDetails(): any {
+    return {
+      droneId: this.droneId,
+      droneStatus: this.droneStatus,
+    };
   }
 }
 
-export class ValidationError extends Error {
+export class ValidationError extends BaseError {
   constructor(
     message: string,
-    public details?: unknown
+    public validationDetails?: unknown,
+    userMessage?: string,
+    context?: Partial<ErrorContext>
   ) {
-    super(message);
-    this.name = 'ValidationError';
+    super(
+      message, 
+      'VALIDATION_ERROR', 
+      400, 
+      userMessage || '入力データが正しくありません', 
+      false, 
+      context
+    );
+    this.validationDetails = validationDetails;
+  }
+
+  protected getDetails(): any {
+    return {
+      validationDetails: this.validationDetails,
+    };
   }
 }
 
-export class NetworkError extends Error {
+export class NetworkError extends BaseError {
   constructor(
     message: string,
-    public statusCode?: number
+    statusCode?: number,
+    userMessage?: string,
+    public endpoint?: string,
+    public method?: string,
+    context?: Partial<ErrorContext>
   ) {
-    super(message);
-    this.name = 'NetworkError';
+    super(
+      message,
+      'NETWORK_ERROR',
+      statusCode || 500,
+      userMessage || 'ネットワークエラーが発生しました',
+      true, // Network errors are usually retryable
+      { ...context, metadata: { endpoint, method, ...context?.metadata } }
+    );
   }
+
+  protected getDetails(): any {
+    return {
+      endpoint: this.endpoint,
+      method: this.method,
+      statusCode: this.statusCode,
+    };
+  }
+}
+
+export class AuthenticationError extends BaseError {
+  constructor(
+    message: string,
+    userMessage?: string,
+    public authMethod?: string,
+    context?: Partial<ErrorContext>
+  ) {
+    super(
+      message,
+      'AUTHENTICATION_ERROR',
+      401,
+      userMessage || '認証に失敗しました',
+      false,
+      { ...context, metadata: { authMethod, ...context?.metadata } }
+    );
+  }
+
+  protected getDetails(): any {
+    return {
+      authMethod: this.authMethod,
+    };
+  }
+}
+
+export class AuthorizationError extends BaseError {
+  constructor(
+    message: string,
+    userMessage?: string,
+    public requiredPermission?: string,
+    public userRole?: string,
+    context?: Partial<ErrorContext>
+  ) {
+    super(
+      message,
+      'AUTHORIZATION_ERROR',
+      403,
+      userMessage || 'この操作を実行する権限がありません',
+      false,
+      { ...context, metadata: { requiredPermission, userRole, ...context?.metadata } }
+    );
+  }
+
+  protected getDetails(): any {
+    return {
+      requiredPermission: this.requiredPermission,
+      userRole: this.userRole,
+    };
+  }
+}
+
+export class ConfigurationError extends BaseError {
+  constructor(
+    message: string,
+    userMessage?: string,
+    public configKey?: string,
+    public expectedType?: string,
+    context?: Partial<ErrorContext>
+  ) {
+    super(
+      message,
+      'CONFIGURATION_ERROR',
+      500,
+      userMessage || '設定エラーが発生しました',
+      false,
+      { ...context, metadata: { configKey, expectedType, ...context?.metadata } }
+    );
+  }
+
+  protected getDetails(): any {
+    return {
+      configKey: this.configKey,
+      expectedType: this.expectedType,
+    };
+  }
+}
+
+export class TimeoutError extends BaseError {
+  constructor(
+    message: string,
+    public timeoutMs: number,
+    userMessage?: string,
+    public operation?: string,
+    context?: Partial<ErrorContext>
+  ) {
+    super(
+      message,
+      'TIMEOUT_ERROR',
+      408,
+      userMessage || 'タイムアウトしました',
+      true,
+      { ...context, metadata: { timeoutMs, operation, ...context?.metadata } }
+    );
+  }
+
+  protected getDetails(): any {
+    return {
+      timeoutMs: this.timeoutMs,
+      operation: this.operation,
+    };
+  }
+}
+
+export class RateLimitError extends BaseError {
+  constructor(
+    message: string,
+    public limit: number,
+    public windowMs: number,
+    public retryAfterMs?: number,
+    userMessage?: string,
+    context?: Partial<ErrorContext>
+  ) {
+    super(
+      message,
+      'RATE_LIMIT_ERROR',
+      429,
+      userMessage || 'リクエストが多すぎます。しばらくお待ちください',
+      true,
+      { ...context, metadata: { limit, windowMs, retryAfterMs, ...context?.metadata } }
+    );
+  }
+
+  protected getDetails(): any {
+    return {
+      limit: this.limit,
+      windowMs: this.windowMs,
+      retryAfterMs: this.retryAfterMs,
+    };
+  }
+}
+
+export class BusinessLogicError extends BaseError {
+  constructor(
+    message: string,
+    code: string,
+    userMessage?: string,
+    public businessContext?: Record<string, any>,
+    context?: Partial<ErrorContext>
+  ) {
+    super(
+      message,
+      code,
+      422,
+      userMessage || '処理を完了できませんでした',
+      false,
+      { ...context, metadata: { businessContext, ...context?.metadata } }
+    );
+  }
+
+  protected getDetails(): any {
+    return {
+      businessContext: this.businessContext,
+    };
+  }
+}
+
+// Error type guards
+export function isDroneError(error: Error): error is DroneError {
+  return error instanceof DroneError;
+}
+
+export function isValidationError(error: Error): error is ValidationError {
+  return error instanceof ValidationError;
+}
+
+export function isNetworkError(error: Error): error is NetworkError {
+  return error instanceof NetworkError;
+}
+
+export function isAuthenticationError(error: Error): error is AuthenticationError {
+  return error instanceof AuthenticationError;
+}
+
+export function isAuthorizationError(error: Error): error is AuthorizationError {
+  return error instanceof AuthorizationError;
+}
+
+export function isRetryableError(error: Error): boolean {
+  return error instanceof BaseError && error.retryable;
+}
+
+export function isClientError(error: Error): boolean {
+  return error instanceof BaseError && error.statusCode >= 400 && error.statusCode < 500;
+}
+
+export function isServerError(error: Error): boolean {
+  return error instanceof BaseError && error.statusCode >= 500;
+}
+
+// Error factory functions
+export function createDroneError(message: string, droneId?: string): DroneError {
+  return new DroneError(message, 'DRONE_ERROR', 500, undefined, droneId);
+}
+
+export function createValidationError(message: string, details?: unknown): ValidationError {
+  return new ValidationError(message, details);
+}
+
+export function createNetworkError(message: string, endpoint?: string, method?: string): NetworkError {
+  return new NetworkError(message, 500, undefined, endpoint, method);
+}
+
+export function createTimeoutError(operation: string, timeoutMs: number): TimeoutError {
+  return new TimeoutError(
+    `Operation '${operation}' timed out after ${timeoutMs}ms`,
+    timeoutMs,
+    undefined,
+    operation
+  );
 }

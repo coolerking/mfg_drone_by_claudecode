@@ -101,7 +101,7 @@ export class BackendClient {
       const response: AxiosResponse<Drone[]> = await this.client.get('/api/drones');
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.getDrones');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.getDrones' });
       throw handledError;
     }
   }
