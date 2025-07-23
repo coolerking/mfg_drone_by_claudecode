@@ -1,0 +1,40 @@
+# システム品質保証チェック - 品質基準しきい値設定
+# System Quality Assurance Checker - Quality Thresholds Configuration
+
+# パフォーマンス基準
+performance:
+  max_response_time: 2000  # ms - API応答時間の上限
+  min_throughput: 100      # requests/sec - 最小スループット
+  max_memory_usage: 512    # MB - メモリ使用量の上限
+  max_cpu_usage: 80        # % - CPU使用率の上限
+
+# セキュリティ基準
+security:
+  min_ssl_strength: 2048   # bit - SSL暗号化強度の最小値
+  max_open_ports: 10       # ports - 開放ポート数の上限
+  max_security_headers: 5  # headers - セキュリティヘッダー数の上限
+  
+# 可用性・信頼性基準
+reliability:
+  min_uptime: 99.9         # % - 最小稼働率
+  max_error_rate: 1.0      # % - エラー率の上限
+  min_success_rate: 99.0   # % - 最小成功率
+
+# スケーラビリティ基準
+scalability:
+  max_concurrent_users: 100    # users - 最大同時接続ユーザー数
+  max_load_increase: 200       # % - 負荷増大許容値
+
+# APIリクエスト設定
+api:
+  timeout: 5               # seconds - APIリクエストタイムアウト
+  retry_count: 3           # times - リトライ回数
+  retry_delay: 2           # seconds - リトライ間隔（指数バックオフのベース）
+
+# ログ設定
+logging:
+  level: "INFO"            # ログレベル (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/quality_checker.log"
+  max_file_size: 10        # MB - ログファイルの最大サイズ
+  backup_count: 5          # 保持するバックアップファイル数
