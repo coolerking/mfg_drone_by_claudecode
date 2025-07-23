@@ -84,11 +84,11 @@ npm start
 npx mcp-drone-server-nodejs
 ```
 
-**Python版**：
+**Python版（レガシー）**：
 ```bash
 cd mcp-server
 pip install -r requirements.txt
-python start_mcp_server.py
+python start_mcp_server_unified.py
 ```
 
 ### Docker環境での起動
