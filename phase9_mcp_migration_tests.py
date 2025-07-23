@@ -87,7 +87,7 @@ class MCPMigrationTestSuite:
         
         # サーバーURL設定
         self.python_server_url = "http://localhost:8001"
-        self.nodejs_server_url = "http://localhost:8002"
+        self.nodejs_server_url = "http://localhost:3001"
         
         # テスト用データ
         self.test_commands = [
