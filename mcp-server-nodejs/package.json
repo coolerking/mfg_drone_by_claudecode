@@ -5,18 +5,21 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "mcp-drone-server": "dist/index.js",
-    "mcp-drone-server-nodejs": "dist/index.js"
+    "mcp-drone-server": "bin/mcp-drone-server.js",
+    "mcp-drone-server-nodejs": "bin/mcp-drone-server.js"
   },
   "files": [
     "dist/**/*",
+    "src/**/*",
+    "bin/**/*",
+    "tsconfig.json",
     "README.md",
     "package.json"
   ],
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc --noEmitOnError false || true",
-    "start": "tsx dist/index.js",
+    "start": "tsx src/index.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

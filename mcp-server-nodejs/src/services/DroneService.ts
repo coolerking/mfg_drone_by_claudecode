@@ -48,7 +48,7 @@ export class DroneService {
       logger.info(`Retrieved drone status for ${statuses.length} drone(s)`);
       return statuses;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'DroneService.getDroneStatus');
+      const handledError = ErrorHandler.handleError(error, { operation: 'DroneService.getDroneStatus' });
       throw handledError;
     }
   }
@@ -66,7 +66,7 @@ export class DroneService {
       logger.info(`Found ${activeDrones.length} active drones`);
       return activeDrones;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'DroneService.getActiveDrones');
+      const handledError = ErrorHandler.handleError(error, { operation: 'DroneService.getActiveDrones' });
       throw handledError;
     }
   }
@@ -83,9 +83,9 @@ export class DroneService {
       this.clearCache();
       
       logger.info(`Drone scan completed: ${result.message} (found: ${result.found})`);
-      return result;
+      return result as { message: string; found: number; };
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'DroneService.scanForDrones');
+      const handledError = ErrorHandler.handleError(error, { operation: 'DroneService.scanForDrones' });
       throw handledError;
     }
   }
@@ -99,7 +99,7 @@ export class DroneService {
       logger.debug(`System status: ${status.status}`);
       return status;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'DroneService.getSystemStatus');
+      const handledError = ErrorHandler.handleError(error, { operation: 'DroneService.getSystemStatus' });
       throw handledError;
     }
   }
@@ -111,9 +111,9 @@ export class DroneService {
     try {
       const health = await this.backendClient.healthCheck();
       logger.debug(`Health check result: ${health.status}`);
-      return health;
+      return health as { status: string; timestamp: string };
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'DroneService.performHealthCheck');
+      const handledError = ErrorHandler.handleError(error, { operation: 'DroneService.performHealthCheck' });
       throw handledError;
     }
   }
@@ -142,9 +142,9 @@ export class DroneService {
         success: result.success,
       });
 
-      return result;
+      return result as { success: boolean; message: string };
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'DroneService.executeCommand');
+      const handledError = ErrorHandler.handleError(error, { operation: 'DroneService.executeCommand' });
       throw handledError;
     }
   }

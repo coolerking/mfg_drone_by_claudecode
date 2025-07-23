@@ -117,7 +117,7 @@ export class BackendClient {
       const data = response.data;
       return Array.isArray(data) ? data : [data];
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.getDroneStatus');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.getDroneStatus' });
       throw handledError;
     }
   }
@@ -131,7 +131,7 @@ export class BackendClient {
         await this.client.post(`/api/drones/${droneId}/connect`);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.connectDrone');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.connectDrone' });
       throw handledError;
     }
   }
@@ -145,7 +145,7 @@ export class BackendClient {
         await this.client.post(`/api/drones/${droneId}/disconnect`);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.disconnectDrone');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.disconnectDrone' });
       throw handledError;
     }
   }
@@ -159,7 +159,7 @@ export class BackendClient {
         await this.client.post(`/api/drones/${droneId}/takeoff`);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.takeoffDrone');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.takeoffDrone' });
       throw handledError;
     }
   }
@@ -173,7 +173,7 @@ export class BackendClient {
         await this.client.post(`/api/drones/${droneId}/land`);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.landDrone');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.landDrone' });
       throw handledError;
     }
   }
@@ -187,7 +187,7 @@ export class BackendClient {
         await this.client.post(`/api/drones/${droneId}/move`, command);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.moveDrone');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.moveDrone' });
       throw handledError;
     }
   }
@@ -201,7 +201,7 @@ export class BackendClient {
         await this.client.post(`/api/drones/${droneId}/rotate`, command);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.rotateDrone');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.rotateDrone' });
       throw handledError;
     }
   }
@@ -215,7 +215,7 @@ export class BackendClient {
         await this.client.post(`/api/drones/${droneId}/emergency`);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.emergencyStopDrone');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.emergencyStopDrone' });
       throw handledError;
     }
   }
@@ -229,7 +229,7 @@ export class BackendClient {
         await this.client.post('/api/drones/scan');
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.scanDrones');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.scanDrones' });
       throw handledError;
     }
   }
@@ -247,7 +247,7 @@ export class BackendClient {
         await this.client.post(`/api/drones/${droneId}/camera/stream/start`);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.startCameraStream');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.startCameraStream' });
       throw handledError;
     }
   }
@@ -261,7 +261,7 @@ export class BackendClient {
         await this.client.post(`/api/drones/${droneId}/camera/stream/stop`);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.stopCameraStream');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.stopCameraStream' });
       throw handledError;
     }
   }
@@ -275,7 +275,7 @@ export class BackendClient {
         await this.client.post(`/api/drones/${droneId}/camera/photo`);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.takePhoto');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.takePhoto' });
       throw handledError;
     }
   }
@@ -293,7 +293,7 @@ export class BackendClient {
         await this.client.get('/api/system/health');
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.healthCheck');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.healthCheck' });
       throw handledError;
     }
   }
@@ -306,7 +306,7 @@ export class BackendClient {
       const response: AxiosResponse<SystemStatus> = await this.client.get('/api/system/status');
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.getSystemStatus');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.getSystemStatus' });
       throw handledError;
     }
   }
@@ -323,7 +323,7 @@ export class BackendClient {
         });
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.executeCommand');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.executeCommand' });
       throw handledError;
     }
   }
@@ -340,7 +340,7 @@ export class BackendClient {
       const response: AxiosResponse<Dataset[]> = await this.client.get('/api/vision/datasets');
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.getDatasets');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.getDatasets' });
       throw handledError;
     }
   }
@@ -354,7 +354,7 @@ export class BackendClient {
         await this.client.post('/api/vision/datasets', request);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.createDataset');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.createDataset' });
       throw handledError;
     }
   }
@@ -368,7 +368,7 @@ export class BackendClient {
         await this.client.get(`/api/vision/datasets/${datasetId}`);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.getDataset');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.getDataset' });
       throw handledError;
     }
   }
@@ -382,7 +382,7 @@ export class BackendClient {
         await this.client.delete(`/api/vision/datasets/${datasetId}`);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.deleteDataset');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.deleteDataset' });
       throw handledError;
     }
   }
@@ -400,7 +400,7 @@ export class BackendClient {
         });
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.addImageToDataset');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.addImageToDataset' });
       throw handledError;
     }
   }
@@ -414,7 +414,7 @@ export class BackendClient {
         await this.client.post('/api/vision/detection', request);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.detectObjects');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.detectObjects' });
       throw handledError;
     }
   }
@@ -428,7 +428,7 @@ export class BackendClient {
         await this.client.post('/api/vision/tracking/start', request);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.startTracking');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.startTracking' });
       throw handledError;
     }
   }
@@ -442,7 +442,7 @@ export class BackendClient {
         await this.client.post('/api/vision/tracking/stop');
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.stopTracking');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.stopTracking' });
       throw handledError;
     }
   }
@@ -456,7 +456,7 @@ export class BackendClient {
         await this.client.get('/api/vision/tracking/status');
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.getTrackingStatus');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.getTrackingStatus' });
       throw handledError;
     }
   }
@@ -473,7 +473,7 @@ export class BackendClient {
       const response: AxiosResponse<Model[]> = await this.client.get('/api/models');
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.getModels');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.getModels' });
       throw handledError;
     }
   }
@@ -487,7 +487,7 @@ export class BackendClient {
         await this.client.post('/api/models', request);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.trainModel');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.trainModel' });
       throw handledError;
     }
   }
@@ -501,7 +501,7 @@ export class BackendClient {
         await this.client.get(`/api/models/${modelId}`);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.getModel');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.getModel' });
       throw handledError;
     }
   }
@@ -515,7 +515,7 @@ export class BackendClient {
         await this.client.delete(`/api/models/${modelId}`);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.deleteModel');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.deleteModel' });
       throw handledError;
     }
   }
@@ -529,7 +529,7 @@ export class BackendClient {
         await this.client.get(`/api/models/training/${jobId}`);
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.getTrainingJob');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.getTrainingJob' });
       throw handledError;
     }
   }
@@ -547,7 +547,7 @@ export class BackendClient {
         await this.client.get('/api/dashboard/drones');
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.getDashboardDrones');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.getDashboardDrones' });
       throw handledError;
     }
   }
@@ -561,7 +561,7 @@ export class BackendClient {
         await this.client.get('/api/dashboard/system');
       return response.data;
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'BackendClient.getDashboardSystemStatus');
+      const handledError = ErrorHandler.handleError(error, { operation: 'BackendClient.getDashboardSystemStatus' });
       throw handledError;
     }
   }

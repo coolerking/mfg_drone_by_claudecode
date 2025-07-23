@@ -216,7 +216,7 @@ export class MCPDroneServer {
           throw new Error(`Unknown tool: ${name}`);
       }
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'MCPDroneServer.handleToolCall');
+      const handledError = ErrorHandler.handleError(error, { operation: 'MCPDroneServer.handleToolCall' });
       
       return {
         content: [
@@ -350,7 +350,7 @@ export class MCPDroneServer {
       logger.info('MCP Drone Server started successfully');
       
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'MCPDroneServer.start');
+      const handledError = ErrorHandler.handleError(error, { operation: 'MCPDroneServer.start' });
       throw handledError;
     }
   }
@@ -370,7 +370,7 @@ export class MCPDroneServer {
       this.isRunning = false;
       logger.info('MCP Drone Server stopped successfully');
     } catch (error) {
-      const handledError = ErrorHandler.handleError(error, 'MCPDroneServer.stop');
+      const handledError = ErrorHandler.handleError(error, { operation: 'MCPDroneServer.stop' });
       throw handledError;
     }
   }

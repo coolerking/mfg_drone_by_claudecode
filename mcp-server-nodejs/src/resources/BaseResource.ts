@@ -52,7 +52,7 @@ export abstract class BaseResource {
    * エラー処理
    */
   protected handleError(error: unknown): MCPResourceResponse {
-    const handledError = ErrorHandler.handleError(error, `${this.resourceName}.getContents`);
+    const handledError = ErrorHandler.handleError(error, { operation: `${this.resourceName}.getContents` });
     
     return {
       contents: [
