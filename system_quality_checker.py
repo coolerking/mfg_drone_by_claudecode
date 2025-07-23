@@ -23,6 +23,8 @@ import sys
 import os
 import psutil
 import aiofiles
+import logging
+import yaml
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
@@ -76,35 +78,204 @@ class QualityReport:
 class SystemQualityChecker:
     """システム品質保証チェックツール"""
     
-    def __init__(self):
-        self.mcp_server_url = "http://localhost:8001"
-        self.backend_api_url = "http://localhost:8000"
-        self.frontend_url = "http://localhost:3000"
+    def __init__(self, mcp_mode: str = "auto"):
+        """
+        初期化
+        
+        Args:
+            mcp_mode: MCPサーバーモード 
+                     - "python": Python MCPサーバー（HTTP API、ポート8001）
+                     - "nodejs": Node.js MCPサーバー（バックエンドAPI経由、ポート8000）
+                     - "auto": 環境変数 MCP_MODE から自動判定
+        """
+        # ログ設定の初期化
+        self._setup_logging()
+        self.logger = logging.getLogger(__name__)
+        
+        # 設定ファイルの読み込み
+        self.config = self._load_config()
+        
+        # 環境変数からモード設定を取得
+        if mcp_mode == "auto":
+            self.mcp_mode = os.environ.get("MCP_MODE", "nodejs").lower()
+        else:
+            self.mcp_mode = mcp_mode.lower()
+        
+        # 共通設定
+        self.backend_port = int(os.environ.get("BACKEND_PORT", "8000"))
+        self.backend_api_url = f"http://localhost:{self.backend_port}"
+        self.frontend_port = int(os.environ.get("FRONTEND_PORT", "3000"))
+        self.frontend_url = f"http://localhost:{self.frontend_port}"
+        
+        # モード別URL設定
+        if self.mcp_mode == "python":
+            # Python MCPサーバー: 直接HTTP API
+            self.mcp_server_port = int(os.environ.get("MCP_PYTHON_PORT", "8001"))
+            self.mcp_server_url = f"http://localhost:{self.mcp_server_port}"
+            self.test_endpoints_mode = "python_mcp"
+            self.logger.info(f"🐍 Python MCPサーバーモード: {self.mcp_server_url}")
+        else:
+            # Node.js MCPサーバー: バックエンドAPI経由でテスト
+            self.mcp_server_url = self.backend_api_url  # Node.js MCPはバックエンド経由
+            self.test_endpoints_mode = "nodejs_backend"
+            self.logger.info(f"🟢 Node.js MCPサーバーモード（バックエンド経由）: {self.backend_api_url}")
         
         self.report = QualityReport()
         
-        # 品質基準しきい値
-        self.quality_thresholds = {
-            # パフォーマンス基準
-            "max_response_time": 2000,  # ms
-            "min_throughput": 100,  # requests/sec
-            "max_memory_usage": 512,  # MB
-            "max_cpu_usage": 80,  # %
-            
-            # セキュリティ基準
-            "min_ssl_strength": 2048,  # bit
-            "max_open_ports": 10,
-            "max_security_headers": 5,
-            
-            # 可用性基準
-            "min_uptime": 99.9,  # %
-            "max_error_rate": 1.0,  # %
-            "min_success_rate": 99.0,  # %
-            
-            # スケーラビリティ基準
-            "max_concurrent_users": 100,
-            "max_load_increase": 200,  # %
+        # 外部設定ファイルから品質基準しきい値を読み込み
+        self.quality_thresholds = self._load_quality_thresholds()
+    
+    def _setup_logging(self):
+        """ログ設定の初期化"""
+        # ログディレクトリの作成
+        log_dir = Path("logs")
+        log_dir.mkdir(exist_ok=True)
+        
+        # ログフォーマットの設定
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        
+        # ファイルハンドラーの設定
+        file_handler = logging.FileHandler(
+            log_dir / "quality_checker.log",
+            encoding='utf-8'
+        )
+        file_handler.setFormatter(formatter)
+        file_handler.setLevel(logging.INFO)
+        
+        # コンソールハンドラーの設定
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        console_handler.setLevel(logging.WARNING)
+        
+        # ルートロガーの設定
+        logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
+        logger.addHandler(file_handler)
+        logger.addHandler(console_handler)
+    
+    def _load_config(self) -> Dict[str, Any]:
+        """設定ファイルの読み込み"""
+        config_path = Path("config/quality_thresholds.yaml")
+        if config_path.exists():
+            try:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    return yaml.safe_load(f)
+            except Exception as e:
+                print(f"⚠️ 設定ファイル読み込みエラー: {str(e)}")
+                return self._get_default_config()
+        else:
+            print(f"⚠️ 設定ファイルが見つかりません: {config_path}")
+            return self._get_default_config()
+    
+    def _get_default_config(self) -> Dict[str, Any]:
+        """デフォルト設定の取得"""
+        return {
+            "performance": {
+                "max_response_time": 2000,
+                "min_throughput": 100,
+                "max_memory_usage": 512,
+                "max_cpu_usage": 80
+            },
+            "security": {
+                "min_ssl_strength": 2048,
+                "max_open_ports": 10,
+                "max_security_headers": 5
+            },
+            "reliability": {
+                "min_uptime": 99.9,
+                "max_error_rate": 1.0,
+                "min_success_rate": 99.0
+            },
+            "scalability": {
+                "max_concurrent_users": 100,
+                "max_load_increase": 200
+            },
+            "api": {
+                "timeout": 5,
+                "retry_count": 3,
+                "retry_delay": 2
+            }
         }
+    
+    def _load_quality_thresholds(self) -> Dict[str, Any]:
+        """品質基準しきい値の読み込み"""
+        thresholds = {}
+        
+        # 設定ファイルから値を取得
+        perf = self.config.get("performance", {})
+        sec = self.config.get("security", {})
+        rel = self.config.get("reliability", {})
+        scale = self.config.get("scalability", {})
+        
+        # フラット構造に変換（既存コードとの互換性のため）
+        thresholds.update({
+            "max_response_time": perf.get("max_response_time", 2000),
+            "min_throughput": perf.get("min_throughput", 100),
+            "max_memory_usage": perf.get("max_memory_usage", 512),
+            "max_cpu_usage": perf.get("max_cpu_usage", 80),
+            "min_ssl_strength": sec.get("min_ssl_strength", 2048),
+            "max_open_ports": sec.get("max_open_ports", 10),
+            "max_security_headers": sec.get("max_security_headers", 5),
+            "min_uptime": rel.get("min_uptime", 99.9),
+            "max_error_rate": rel.get("max_error_rate", 1.0),
+            "min_success_rate": rel.get("min_success_rate", 99.0),
+            "max_concurrent_users": scale.get("max_concurrent_users", 100),
+            "max_load_increase": scale.get("max_load_increase", 200)
+        })
+        
+        return thresholds
+    
+    def _get_endpoints_for_mode(self) -> List[str]:
+        """モードに応じたテスト対象エンドポイントを取得"""
+        if self.test_endpoints_mode == "python_mcp":
+            # Python MCPサーバー: 直接MCPエンドポイント + バックエンドAPI
+            return [
+                f"{self.mcp_server_url}/mcp/system/health",
+                f"{self.mcp_server_url}/mcp/drones",
+                f"{self.backend_api_url}/api/drones",
+                f"{self.backend_api_url}/api/system/status",
+            ]
+        else:
+            # Node.js MCPサーバー: バックエンドAPIのみ（MCPサーバーは stdio 通信）
+            return [
+                f"{self.mcp_server_url}/api/system/health",
+                f"{self.mcp_server_url}/api/system/status", 
+                f"{self.mcp_server_url}/api/drones",
+                f"{self.mcp_server_url}/api/drones/scan",
+            ]
+    
+    async def _retry_request(self, session: aiohttp.ClientSession, 
+                           endpoint: str, method: str = "GET", 
+                           json_data: Optional[Dict] = None) -> Optional[aiohttp.ClientResponse]:
+        """リトライ機能付きAPIリクエスト"""
+        api_config = self.config.get("api", {})
+        max_retries = api_config.get("retry_count", 3)
+        base_delay = api_config.get("retry_delay", 2)
+        timeout = api_config.get("timeout", 5)
+        
+        for attempt in range(max_retries):
+            try:
+                if method.upper() == "GET":
+                    response = await session.get(endpoint, timeout=timeout)
+                elif method.upper() == "POST":
+                    response = await session.post(endpoint, json=json_data, timeout=timeout)
+                else:
+                    raise ValueError(f"Unsupported HTTP method: {method}")
+                
+                return response
+                
+            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                if attempt == max_retries - 1:
+                    self.logger.warning(f"API request failed after {max_retries} attempts: {endpoint} - {str(e)}")
+                    raise
+                
+                delay = base_delay * (2 ** attempt)  # 指数バックオフ
+                self.logger.debug(f"Request failed (attempt {attempt + 1}), retrying in {delay}s: {str(e)}")
+                await asyncio.sleep(delay)
+        
+        return None
     
     async def run_quality_assessment(self) -> QualityReport:
         """品質保証の総合評価"""
@@ -147,14 +318,9 @@ class SystemQualityChecker:
     
     async def _measure_api_response_time(self):
         """API応答時間測定"""
-        print("  📊 API応答時間測定...")
+        print(f"  📊 API応答時間測定 ({self.mcp_mode}モード)...")
         
-        endpoints = [
-            f"{self.mcp_server_url}/mcp/system/health",
-            f"{self.mcp_server_url}/mcp/drones",
-            f"{self.backend_api_url}/api/drones",
-            f"{self.backend_api_url}/api/system/status",
-        ]
+        endpoints = self._get_endpoints_for_mode()
         
         all_response_times = []
         
@@ -166,12 +332,19 @@ class SystemQualityChecker:
                 for _ in range(10):
                     start_time = time.time()
                     try:
-                        async with session.get(endpoint, timeout=5) as response:
+                        response = await self._retry_request(session, endpoint, "GET")
+                        if response:
                             response_time = (time.time() - start_time) * 1000  # ms
                             response_times.append(response_time)
                             all_response_times.append(response_time)
-                    except Exception as e:
+                            response.close()
+                    except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                        self.logger.warning(f"API access failed for {endpoint}: {str(e)}")
                         print(f"    ⚠️ {endpoint}: アクセスエラー ({str(e)})")
+                        continue
+                    except Exception as e:
+                        self.logger.error(f"Unexpected error for {endpoint}: {str(e)}")
+                        print(f"    ❌ {endpoint}: 予期しないエラー ({str(e)})")
                         continue
                 
                 if response_times:
@@ -208,7 +381,9 @@ class SystemQualityChecker:
         """スループット測定"""
         print("  🚀 スループット測定...")
         
-        endpoint = f"{self.mcp_server_url}/mcp/system/health"
+        endpoints = self._get_endpoints_for_mode()
+        endpoint = endpoints[0]  # 最初のエンドポイントを使用
+        
         duration = 10  # 10秒間測定
         request_count = 0
         
@@ -217,10 +392,12 @@ class SystemQualityChecker:
             
             while time.time() - start_time < duration:
                 try:
-                    async with session.get(endpoint) as response:
-                        if response.status == 200:
-                            request_count += 1
-                except:
+                    response = await self._retry_request(session, endpoint, "GET")
+                    if response and response.status == 200:
+                        request_count += 1
+                        response.close()
+                except Exception as e:
+                    self.logger.debug(f"Throughput test request failed: {str(e)}")
                     pass
         
         throughput = request_count / duration
@@ -293,7 +470,9 @@ class SystemQualityChecker:
         """並行処理性能測定"""
         print("  🔄 並行処理性能測定...")
         
-        endpoint = f"{self.mcp_server_url}/mcp/system/health"
+        endpoints = self._get_endpoints_for_mode()
+        endpoint = endpoints[0]  # 最初のエンドポイントを使用
+            
         concurrent_users = [10, 25, 50, 100]
         
         for users in concurrent_users:
@@ -332,9 +511,14 @@ class SystemQualityChecker:
     async def _make_concurrent_request(self, session: aiohttp.ClientSession, endpoint: str):
         """並行リクエスト実行"""
         try:
-            async with session.get(endpoint, timeout=5) as response:
-                return response.status == 200
-        except:
+            response = await self._retry_request(session, endpoint, "GET")
+            if response:
+                status_ok = response.status == 200
+                response.close()
+                return status_ok
+            return False
+        except Exception as e:
+            self.logger.debug(f"Concurrent request failed: {str(e)}")
             return False
     
     async def _check_security_quality(self):
@@ -384,10 +568,16 @@ class SystemQualityChecker:
         print("  🔑 認証・認可セキュリティチェック...")
         
         # 認証なしアクセステスト
-        protected_endpoints = [
-            f"{self.mcp_server_url}/mcp/command",
-            f"{self.mcp_server_url}/mcp/drones",
-        ]
+        if self.test_endpoints_mode == "python_mcp":
+            protected_endpoints = [
+                f"{self.mcp_server_url}/mcp/command",
+                f"{self.mcp_server_url}/mcp/drones",
+            ]
+        else:
+            protected_endpoints = [
+                f"{self.mcp_server_url}/api/drones/scan",
+                f"{self.mcp_server_url}/api/vision/detection",
+            ]
         
         async with aiohttp.ClientSession() as session:
             for endpoint in protected_endpoints:
@@ -419,11 +609,13 @@ class SystemQualityChecker:
             "Content-Security-Policy"
         ]
         
-        endpoint = f"{self.mcp_server_url}/mcp/system/health"
+        endpoints = self._get_endpoints_for_mode()
+        endpoint = endpoints[0]  # 最初のエンドポイントを使用
         
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(endpoint) as response:
+                response = await self._retry_request(session, endpoint, "GET")
+                if response:
                     missing_headers = []
                     present_headers = []
                     
@@ -444,6 +636,7 @@ class SystemQualityChecker:
                             description=f"推奨セキュリティヘッダーが不足: {', '.join(missing_headers)}",
                             recommendation="セキュリティヘッダーを追加して、XSS、クリックジャッキング等の攻撃を防止してください"
                         ))
+                    response.close()
         except Exception as e:
             print(f"    ❌ セキュリティヘッダーチェックエラー: {str(e)}")
     
@@ -456,7 +649,7 @@ class SystemQualityChecker:
         
         for port in common_ports:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(1)
+            sock.settimeout(3)  # タイムアウトを3秒に延長
             result = sock.connect_ex(('localhost', port))
             if result == 0:
                 open_ports.append(port)
@@ -496,7 +689,11 @@ class SystemQualityChecker:
             "{{7*7}}"  # Template injection
         ]
         
-        endpoint = f"{self.mcp_server_url}/mcp/command"
+        if self.test_endpoints_mode == "python_mcp":
+            endpoint = f"{self.mcp_server_url}/mcp/command"
+        else:
+            # Node.js版の場合はバックエンドAPIの入力検証をテスト
+            endpoint = f"{self.mcp_server_url}/api/drones/scan"
         
         async with aiohttp.ClientSession() as session:
             for malicious_input in malicious_inputs:
@@ -528,10 +725,7 @@ class SystemQualityChecker:
         """可用性テスト"""
         print("  📈 可用性テスト...")
         
-        endpoints = [
-            f"{self.mcp_server_url}/mcp/system/health",
-            f"{self.backend_api_url}/api/system/status",
-        ]
+        endpoints = self._get_endpoints_for_mode()[:2]  # 最初の2つのエンドポイントを使用
         
         total_requests = 0
         successful_requests = 0
@@ -541,10 +735,12 @@ class SystemQualityChecker:
                 for _ in range(20):  # 各エンドポイント20回テスト
                     total_requests += 1
                     try:
-                        async with session.get(endpoint, timeout=5) as response:
-                            if response.status == 200:
-                                successful_requests += 1
-                    except:
+                        response = await self._retry_request(session, endpoint, "GET")
+                        if response and response.status == 200:
+                            successful_requests += 1
+                            response.close()
+                    except Exception as e:
+                        self.logger.debug(f"Availability test request failed: {str(e)}")
                         pass
         
         availability = (successful_requests / total_requests) * 100 if total_requests > 0 else 0
@@ -634,7 +830,9 @@ class SystemQualityChecker:
         """負荷スケーラビリティテスト"""
         print("  ⚡ 負荷スケーラビリティテスト...")
         
-        endpoint = f"{self.mcp_server_url}/mcp/system/health"
+        endpoints = self._get_endpoints_for_mode()
+        endpoint = endpoints[0]  # 最初のエンドポイントを使用
+            
         base_load = 10
         max_load = 100
         
@@ -680,7 +878,9 @@ class SystemQualityChecker:
         initial_memory = psutil.virtual_memory().used
         
         # 簡易的な負荷をかける
-        endpoint = f"{self.mcp_server_url}/mcp/system/health"
+        endpoints = self._get_endpoints_for_mode()
+        endpoint = endpoints[0]  # 最初のエンドポイントを使用
+        
         async with aiohttp.ClientSession() as session:
             tasks = [self._make_concurrent_request(session, endpoint) for _ in range(200)]
             await asyncio.gather(*tasks)
@@ -798,31 +998,34 @@ class SystemQualityChecker:
         """APIレスポンス整合性チェック"""
         print("  🔍 APIレスポンス整合性チェック...")
         
-        endpoint = f"{self.mcp_server_url}/mcp/system/health"
+        endpoints = self._get_endpoints_for_mode()
+        endpoint = endpoints[0]  # 最初のエンドポイントを使用
         
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(endpoint) as response:
-                    if response.status == 200:
-                        data = await response.json()
+                response = await self._retry_request(session, endpoint, "GET")
+                if response and response.status == 200:
+                    data = await response.json()
                         
-                        # 必須フィールドの確認
-                        required_fields = ["status", "checks", "timestamp"]
-                        missing_fields = [field for field in required_fields if field not in data]
-                        
-                        if not missing_fields:
-                            print(f"    ✅ APIレスポンス整合性: 正常")
-                        else:
-                            print(f"    ❌ APIレスポンス整合性: 不足フィールド {missing_fields}")
-                            self.report.issues.append(QualityIssue(
-                                severity="MEDIUM",
-                                category="Data Integrity",
-                                title="APIレスポンス形式の不整合",
-                                description=f"必須フィールドが不足: {missing_fields}",
-                                recommendation="APIレスポンス形式を仕様に合わせて修正してください"
-                            ))
+                    # 必須フィールドの確認
+                    required_fields = ["status", "checks", "timestamp"]
+                    missing_fields = [field for field in required_fields if field not in data]
+                    
+                    if not missing_fields:
+                        print(f"    ✅ APIレスポンス整合性: 正常")
                     else:
-                        print(f"    ⚠️ APIレスポンス取得失敗: HTTP {response.status}")
+                        print(f"    ❌ APIレスポンス整合性: 不足フィールド {missing_fields}")
+                        self.report.issues.append(QualityIssue(
+                            severity="MEDIUM",
+                            category="Data Integrity",
+                            title="APIレスポンス形式の不整合",
+                            description=f"必須フィールドが不足: {missing_fields}",
+                            recommendation="APIレスポンス形式を仕様に合わせて修正してください"
+                        ))
+                    response.close()
+                elif response:
+                    print(f"    ⚠️ APIレスポンス取得失敗: HTTP {response.status}")
+                    response.close()
         except Exception as e:
             print(f"    ❌ APIレスポンス整合性チェックエラー: {str(e)}")
     
@@ -914,14 +1117,58 @@ class SystemQualityChecker:
         print("\n" + "=" * 80)
 
 
+def print_usage():
+    """使用方法を表示"""
+    print("""
+🎯 システム品質保証チェックツール
+MCP Drone Control System - System Quality Assurance Checker
+
+使用方法:
+  python system_quality_checker.py [mode]
+
+モード:
+  python    Python MCPサーバー（HTTP API、ポート8001）をテスト
+  nodejs    Node.js MCPサーバー（バックエンドAPI経由、ポート8000）をテスト  
+  auto      環境変数 MCP_MODE から自動判定（デフォルト: nodejs）
+
+環境変数:
+  MCP_MODE           MCPサーバーモード (python/nodejs)
+  MCP_PYTHON_PORT    Python MCPサーバーポート (デフォルト: 8001)
+  BACKEND_PORT       バックエンドAPIポート (デフォルト: 8000)
+  FRONTEND_PORT      フロントエンドポート (デフォルト: 3000)
+
+使用例:
+  # Node.js MCPサーバーをテスト（デフォルト）
+  python system_quality_checker.py
+  python system_quality_checker.py nodejs
+  
+  # Python MCPサーバーをテスト
+  python system_quality_checker.py python
+  
+  # 環境変数で設定
+  export MCP_MODE=nodejs && python system_quality_checker.py
+  export BACKEND_PORT=8080 && python system_quality_checker.py nodejs
+    """)
+
+
 async def main():
     """メイン実行関数"""
+    # ヘルプ表示チェック
+    if len(sys.argv) > 1 and sys.argv[1] in ['-h', '--help', 'help']:
+        print_usage()
+        return
+    
     print("🎯 システム品質保証チェックツール")
     print("MCP Drone Control System - System Quality Assurance Checker")
     print("=" * 80)
     
+    # コマンドライン引数からモード取得
+    mcp_mode = "auto"
+    if len(sys.argv) > 1:
+        mcp_mode = sys.argv[1]
+    
     # 品質チェッカー初期化
-    checker = SystemQualityChecker()
+    checker = SystemQualityChecker(mcp_mode=mcp_mode)
     
     # 品質評価実行
     report = await checker.run_quality_assessment()
