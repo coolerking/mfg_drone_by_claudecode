@@ -94,7 +94,7 @@ class Phase6ComprehensiveTestSuite:
         self.test_cases = []
         
         # テスト対象URLs
-        self.mcp_server_url = "http://localhost:8001"
+        self.mcp_server_url = "http://localhost:3001"
         self.backend_api_url = "http://localhost:8000"
         self.frontend_url = "http://localhost:3000"
         

@@ -71,7 +71,7 @@ class MCPPerformanceBenchmark:
         
         # サーバーURL設定
         self.python_server_url = "http://localhost:8001"
-        self.nodejs_server_url = "http://localhost:8002"
+        self.nodejs_server_url = "http://localhost:3001"
         
         # ベンチマーク設定
         self.benchmark_config = {

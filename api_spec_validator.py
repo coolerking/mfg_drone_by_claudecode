@@ -61,7 +61,7 @@ class ApiSpecValidationReport:
 class ApiSpecValidator:
     """API仕様適合性検証ツール"""
     
-    def __init__(self, spec_file: Path, base_url: str = "http://localhost:8001"):
+    def __init__(self, spec_file: Path, base_url: str = "http://localhost:3001"):
         self.spec_file = spec_file
         self.base_url = base_url
         self.spec_data = None
