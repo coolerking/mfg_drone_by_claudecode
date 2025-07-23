@@ -238,7 +238,7 @@ Error: Backend connection failed: http://localhost:8000
 npm run test:connection
 
 # 特定のバックエンドURLでテスト
-BACKEND_URL=http://localhost:8001 npm run test:connection
+BACKEND_URL=http://localhost:8000 npm run test:connection
 ```
 
 #### 2. MCP SDK エラー

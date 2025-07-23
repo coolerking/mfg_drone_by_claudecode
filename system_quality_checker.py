@@ -115,10 +115,14 @@ class SystemQualityChecker:
             self.test_endpoints_mode = "python_mcp"
             self.logger.info(f"🐍 Python MCPサーバーモード: {self.mcp_server_url}")
         else:
-            # Node.js MCPサーバー: バックエンドAPI経由でテスト
-            self.mcp_server_url = self.backend_api_url  # Node.js MCPはバックエンド経由
+            # Node.js MCPサーバー: 直接接続またはバックエンドAPI経由
+            self.mcp_nodejs_port = int(os.environ.get("MCP_NODEJS_PORT", "3001"))
+            self.mcp_nodejs_url = f"http://localhost:{self.mcp_nodejs_port}"
+            
+            # Node.js MCPの場合、バックエンドAPI経由でテスト（stdio通信のため）
+            self.mcp_server_url = self.backend_api_url
             self.test_endpoints_mode = "nodejs_backend"
-            self.logger.info(f"🟢 Node.js MCPサーバーモード（バックエンド経由）: {self.backend_api_url}")
+            self.logger.info(f"🟢 Node.js MCPサーバーモード（バックエンド経由: {self.backend_api_url}, 直接: {self.mcp_nodejs_url}）")
         
         self.report = QualityReport()
         
@@ -546,7 +550,7 @@ class SystemQualityChecker:
         
         # HTTPSエンドポイントの確認（本番環境想定）
         https_endpoints = [
-            "https://localhost:8001",
+            "https://localhost:3001",
             "https://localhost:8000",
         ]
         
@@ -644,7 +648,7 @@ class SystemQualityChecker:
         """開放ポートチェック"""
         print("  🚪 開放ポートチェック...")
         
-        common_ports = [22, 80, 443, 3000, 8000, 8001, 5432, 3306, 6379]
+        common_ports = [22, 80, 443, 3000, 3001, 8000, 5432, 3306, 6379]
         open_ports = []
         
         for port in common_ports:
@@ -667,7 +671,7 @@ class SystemQualityChecker:
         ))
         
         # 不要なポートの警告
-        unnecessary_ports = [port for port in open_ports if port not in [3000, 8000, 8001]]
+        unnecessary_ports = [port for port in open_ports if port not in [3000, 3001, 8000]]
         if unnecessary_ports:
             self.report.issues.append(QualityIssue(
                 severity="LOW",
@@ -1127,13 +1131,14 @@ MCP Drone Control System - System Quality Assurance Checker
   python system_quality_checker.py [mode]
 
 モード:
-  python    Python MCPサーバー（HTTP API、ポート8001）をテスト
+  python    Python MCPサーバー（HTTP API、ポート8001）をテスト（レガシー）
   nodejs    Node.js MCPサーバー（バックエンドAPI経由、ポート8000）をテスト  
   auto      環境変数 MCP_MODE から自動判定（デフォルト: nodejs）
 
 環境変数:
   MCP_MODE           MCPサーバーモード (python/nodejs)
-  MCP_PYTHON_PORT    Python MCPサーバーポート (デフォルト: 8001)
+  MCP_NODEJS_PORT    Node.js MCPサーバーポート (デフォルト: 3001)
+  MCP_PYTHON_PORT    Python MCPサーバーポート (デフォルト: 8001、レガシー)
   BACKEND_PORT       バックエンドAPIポート (デフォルト: 8000)
   FRONTEND_PORT      フロントエンドポート (デフォルト: 3000)
 
