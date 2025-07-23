@@ -46,7 +46,7 @@ import { MCPClient } from 'mcp-drone-client';
 
 // クライアント初期化
 const client = new MCPClient({
-  baseURL: 'http://localhost:8001',
+  baseURL: 'http://localhost:3001',
   apiKey: 'your-api-key', // または bearerToken
 });
 ```
@@ -208,7 +208,7 @@ try {
 
 ### ネットワーク要件
 
-- **MCPサーバー**: ポート8001での通信
+- **MCPサーバー**: ポート3001での通信
 - **WebSocket**: リアルタイム通信用
 - **CORS**: ブラウザ環境での通信許可
 
@@ -230,7 +230,7 @@ javascript/
 
 ```typescript
 interface MCPClientConfig {
-  baseURL: string;          // MCPサーバーURL
+  baseURL: string;          // MCPサーバーURL (例: http://localhost:3001)
   apiKey?: string;          // API Key認証
   bearerToken?: string;     // JWT Bearer Token認証
   timeout?: number;         // リクエストタイムアウト(ms、デフォルト: 30000)

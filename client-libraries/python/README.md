@@ -48,7 +48,7 @@ from mcp_drone_client import MCPClient, MCPClientConfig, NaturalLanguageCommand
 async def main():
     # クライアント設定
     config = MCPClientConfig(
-        base_url="http://localhost:8001",
+        base_url="http://localhost:3001",
         api_key="your-api-key",  # または bearer_token
         timeout=30.0,
     )
@@ -234,7 +234,7 @@ except Exception as e:
 
 ### ネットワーク要件
 
-- **MCPサーバー**: ポート8001での通信
+- **MCPサーバー**: ポート3001での通信
 - **WebSocket**: リアルタイム通信用
 - **SSL/TLS**: HTTPS通信対応
 
@@ -260,7 +260,7 @@ python/
 from mcp_drone_client.models import MCPClientConfig
 
 config = MCPClientConfig(
-    base_url="http://localhost:8001",      # MCPサーバーURL
+    base_url="http://localhost:3001",      # MCPサーバーURL
     api_key="your-api-key",                # API Key認証
     bearer_token="your-jwt-token",         # JWT Bearer Token認証
     timeout=30.0,                          # リクエストタイムアウト(秒)

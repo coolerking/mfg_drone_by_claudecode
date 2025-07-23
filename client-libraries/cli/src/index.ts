@@ -228,7 +228,7 @@ class ConfigManager {
       return yaml.parse(content);
     }
     return {
-      baseURL: 'http://localhost:8001',
+      baseURL: 'http://localhost:3001',
       timeout: 30000,
     };
   }
