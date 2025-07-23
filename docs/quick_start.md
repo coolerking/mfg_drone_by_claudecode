@@ -32,10 +32,25 @@ curl http://localhost:8000/health
 ```
 
 ### 1.2 MCPサーバー起動 (Windows PC)
+
+**Node.js版（推奨）**:
+```bash
+# Windows PCで実行
+cd C:\path\to\mfg_drone_by_claudecode\mcp-server-nodejs
+npm install
+npm run build
+npm start
+
+# 起動確認
+curl http://localhost:8001/mcp/system/health
+# 応答: {"status": "healthy"}
+```
+
+**Python版（レガシー）**:
 ```bash
 # Windows PCで実行
 cd C:\path\to\mfg_drone_by_claudecode\mcp-server
-python start_mcp_server.py
+python start_mcp_server_unified.py
 
 # 起動確認
 curl http://localhost:8001/mcp/system/health

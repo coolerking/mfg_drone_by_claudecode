@@ -432,9 +432,18 @@ python start_api_server.py
 ```
 
 ### 強化機能付きMCPサーバー起動
+
+**Node.js版（推奨）**:
+```bash
+cd mcp-server-nodejs
+npm run build
+npm start
+```
+
+**Python版（レガシー）**:
 ```bash
 cd mcp-server
-python start_mcp_server.py --enhanced
+python start_mcp_server_unified.py --enhanced
 ```
 
 ## 🌟 使用例・シナリオ
