@@ -39,7 +39,7 @@ from mcp_drone_client.models import (
 def client_config():
     """Client configuration fixture"""
     return MCPClientConfig(
-        base_url="http://localhost:8001",
+        base_url="http://localhost:3001",
         api_key="test-api-key",
         timeout=30.0,
     )
@@ -59,13 +59,13 @@ class TestMCPClient:
     def test_create_client_convenience_function(self):
         """Test create_client convenience function"""
         client = create_client(
-            base_url="http://localhost:8001",
+            base_url="http://localhost:3001",
             api_key="test-key",
             timeout=60.0,
         )
         
         assert isinstance(client, MCPClient)
-        assert client.config.base_url == "http://localhost:8001"
+        assert client.config.base_url == "http://localhost:3001"
         assert client.config.api_key == "test-key"
         assert client.config.timeout == 60.0
     
