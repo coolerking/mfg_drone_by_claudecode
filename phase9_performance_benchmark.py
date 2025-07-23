@@ -14,6 +14,7 @@ MCPサーバーのPython版とNode.js版のパフォーマンス詳細比較
 
 import asyncio
 import json
+import os
 import time
 import psutil
 import statistics
@@ -69,9 +70,9 @@ class MCPPerformanceBenchmark:
         self.project_root = Path(__file__).parent
         self.report = PerformanceReport()
         
-        # サーバーURL設定
-        self.python_server_url = "http://localhost:8001"
-        self.nodejs_server_url = "http://localhost:3001"
+        # サーバーURL設定（環境変数対応）
+        self.python_server_url = f"http://localhost:{os.environ.get('MCP_PYTHON_PORT', '8001')}"  # レガシーPython版  
+        self.nodejs_server_url = f"http://localhost:{os.environ.get('MCP_NODEJS_PORT', '3001')}"  # メインNode.js版
         
         # ベンチマーク設定
         self.benchmark_config = {

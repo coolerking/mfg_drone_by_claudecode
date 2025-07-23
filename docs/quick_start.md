@@ -18,6 +18,14 @@
 - [ ] 平坦で安全な飛行スペースが確保されている（3m×3m以上）
 - [ ] 必要なソフトウェアがインストールされている
 
+## 📌 重要: ポート番号について
+
+**MCPサーバーのポート番号:**
+- **Node.js版（推奨）**: `localhost:3001` 
+- **Python版（レガシー）**: `localhost:3001`
+
+以下の例ではNode.js版（ポート3001）を使用しています。Python版を使用する場合は、URLの`:3001`を`:8001`に変更してください。
+
 ## 🌟 Step 1: システム起動 (2分)
 
 ### 1.1 バックエンドAPI起動 (Raspberry Pi)
@@ -42,7 +50,7 @@ npm run build
 npm start
 
 # 起動確認
-curl http://localhost:8001/mcp/system/health
+curl http://localhost:3001/mcp/system/health
 # 応答: {"status": "healthy"}
 ```
 
@@ -52,7 +60,7 @@ curl http://localhost:8001/mcp/system/health
 cd C:\path\to\mfg_drone_by_claudecode\mcp-server
 python start_mcp_server_unified.py
 
-# 起動確認
+# 起動確認 (Python版はポート8001)
 curl http://localhost:8001/mcp/system/health
 # 応答: {"status": "healthy"}
 ```
@@ -69,7 +77,7 @@ npm start
 
 ### 🎯 起動完了チェック
 - [ ] バックエンドAPI: http://localhost:8000/docs でSwagger UI表示
-- [ ] MCPサーバー: http://localhost:8001/docs でAPI仕様表示
+- [ ] MCPサーバー: http://localhost:3001/docs (Node.js版) または http://localhost:8001/docs (Python版) でAPI仕様表示
 - [ ] フロントエンド: http://localhost:3000 でダッシュボード表示
 
 ## 🚁 Step 2: ドローン接続 (1分)
@@ -77,14 +85,14 @@ npm start
 ### 2.1 ドローンの準備
 ```bash
 # ドローンの状態確認
-curl -X GET http://localhost:8001/mcp/drones
+curl -X GET http://localhost:3001/mcp/drones
 # 応答: {"drones": [{"id": "drone_001", "status": "available"}]}
 ```
 
 ### 2.2 自然言語で接続
 ```bash
 # MCPサーバーに自然言語コマンドを送信
-curl -X POST http://localhost:8001/mcp/command \
+curl -X POST http://localhost:3001/mcp/command \
   -H "Content-Type: application/json" \
   -d '{
     "command": "ドローンdrone_001に接続して"
@@ -105,7 +113,7 @@ curl -X POST http://localhost:8001/mcp/command \
 ### 2.3 接続確認
 ```bash
 # ドローンの状態確認
-curl -X GET http://localhost:8001/mcp/drones/drone_001/status
+curl -X GET http://localhost:3001/mcp/drones/drone_001/status
 
 # 接続成功の場合
 {
@@ -123,34 +131,34 @@ curl -X GET http://localhost:8001/mcp/drones/drone_001/status
 ### 3.1 離陸
 ```bash
 # 自然言語コマンドで離陸
-curl -X POST http://localhost:8001/mcp/command \
+curl -X POST http://localhost:3001/mcp/command \
   -H "Content-Type: application/json" \
   -d '{
     "command": "離陸して"
   }'
 
 # または直接APIでも可能
-curl -X POST http://localhost:8001/mcp/drones/drone_001/takeoff
+curl -X POST http://localhost:3001/mcp/drones/drone_001/takeoff
 ```
 
 ### 3.2 基本移動
 ```bash
 # 右に50センチ移動
-curl -X POST http://localhost:8001/mcp/command \
+curl -X POST http://localhost:3001/mcp/command \
   -H "Content-Type: application/json" \
   -d '{
     "command": "右に50センチ移動して"
   }'
 
 # 前に1メートル移動
-curl -X POST http://localhost:8001/mcp/command \
+curl -X POST http://localhost:3001/mcp/command \
   -H "Content-Type: application/json" \
   -d '{
     "command": "前に1メートル移動して"
   }'
 
 # 高度を1.5メートルに調整
-curl -X POST http://localhost:8001/mcp/command \
+curl -X POST http://localhost:3001/mcp/command \
   -H "Content-Type: application/json" \
   -d '{
     "command": "高度を1.5メートルにして"
@@ -160,7 +168,7 @@ curl -X POST http://localhost:8001/mcp/command \
 ### 3.3 写真撮影
 ```bash
 # 写真を撮影
-curl -X POST http://localhost:8001/mcp/command \
+curl -X POST http://localhost:3001/mcp/command \
   -H "Content-Type: application/json" \
   -d '{
     "command": "写真を撮って"
@@ -173,7 +181,7 @@ curl -X GET http://localhost:8000/api/photos/latest
 ### 3.4 着陸
 ```bash
 # 着陸
-curl -X POST http://localhost:8001/mcp/command \
+curl -X POST http://localhost:3001/mcp/command \
   -H "Content-Type: application/json" \
   -d '{
     "command": "着陸して"
@@ -221,7 +229,7 @@ MCPドローン制御システムの基本操作をマスターしました！
 ### 🔍 高度な機能
 ```bash
 # 複数コマンドの一括実行
-curl -X POST http://localhost:8001/mcp/command/batch \
+curl -X POST http://localhost:3001/mcp/command/batch \
   -H "Content-Type: application/json" \
   -d '{
     "commands": [
@@ -235,7 +243,7 @@ curl -X POST http://localhost:8001/mcp/command/batch \
   }'
 
 # 物体検出
-curl -X POST http://localhost:8001/mcp/vision/detection \
+curl -X POST http://localhost:3001/mcp/vision/detection \
   -H "Content-Type: application/json" \
   -d '{
     "drone_id": "drone_001",
@@ -244,7 +252,7 @@ curl -X POST http://localhost:8001/mcp/vision/detection \
   }'
 
 # 学習データ収集
-curl -X POST http://localhost:8001/mcp/drones/drone_001/learning/collect \
+curl -X POST http://localhost:3001/mcp/drones/drone_001/learning/collect \
   -H "Content-Type: application/json" \
   -d '{
     "object_name": "sample_object",
@@ -278,7 +286,7 @@ curl -X POST http://localhost:8001/mcp/drones/drone_001/learning/collect \
 4. システムの再起動
 
 # 確認コマンド
-curl -X GET http://localhost:8001/mcp/drones
+curl -X GET http://localhost:3001/mcp/drones
 ping [ドローンのIPアドレス]
 ```
 
@@ -302,7 +310,7 @@ ping [ドローンのIPアドレス]
 3. キャッシュクリア
 
 # 確認コマンド
-curl -X GET http://localhost:8001/mcp/system/performance
+curl -X GET http://localhost:3001/mcp/system/performance
 ```
 
 ### 🆘 緊急時の対処
@@ -310,10 +318,10 @@ curl -X GET http://localhost:8001/mcp/system/performance
 #### 緊急停止
 ```bash
 # 即座に停止
-curl -X POST http://localhost:8001/mcp/drones/drone_001/emergency
+curl -X POST http://localhost:3001/mcp/drones/drone_001/emergency
 
 # または自然言語で
-curl -X POST http://localhost:8001/mcp/command \
+curl -X POST http://localhost:3001/mcp/command \
   -d '{"command": "緊急停止"}'
 ```
 
