@@ -1,0 +1,245 @@
+# 統一監視設定 - MFG Drone System (Node.js MCP中心)
+# Phase F: 監視・運用設定の統合
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+  external_labels:
+    cluster: 'mfg-drone-unified'
+    environment: 'production'
+    version: 'phase-f'
+
+# アラートマネージャー設定
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# アラートルール設定
+rule_files:
+  - "unified_alerts.yml"
+
+# スクレイプ設定（Node.js MCP中心の優先順位）
+scrape_configs:
+  # === 主要サービス（高頻度監視） ===
+  
+  # Node.js MCP Server（最高優先度）
+  - job_name: 'mcp-server-nodejs'
+    static_configs:
+      - targets: ['mcp-server-nodejs:3001']
+    scrape_interval: 10s
+    metrics_path: '/metrics'
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'mcp-nodejs'
+      - source_labels: [__address__]
+        target_label: priority
+        replacement: 'critical'
+
+  # Node.js MCP Server ヘルスチェック
+  - job_name: 'mcp-server-nodejs-health'
+    static_configs:
+      - targets: ['mcp-server-nodejs:3001']
+    scrape_interval: 15s
+    metrics_path: '/health'
+    honor_labels: true
+
+  # バックエンドAPI（高優先度）
+  - job_name: 'backend-api'
+    static_configs:
+      - targets: ['backend:8000']
+    scrape_interval: 15s
+    metrics_path: '/metrics'
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'backend-api'
+      - source_labels: [__address__]
+        target_label: priority
+        replacement: 'high'
+
+  # フロントエンド（中優先度）
+  - job_name: 'frontend'
+    static_configs:
+      - targets: ['frontend:80']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    honor_labels: true
+
+  # === データベース・キャッシュ ===
+  
+  # PostgreSQL
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'postgres-db'
+
+  # Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'redis-cache'
+
+  # === システムメトリクス ===
+  
+  # Node Exporter（システムメトリクス）
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+)(:[0-9]+)?'
+        replacement: '${1}'
+
+  # cAdvisor（コンテナメトリクス）
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 30s
+    metrics_path: /metrics
+    relabel_configs:
+      - source_labels: [__name__]
+        regex: 'container_.*'
+        target_label: metric_type
+        replacement: 'container'
+
+  # === 監視システム自体 ===
+  
+  # Prometheus自己監視
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Grafana
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+    scrape_interval: 60s
+    metrics_path: /metrics
+
+  # AlertManager
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['alertmanager:9093']
+    scrape_interval: 60s
+    metrics_path: /metrics
+
+  # === エンドポイント監視（Blackbox Exporter） ===
+  
+  # 重要エンドポイントの外部監視
+  - job_name: 'blackbox-http'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        # Node.js MCP Server（最重要）
+        - http://mcp-server-nodejs:3001/health
+        - http://mcp-server-nodejs:3001/metrics
+        # その他のエンドポイント
+        - http://frontend:80/health
+        - http://backend:8000/health
+        - http://backend:8000/api/system/status
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # SSL証明書監視
+  - job_name: 'blackbox-ssl'
+    metrics_path: /probe
+    params:
+      module: [ssl_cert]
+    static_configs:
+      - targets:
+        - https://mfg-drone.local:443
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # === 動的サービス発見 ===
+  
+  # ドローンデバイス動的発見
+  - job_name: 'drone-devices'
+    file_sd_configs:
+      - files:
+        - '/etc/prometheus/targets/drones*.yml'
+        refresh_interval: 30s
+    relabel_configs:
+      - source_labels: [__meta_drone_name]
+        target_label: drone_name
+      - source_labels: [__meta_drone_type]
+        target_label: drone_type
+      - source_labels: [__meta_drone_priority]
+        target_label: priority
+
+  # === レガシーサポート（Python MCP）===
+  
+  # Python MCP Server（レガシー、低優先度）
+  - job_name: 'mcp-server-python'
+    static_configs:
+      - targets: ['mcp-server:8003']
+    scrape_interval: 60s
+    metrics_path: '/metrics'
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'mcp-python-legacy'
+      - source_labels: [__address__]
+        target_label: priority
+        replacement: 'low'
+
+# ストレージ設定
+storage:
+  tsdb:
+    retention.time: 30d
+    retention.size: 50GB
+    wal-compression: true
+
+# Web UI設定
+web:
+  enable-lifecycle: true
+  enable-admin-api: true
+  console:
+    libraries: /etc/prometheus/console_libraries
+    templates: /etc/prometheus/consoles
+
+# ログレベル
+log.level: info
+
+# リモート書き込み設定（必要に応じて有効化）
+# remote_write:
+#   - url: "https://metrics-collector.mfg-drone.local/api/v1/write"
+#     basic_auth:
+#       username: "prometheus"
+#       password: "${REMOTE_WRITE_PASSWORD}"
+
+# 機能フラグ
+# --enable-feature=expand-external-labels
+# --enable-feature=memory-snapshot-on-shutdown
+# --enable-feature=exemplar-storage

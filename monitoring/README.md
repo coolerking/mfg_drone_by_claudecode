@@ -1,10 +1,24 @@
-# システム監視・アラート設定
+# 統合監視・運用システム（Phase F対応）
 
-MFG Drone システムの包括的な監視とアラート管理を提供するPrometheus + Grafana統合監視システム
+**Node.js MCP Server中心**のMFG Drone システム統合監視・運用プラットフォーム
 
 ## 概要（Description）
 
-MFG Drone Monitoring System は、Tello EDU ドローン制御システムの健全性とパフォーマンスを監視するためのPrometheusベースの監視システムです。インフラストラクチャ、アプリケーション、データベース、セキュリティを含む全コンポーネントの包括的な監視機能を提供し、リアルタイムアラートとメトリクス収集により、システムの安定稼働を支援します。
+Phase F統合版のMFG Drone Monitoring Systemは、Node.js版MCPサーバーを中心とした統一監視・運用体制を提供します。従来の分散した監視設定を統合し、Prometheus + Grafana + 統一ログ管理により、効率的な運用を実現します。実機制御とシミュレーション環境の両方に対応し、リアルタイム監視とインテリジェントアラートにより、システムの安定稼働を支援します。
+
+## 🚀 Phase F 新機能・改善点
+
+### Node.js中心運用体制
+- **Node.js MCP Server最優先監視**: 10秒間隔の高頻度監視
+- **統一設定ファイル**: 分散していた設定を一元化
+- **智的アラート**: 優先度ベースの段階的通知
+- **レガシーPython版**: 保守モードでの継続サポート
+
+### 統合ログ管理
+- **Winston（Node.js）+ Structlog（Python）**: 統一ログ形式
+- **自動ローテーション**: サイズ・期間ベースの管理
+- **セキュリティフィルタリング**: 機密情報の自動マスキング
+- **パフォーマンス最適化**: 非同期ログ出力
 
 ## 目次（Table of Contents）
 
@@ -15,30 +29,43 @@ MFG Drone Monitoring System は、Tello EDU ドローン制御システムの健
 - [ディレクトリ構成（Directory Structure）](#ディレクトリ構成directory-structure)
 - [更新履歴（Changelog/History）](#更新履歴changeloghistory)
 
-## インストール方法（Installation）
+## 📦 インストール方法（Installation）
 
-### Docker Composeを使用したセットアップ
+### 統一デプロイスクリプトを使用（推奨）
 
 ```bash
 # プロジェクトルートディレクトリで実行
 cd mfg_drone_by_claudecode
 
-# 監視スタックの起動
-docker-compose -f docker-compose.prod.yml up -d prometheus grafana alertmanager
+# フル統合デプロイ（Node.js MCP Server + 全サービス）
+./scripts/unified_deploy.sh deploy -e production
 
-# または個別起動
-docker run -d \
-  --name prometheus \
-  -p 9090:9090 \
-  -v $(pwd)/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml \
-  -v $(pwd)/monitoring/alerts.yml:/etc/prometheus/alerts.yml \
-  prom/prometheus
+# Node.js MCP Server のみデプロイ（軽量）
+./scripts/unified_deploy.sh nodejs-only -e production
 
-docker run -d \
-  --name grafana \
-  -p 3000:3000 \
-  -e GF_SECURITY_ADMIN_PASSWORD=admin \
-  grafana/grafana
+# デプロイ状態確認
+./scripts/unified_deploy.sh status
+
+# ログ確認（Node.js MCP Server）
+./scripts/unified_deploy.sh logs mcp-server-nodejs
+```
+
+### Docker Compose手動セットアップ
+
+```bash
+# 統一監視設定の適用
+cp monitoring/unified_prometheus.yml monitoring/prometheus.yml
+cp monitoring/unified_alerts.yml monitoring/alerts.yml
+
+# 環境設定ファイルの準備
+cp .env.production.example .env.production
+# 必要な環境変数を設定
+
+# 統合監視スタックの起動
+docker-compose -f docker-compose.prod.yml up -d
+
+# Node.js MCP Server の優先起動確認
+docker-compose -f docker-compose.prod.yml logs -f mcp-server-nodejs
 ```
 
 ### 手動セットアップ（ローカル環境）
@@ -76,22 +103,47 @@ curl -X POST \
   }'
 ```
 
-## 使い方（Usage）
+## 🛠️ 使い方（Usage）
 
-### 基本的な監視操作
+### Node.js MCP Server中心の監視操作
 
 ```bash
-# Prometheusメトリクス確認
+# Node.js MCP Server ヘルスチェック（最重要）
+curl http://localhost:3001/health
+
+# Node.js MCP Server メトリクス取得
+curl http://localhost:3001/metrics
+
+# 統一Prometheusメトリクス確認
 curl http://localhost:9090/api/v1/targets
 
-# アラート状態確認
-curl http://localhost:9090/api/v1/alerts
+# Node.js MCP Server特化クエリ
+curl 'http://localhost:9090/api/v1/query?query=up{job="mcp-server-nodejs"}'
 
-# 特定メトリクスの取得
-curl 'http://localhost:9090/api/v1/query?query=up'
+# 統合アラート状態確認（優先度別）
+curl 'http://localhost:9090/api/v1/alerts?filter={priority="p1"}'
 
-# ドローンバッテリー状態の確認
-curl 'http://localhost:9090/api/v1/query?query=drone_battery_percentage'
+# システム全体ステータス
+curl http://localhost:8000/api/system/status
+```
+
+### 統一ログ管理操作
+
+```bash
+# Node.js MCP Server ログ（リアルタイム）
+tail -f logs/mcp-nodejs/combined.log
+
+# エラーログのみ表示
+tail -f logs/mcp-nodejs/error.log
+
+# パフォーマンスログ分析
+jq '.duration' logs/mcp-nodejs/performance.log | sort -n
+
+# 全サービス統合ログ検索
+grep -r "ERROR" logs/ --include="*.log" | tail -20
+
+# セキュリティログ確認
+tail -f logs/security/security.log
 ```
 
 ### アラート設定の変更
@@ -189,15 +241,19 @@ receivers:
 - **Node Exporterポート**: 9100 (システムメトリクス)
 - **ファイアウォール**: 上記ポートの許可設定
 
-## ディレクトリ構成（Directory Structure）
+## 📁 ディレクトリ構成（Directory Structure）
 
 ```
 monitoring/
-├── README.md                   # このファイル
-├── prometheus.yml              # Prometheus設定ファイル
-├── alerts.yml                  # アラートルール定義
-├── grafana/                    # Grafana設定（追加時）
+├── README.md                   # 統合監視システムドキュメント
+├── unified_prometheus.yml      # 🆕 統一Prometheus設定（Node.js中心）
+├── unified_alerts.yml          # 🆕 統一アラート設定（優先度ベース）
+├── unified_logging_config.yml  # 🆕 統一ログ管理設定
+├── prometheus.yml              # 運用時設定（unified_prometheus.ymlからコピー）
+├── alerts.yml                  # 運用時アラート（unified_alerts.ymlからコピー）
+├── grafana/                    # Grafana設定
 │   ├── dashboards/            # ダッシュボード定義
+│   │   ├── mcp-nodejs-overview.json      # 🆕 Node.js MCP専用
 │   │   ├── system-overview.json
 │   │   ├── drone-monitoring.json
 │   │   ├── infrastructure.json
@@ -205,49 +261,80 @@ monitoring/
 │   └── provisioning/          # 自動プロビジョニング
 │       ├── datasources/
 │       └── dashboards/
-├── alertmanager/              # AlertManager設定（追加時）
+├── alertmanager/              # AlertManager設定
 │   └── alertmanager.yml
-└── exporters/                 # 各種Exporter設定（追加時）
-    ├── node-exporter.yml
-    ├── postgres-exporter.yml
-    └── redis-exporter.yml
+└── logs/                      # 🆕 統一ログディレクトリ
+    ├── mcp-nodejs/           # Node.js MCP Server ログ（最優先）
+    │   ├── combined.log
+    │   ├── error.log
+    │   ├── access.log
+    │   └── performance.log
+    ├── backend/              # Backend API ログ
+    ├── frontend/             # Frontend ログ
+    ├── mcp-python/           # Python MCP ログ（レガシー）
+    ├── access/               # アクセスログ
+    ├── error/                # エラーログ
+    ├── security/             # セキュリティログ
+    ├── performance/          # パフォーマンスログ
+    └── audit/                # 監査ログ
+
+scripts/
+├── unified_deploy.sh          # 🆕 統一デプロイスクリプト（Node.js中心）
+└── deploy.sh                 # 従来のデプロイスクリプト
 ```
 
-### 現在の監視対象
+### 🎯 統合監視対象（優先度順）
 
-#### インフラストラクチャ監視
-- **CPU使用率**: 80%超過時アラート
-- **メモリ使用率**: 85%超過時アラート
-- **ディスク使用率**: 90%超過時アラート
-- **ディスクI/O**: 20%超過時アラート
-
-#### サービス監視
-- **エンドポイント死活監視**: 1分間ダウン検出
-- **レスポンス時間**: 500ms超過時アラート
+#### 🚨 P1: Node.js MCP Server（最重要・10秒間隔）
+- **サービス死活**: 30秒ダウンで即座アラート
+- **レスポンス時間**: 2秒超過時アラート（95パーセンタイル）
 - **エラー率**: 5%超過時アラート
-- **API制限**: レート制限頻発時アラート
+- **メモリ使用量**: 400MB超過時アラート
+- **CPU使用率**: 80%超過時アラート
+- **WebSocket接続**: リアルタイム監視
 
-#### データベース監視
-- **PostgreSQL接続数**: 80%超過時アラート
-- **レプリケーション遅延**: 30秒超過時アラート
-- **Redisメモリ使用量**: 90%超過時アラート
-- **Redis接続エラー**: 接続拒否検出時アラート
+#### 🚨 P1: システム基盤（1分間隔）
+- **CPU使用率**: 85%超過時アラート（従来より厳格化）
+- **メモリ使用率**: 90%超過時アラート
+- **ディスク使用率**: 90%超過時アラート
+- **PostgreSQL**: 接続数80%・レプリケーション遅延30秒
+- **Redis**: メモリ85%・接続拒否検出
 
-#### アプリケーション監視
-- **ドローン接続状態**: 接続喪失時即座アラート
-- **ドローンバッテリー**: 20%以下時アラート
-- **カメラストリーム**: ストリーム停止時アラート
-- **モデル学習**: 学習失敗時アラート
-- **WebSocket接続数**: 50接続超過時アラート
+#### 🟡 P2: Backend API・Frontend（30秒間隔）
+- **Backend API**: 1分ダウン・1秒レスポンス・3%エラー率
+- **Frontend**: ヘルスチェック・静的リソース配信
+- **エンドポイント監視**: Blackbox Exporter経由
 
-#### セキュリティ監視
-- **ログイン失敗**: 5分間に10回超過時アラート
-- **不正APIアクセス**: 5分間に20回超過時アラート
-- **不審ファイルアップロード**: 検出時即座アラート
+#### 🟢 P3: アプリケーション固有（1分間隔）
+- **ドローン接続状態**: 30秒接続喪失でアラート
+- **ドローンバッテリー**: 15%以下時アラート（従来20%から強化）
+- **カメラストリーム**: 2分停止時アラート
+- **モデル学習**: 10分間に2回失敗でアラート
 
-## 更新履歴（Changelog/History）
+#### 🔒 セキュリティ監視（30秒間隔）
+- **失敗ログイン**: 5分間に20回超過（従来10回から強化）
+- **不正APIアクセス**: 5分間に50回超過（従来20回から調整）
+- **セキュリティ違反**: 検出時即座アラート
+- **SSL証明書**: 7日前期限切れ警告
 
-### Phase 6: 実機統合監視対応（最新）
+#### 📊 監視システム自体（2分間隔）
+- **Prometheus**: 設定リロード失敗・スクレイプ失敗率5%
+- **Grafana**: ダッシュボード応答性
+- **AlertManager**: 通知配信状態
+
+## 📋 更新履歴（Changelog/History）
+
+### 🆕 Phase F: 監視・運用設定の統合（最新）
+- **Node.js MCP Server中心運用**: 最優先監視・10秒間隔スクレイプ
+- **統一設定ファイル**: 分散していたPrometheus/Alert設定を一元化
+- **統合ログ管理**: Winston(Node.js) + Structlog(Python)統一フォーマット
+- **優先度ベースアラート**: P1/P2/P3段階的通知システム
+- **統一デプロイスクリプト**: Node.js中心の自動化デプロイ
+- **レガシーサポート**: Python MCP Server保守モード継続
+- **智的監視**: サービス重要度に応じた監視頻度調整
+- **セキュリティ強化**: 機密情報自動マスキング・改ざん防止
+
+### Phase 6: 実機統合監視対応
 - **ドローン固有メトリクス**: バッテリー、接続状態、高度監視
 - **動的サービス検出**: ドローンデバイスの自動検出・監視
 - **実機・シミュレーション**: 統合環境の監視対応
