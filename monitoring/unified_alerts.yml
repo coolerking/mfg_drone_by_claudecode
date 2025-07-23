@@ -1,0 +1,384 @@
+# 統一アラート設定 - MFG Drone System (Node.js MCP中心)
+# Phase F: 監視・運用設定の統合
+
+groups:
+  # ===== 最重要サービス（Node.js MCP Server）=====
+  - name: mcp-nodejs-critical
+    interval: 30s
+    rules:
+      - alert: MCPNodeJSServerDown
+        expr: up{job="mcp-server-nodejs"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: mcp-nodejs
+          priority: p1
+          team: platform
+        annotations:
+          summary: "Node.js MCP Server is down"
+          description: "Node.js MCP Server has been unreachable for more than 30 seconds"
+          runbook_url: "https://docs.mfg-drone.local/runbooks/mcp-nodejs-down"
+
+      - alert: MCPNodeJSHighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="mcp-server-nodejs"}[5m])) > 2.0
+        for: 2m
+        labels:
+          severity: warning
+          service: mcp-nodejs
+          priority: p2
+          team: platform
+        annotations:
+          summary: "Node.js MCP Server high latency"
+          description: "95th percentile latency is {{ $value }}s (threshold: 2.0s)"
+
+      - alert: MCPNodeJSHighErrorRate
+        expr: rate(http_requests_total{job="mcp-server-nodejs", code=~"5.."}[5m]) / rate(http_requests_total{job="mcp-server-nodejs"}[5m]) * 100 > 5
+        for: 3m
+        labels:
+          severity: critical
+          service: mcp-nodejs
+          priority: p1
+          team: platform
+        annotations:
+          summary: "Node.js MCP Server high error rate"
+          description: "Error rate is {{ $value }}% (threshold: 5%)"
+
+      - alert: MCPNodeJSHighMemoryUsage
+        expr: process_resident_memory_bytes{job="mcp-server-nodejs"} / 1024 / 1024 > 400
+        for: 5m
+        labels:
+          severity: warning
+          service: mcp-nodejs
+          priority: p2
+          team: platform
+        annotations:
+          summary: "Node.js MCP Server high memory usage"
+          description: "Memory usage is {{ $value }}MB (threshold: 400MB)"
+
+      - alert: MCPNodeJSHighCPUUsage
+        expr: rate(process_cpu_seconds_total{job="mcp-server-nodejs"}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: mcp-nodejs
+          priority: p2
+          team: platform
+        annotations:
+          summary: "Node.js MCP Server high CPU usage"
+          description: "CPU usage is {{ $value }}% (threshold: 80%)"
+
+  # ===== バックエンドAPI =====
+  - name: backend-api
+    interval: 30s
+    rules:
+      - alert: BackendAPIDown
+        expr: up{job="backend-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: backend
+          priority: p1
+          team: backend
+        annotations:
+          summary: "Backend API is down"
+          description: "Backend API has been unreachable for more than 1 minute"
+
+      - alert: BackendAPIHighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="backend-api"}[5m])) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+          priority: p2
+          team: backend
+        annotations:
+          summary: "Backend API high latency"
+          description: "95th percentile latency is {{ $value }}s (threshold: 1.0s)"
+
+      - alert: BackendAPIHighErrorRate
+        expr: rate(http_requests_total{job="backend-api", code=~"5.."}[5m]) / rate(http_requests_total{job="backend-api"}[5m]) * 100 > 3
+        for: 5m
+        labels:
+          severity: critical
+          service: backend
+          priority: p1
+          team: backend
+        annotations:
+          summary: "Backend API high error rate"
+          description: "Error rate is {{ $value }}% (threshold: 3%)"
+
+  # ===== インフラストラクチャ =====
+  - name: infrastructure
+    interval: 60s
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 10m
+        labels:
+          severity: warning
+          category: infrastructure
+          priority: p3
+          team: ops
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}% for {{ $labels.instance }} (threshold: 85%)"
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+          category: infrastructure
+          priority: p2
+          team: ops
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}% for {{ $labels.instance }} (threshold: 90%)"
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs"}) * 100 < 10
+        for: 2m
+        labels:
+          severity: critical
+          category: infrastructure
+          priority: p1
+          team: ops
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is {{ $value }}% available for {{ $labels.instance }} on {{ $labels.mountpoint }} (threshold: 10%)"
+
+  # ===== データベース =====
+  - name: database
+    interval: 60s
+    rules:
+      - alert: PostgreSQLDown
+        expr: up{job="postgres"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: database
+          priority: p1
+          team: data
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL database has been unreachable for more than 30 seconds"
+
+      - alert: PostgreSQLConnectionsHigh
+        expr: pg_stat_database_numbackends / pg_settings_max_connections * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+          priority: p2
+          team: data
+        annotations:
+          summary: "PostgreSQL high connection usage"
+          description: "Connection usage is {{ $value }}% (threshold: 80%)"
+
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: cache
+          priority: p1
+          team: data
+        annotations:
+          summary: "Redis is down"
+          description: "Redis cache has been unreachable for more than 30 seconds"
+
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: cache
+          priority: p2
+          team: data
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Memory usage is {{ $value }}% (threshold: 85%)"
+
+  # ===== セキュリティ =====
+  - name: security
+    interval: 30s
+    rules:
+      - alert: HighFailedLoginAttempts
+        expr: increase(failed_login_attempts_total[5m]) > 20
+        for: 1m
+        labels:
+          severity: warning
+          category: security
+          priority: p2
+          team: security
+        annotations:
+          summary: "High number of failed login attempts"
+          description: "{{ $value }} failed login attempts in the last 5 minutes from {{ $labels.source_ip }}"
+
+      - alert: UnauthorizedAPIAccess
+        expr: increase(http_requests_total{code="401"}[5m]) > 50
+        for: 2m
+        labels:
+          severity: warning
+          category: security
+          priority: p2
+          team: security
+        annotations:
+          summary: "High number of unauthorized API requests"
+          description: "{{ $value }} unauthorized requests in the last 5 minutes"
+
+      - alert: SecurityViolationDetected
+        expr: increase(security_violations_total[5m]) > 0
+        for: 30s
+        labels:
+          severity: critical
+          category: security
+          priority: p1
+          team: security
+        annotations:
+          summary: "Security violation detected"
+          description: "{{ $value }} security violations detected in the last 5 minutes"
+
+  # ===== アプリケーション固有 =====
+  - name: application
+    interval: 60s
+    rules:
+      - alert: DroneConnectionLost
+        expr: drone_connection_status == 0
+        for: 30s
+        labels:
+          severity: critical
+          category: application
+          priority: p2
+          team: robotics
+        annotations:
+          summary: "Drone connection lost"
+          description: "Connection to drone {{ $labels.drone_id }} has been lost"
+
+      - alert: DroneBatteryLow
+        expr: drone_battery_percentage < 15
+        for: 1m
+        labels:
+          severity: warning
+          category: application
+          priority: p3
+          team: robotics
+        annotations:
+          summary: "Drone battery low"
+          description: "Drone {{ $labels.drone_id }} battery is {{ $value }}% (threshold: 15%)"
+
+      - alert: CameraStreamDown
+        expr: camera_stream_active == 0
+        for: 2m
+        labels:
+          severity: warning
+          category: application
+          priority: p3
+          team: robotics
+        annotations:
+          summary: "Camera stream inactive"
+          description: "Camera stream for drone {{ $labels.drone_id }} is inactive"
+
+      - alert: ModelTrainingFailed
+        expr: increase(model_training_failures_total[10m]) > 2
+        for: 1m
+        labels:
+          severity: warning
+          category: application
+          priority: p3
+          team: ml
+        annotations:
+          summary: "Model training failures"
+          description: "{{ $value }} model training failures in the last 10 minutes"
+
+  # ===== 監視システム自体 =====
+  - name: monitoring
+    interval: 120s
+    rules:
+      - alert: PrometheusDown
+        expr: up{job="prometheus"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: monitoring
+          priority: p1
+          team: ops
+        annotations:
+          summary: "Prometheus is down"
+          description: "Prometheus monitoring system is unreachable"
+
+      - alert: GrafanaDown
+        expr: up{job="grafana"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: monitoring
+          priority: p2
+          team: ops
+        annotations:
+          summary: "Grafana is down"
+          description: "Grafana dashboard system is unreachable"
+
+      - alert: HighPrometheusScrapeFailures
+        expr: rate(prometheus_scrape_failures_total[10m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: monitoring
+          priority: p3
+          team: ops
+        annotations:
+          summary: "High Prometheus scrape failures"
+          description: "Prometheus scrape failure rate is {{ $value }} (threshold: 0.05)"
+
+      - alert: PrometheusConfigReloadFailed
+        expr: prometheus_config_last_reload_successful == 0
+        for: 5m
+        labels:
+          severity: warning
+          service: monitoring
+          priority: p3
+          team: ops
+        annotations:
+          summary: "Prometheus configuration reload failed"
+          description: "Prometheus failed to reload its configuration"
+
+  # ===== エンドポイント監視 =====
+  - name: endpoints
+    interval: 60s
+    rules:
+      - alert: EndpointDown
+        expr: probe_success{job="blackbox-http"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: endpoint
+          priority: p2
+          team: ops
+        annotations:
+          summary: "Endpoint is down"
+          description: "{{ $labels.instance }} endpoint is unreachable"
+
+      - alert: SSLCertificateExpiringSoon
+        expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 7
+        for: 1h
+        labels:
+          severity: warning
+          category: security
+          priority: p2
+          team: ops
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "SSL certificate for {{ $labels.instance }} expires in {{ $value }} days"
+
+      - alert: HTTPSlowResponse
+        expr: probe_duration_seconds{job="blackbox-http"} > 5
+        for: 3m
+        labels:
+          severity: warning
+          category: performance
+          priority: p3
+          team: ops
+        annotations:
+          summary: "HTTP response is slow"
+          description: "{{ $labels.instance }} responded in {{ $value }}s (threshold: 5s)"

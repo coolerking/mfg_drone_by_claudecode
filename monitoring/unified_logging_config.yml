@@ -1,0 +1,315 @@
+# 統一ログ管理設定 - MFG Drone System
+# Phase F: 監視・運用設定の統合
+# Node.js中心の運用体制に対応
+
+# ===== 基本ログ設定 =====
+logging:
+  # 全体設定
+  global:
+    level: info                    # デフォルトログレベル
+    format: structured             # structured/json/text
+    timezone: Asia/Tokyo           # タイムゾーン
+    encoding: utf8                 # エンコーディング
+    max_file_size: 50MB           # 最大ファイルサイズ
+    max_files: 10                 # 保持ファイル数
+    max_age_days: 30              # 保持期間（日）
+    
+  # ログディレクトリ構成
+  directories:
+    base: "./logs"
+    apps:
+      mcp-nodejs: "./logs/mcp-nodejs"
+      backend: "./logs/backend"
+      frontend: "./logs/frontend"
+      mcp-python: "./logs/mcp-python"    # レガシー
+    system:
+      access: "./logs/access"
+      error: "./logs/error"
+      security: "./logs/security"
+      performance: "./logs/performance"
+      audit: "./logs/audit"
+
+# ===== Node.js（Winston）設定 =====
+nodejs:
+  # MCP Server Node.js (最優先)
+  mcp-server:
+    level: info
+    format: json
+    transports:
+      console:
+        enabled: true
+        level: info
+        colorize: true
+      file:
+        enabled: true
+        filename: "./logs/mcp-nodejs/combined.log"
+        level: info
+        max_size: 50MB
+        max_files: 10
+      error_file:
+        enabled: true
+        filename: "./logs/mcp-nodejs/error.log"
+        level: error
+        max_size: 10MB
+        max_files: 5
+      performance_file:
+        enabled: true
+        filename: "./logs/mcp-nodejs/performance.log"
+        level: info
+        max_size: 20MB
+        max_files: 5
+      access_file:
+        enabled: true
+        filename: "./logs/mcp-nodejs/access.log"
+        level: info
+        max_size: 30MB
+        max_files: 7
+    
+    # セキュリティ設定
+    security:
+      sanitize_sensitive_data: true
+      sensitive_fields:
+        - password
+        - secret
+        - token
+        - key
+        - authorization
+        - cookie
+    
+    # メタデータ
+    metadata:
+      service: mcp-nodejs
+      version: ${npm_package_version}
+      node_version: ${NODE_VERSION}
+      pid: ${process.pid}
+      hostname: ${HOSTNAME}
+
+  # Frontend（Next.js/React）
+  frontend:
+    level: warn
+    format: json
+    transports:
+      console:
+        enabled: true
+        level: info
+      file:
+        enabled: true
+        filename: "./logs/frontend/combined.log"
+        level: warn
+        max_size: 20MB
+        max_files: 5
+
+# ===== Python（Structlog）設定 =====
+python:
+  # Backend API
+  backend:
+    level: INFO
+    format: json
+    loggers:
+      main:
+        filename: "./logs/backend/combined.log"
+        level: INFO
+        max_bytes: 52428800  # 50MB
+        backup_count: 10
+      error:
+        filename: "./logs/backend/error.log"
+        level: ERROR
+        max_bytes: 10485760  # 10MB
+        backup_count: 5
+      access:
+        filename: "./logs/backend/access.log"
+        level: INFO
+        max_bytes: 31457280  # 30MB
+        backup_count: 7
+    
+    # Structlog設定
+    structlog:
+      processors:
+        - structlog.stdlib.filter_by_level
+        - structlog.stdlib.add_logger_name
+        - structlog.stdlib.add_log_level
+        - structlog.stdlib.PositionalArgumentsFormatter
+        - structlog.processors.TimeStamper
+        - structlog.processors.StackInfoRenderer
+        - structlog.processors.format_exc_info
+        - structlog.processors.JSONRenderer
+
+  # MCP Server Python（レガシー・保守のみ）
+  mcp-python:
+    level: WARNING
+    format: json
+    loggers:
+      main:
+        filename: "./logs/mcp-python/combined.log"
+        level: WARNING
+        max_bytes: 20971520  # 20MB
+        backup_count: 3
+
+# ===== ログ集約設定 =====
+aggregation:
+  # Fluentd/Fluent Bit設定
+  fluent:
+    enabled: false              # 本番環境で有効化
+    host: fluentd
+    port: 24224
+    tag_prefix: mfg-drone
+    
+    # ログ送信設定
+    forward:
+      - service: mcp-nodejs
+        tag: mfg-drone.mcp-nodejs
+        path: "./logs/mcp-nodejs/*.log"
+      - service: backend
+        tag: mfg-drone.backend
+        path: "./logs/backend/*.log"
+
+  # Elasticsearch設定（オプション）
+  elasticsearch:
+    enabled: false
+    hosts:
+      - http://elasticsearch:9200
+    index_pattern: "mfg-drone-logs-%{+YYYY.MM.dd}"
+    
+# ===== ログローテーション設定 =====
+rotation:
+  # logrotate設定
+  logrotate:
+    enabled: true
+    frequency: daily            # daily/weekly/monthly
+    compress: true
+    compress_delay: 1
+    copy_truncate: false
+    create_mode: 644
+    date_extension: true
+    
+    # サービス別設定
+    services:
+      mcp-nodejs:
+        retention_days: 30
+        max_size: 100MB
+        min_size: 1MB
+      backend:
+        retention_days: 30
+        max_size: 100MB
+        min_size: 1MB
+      frontend:
+        retention_days: 14
+        max_size: 50MB
+        min_size: 1MB
+      mcp-python:
+        retention_days: 7       # レガシーのため短期間
+        max_size: 20MB
+        min_size: 1MB
+
+# ===== 監視・アラート設定 =====
+monitoring:
+  # ログベースアラート
+  alerts:
+    error_rate_threshold: 10     # エラー率閾値（％）
+    error_count_window: 5m       # エラー数計測ウィンドウ
+    security_event_immediate: true  # セキュリティイベント即座通知
+    
+  # メトリクス出力
+  metrics:
+    enabled: true
+    port: 9115
+    path: /metrics
+    labels:
+      - service
+      - level
+      - source
+
+# ===== セキュリティ設定 =====
+security:
+  # ログアクセス制御
+  file_permissions: 640
+  directory_permissions: 750
+  owner: mfg-drone
+  group: mfg-drone
+  
+  # 機密情報フィルタリング
+  sensitive_data_patterns:
+    - password
+    - secret
+    - token
+    - key
+    - authorization
+    - cookie
+    - api_key
+    - jwt
+    - bearer
+  
+  # 改ざん防止
+  integrity:
+    enabled: true
+    checksum_algorithm: sha256
+    verification_interval: 1h
+
+# ===== パフォーマンス設定 =====
+performance:
+  # 非同期ログ出力
+  async_logging: true
+  buffer_size: 8192
+  flush_interval: 1s
+  
+  # 圧縮設定
+  compression:
+    enabled: true
+    algorithm: gzip
+    level: 6
+  
+  # インデックス最適化
+  indexing:
+    enabled: true
+    fields:
+      - timestamp
+      - level
+      - service
+      - error_code
+      - user_id
+      - request_id
+
+# ===== 開発環境設定 =====
+development:
+  # デバッグモード
+  debug_mode: false
+  verbose_errors: false
+  
+  # コンソール出力
+  console:
+    enabled: true
+    colorize: true
+    pretty_print: true
+  
+  # ファイル出力（軽量化）
+  file_output:
+    enabled: true
+    rotation_disabled: true
+    max_files: 3
+
+# ===== 運用設定 =====
+operations:
+  # ヘルスチェック
+  health_check:
+    enabled: true
+    endpoint: /logs/health
+    checks:
+      - disk_space
+      - write_permissions
+      - rotation_status
+  
+  # クリーンアップ
+  cleanup:
+    enabled: true
+    schedule: "0 2 * * *"        # 毎日2時
+    actions:
+      - remove_old_logs
+      - compress_old_logs
+      - update_permissions
+  
+  # バックアップ
+  backup:
+    enabled: false               # 本番環境で有効化
+    destination: s3://mfg-drone-logs/
+    schedule: "0 3 * * 0"        # 毎週日曜3時
+    retention_weeks: 12
