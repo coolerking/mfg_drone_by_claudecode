@@ -12,9 +12,9 @@ info:
     name: MIT
 
 servers:
-  - url: http://localhost:8001
+  - url: http://localhost:3001
     description: MCP サーバー開発環境
-  - url: http://raspberrypi.local:8001
+  - url: http://raspberrypi.local:3001
     description: MCP サーバー Raspberry Pi環境
 
 tags:
