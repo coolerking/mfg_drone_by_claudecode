@@ -26,7 +26,7 @@ describe('MCPClient', () => {
     mockedAxios.create.mockReturnValue(mockAxiosInstance as any);
     
     client = new MCPClient({
-      baseURL: 'http://localhost:8001',
+      baseURL: 'http://localhost:3001',
       apiKey: 'test-key'
     });
   });
@@ -35,7 +35,7 @@ describe('MCPClient', () => {
     it('should create instance with config', () => {
       expect(client).toBeInstanceOf(MCPClient);
       expect(mockedAxios.create).toHaveBeenCalledWith({
-        baseURL: 'http://localhost:8001',
+        baseURL: 'http://localhost:3001',
         timeout: 30000,
         headers: {
           'Content-Type': 'application/json',
@@ -46,13 +46,13 @@ describe('MCPClient', () => {
 
     it('should create instance with bearer token', () => {
       const clientWithToken = new MCPClient({
-        baseURL: 'http://localhost:8001',
+        baseURL: 'http://localhost:3001',
         bearerToken: 'test-token'
       });
       
       expect(clientWithToken).toBeInstanceOf(MCPClient);
       expect(mockedAxios.create).toHaveBeenCalledWith({
-        baseURL: 'http://localhost:8001',
+        baseURL: 'http://localhost:3001',
         timeout: 30000,
         headers: {
           'Content-Type': 'application/json',

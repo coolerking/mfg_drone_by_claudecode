@@ -71,7 +71,7 @@ cd types && npm run build
 import { MCPClient } from 'mcp-drone-client';
 
 const client = new MCPClient({
-  baseURL: 'http://localhost:8001',
+  baseURL: 'http://localhost:3001',
   apiKey: 'your-api-key'
 });
 
@@ -94,7 +94,7 @@ from mcp_drone_client import MCPClient, MCPClientConfig, NaturalLanguageCommand
 
 async def main():
     config = MCPClientConfig(
-        base_url="http://localhost:8001",
+        base_url="http://localhost:3001",
         api_key="your-api-key"
     )
     
@@ -195,7 +195,7 @@ node test_all.js javascript python
 
 ### ネットワーク要件
 
-- **MCPサーバー**: ポート8001での通信
+- **MCPサーバー**: ポート3001での通信
 - **バックエンドAPI**: ポート8000での通信
 - **WebSocket**: リアルタイム通信用
 - **認証**: API Key または JWT Bearer Token

@@ -50,7 +50,7 @@ mcp-drone configure
 ```
 
 設定項目：
-- MCPサーバーURL (デフォルト: http://localhost:8001)
+- MCPサーバーURL (デフォルト: http://localhost:3001)
 - API Key (オプション)
 - Bearer Token (オプション)
 - リクエストタイムアウト (デフォルト: 30000ms)
@@ -138,7 +138,7 @@ mcp-drone watch
 
 ### ネットワーク要件
 
-- **MCPサーバー**: ポート8001での通信
+- **MCPサーバー**: ポート3001での通信
 - **WebSocket**: リアルタイム通信用
 - **ファイアウォール**: localhost通信許可
 
