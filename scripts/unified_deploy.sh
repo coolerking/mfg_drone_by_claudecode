@@ -256,7 +256,7 @@ create_backup() {
     # データベースバックアップ（実行中の場合）
     if $DOCKER_COMPOSE -f "$COMPOSE_FILE" ps postgres | grep -q "Up"; then
         info "PostgreSQLデータベースをバックアップ中..."
-        $DOCKER_COMPOSE -f "$COMPOSE_FILE" exec -T postgres pg_dump -U mfg_user mfg_drone_db > "$backup_path/database.sql" || warn "データベースバックアップに失敗"
+        $DOCKER_COMPOSE -f "$COMPOSE_FILE" exec -T -e PGPASSWORD="$DB_PASSWORD" postgres pg_dump -U mfg_user mfg_drone_db > "$backup_path/database.sql" || warn "データベースバックアップに失敗"
     fi
     
     # Dockerボリュームのバックアップ
@@ -369,7 +369,7 @@ verify_deployment() {
         fi
         
         # Grafana
-        if ! curl -f "http://localhost:3001/api/health" &>/dev/null; then
+        if ! curl -f "http://localhost:3000/api/health" &>/dev/null; then
             warn "Grafana のヘルスチェックに失敗"
         fi
     fi
@@ -536,7 +536,7 @@ main() {
                 info "  - Frontend: http://localhost"
                 info "  - Backend API: http://localhost:8000"
                 info "  - Prometheus: http://localhost:9090"
-                info "  - Grafana: http://localhost:3001"
+                info "  - Grafana: http://localhost:3000"
             fi
             ;;
         rollback)
