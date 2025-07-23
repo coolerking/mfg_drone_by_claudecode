@@ -76,10 +76,40 @@ class QualityReport:
 class SystemQualityChecker:
     """システム品質保証チェックツール"""
     
-    def __init__(self):
-        self.mcp_server_url = "http://localhost:8001"
-        self.backend_api_url = "http://localhost:8000"
-        self.frontend_url = "http://localhost:3000"
+    def __init__(self, mcp_mode: str = "auto"):
+        """
+        初期化
+        
+        Args:
+            mcp_mode: MCPサーバーモード 
+                     - "python": Python MCPサーバー（HTTP API、ポート8001）
+                     - "nodejs": Node.js MCPサーバー（バックエンドAPI経由、ポート8000）
+                     - "auto": 環境変数 MCP_MODE から自動判定
+        """
+        # 環境変数からモード設定を取得
+        if mcp_mode == "auto":
+            self.mcp_mode = os.environ.get("MCP_MODE", "nodejs").lower()
+        else:
+            self.mcp_mode = mcp_mode.lower()
+        
+        # 共通設定
+        self.backend_port = int(os.environ.get("BACKEND_PORT", "8000"))
+        self.backend_api_url = f"http://localhost:{self.backend_port}"
+        self.frontend_port = int(os.environ.get("FRONTEND_PORT", "3000"))
+        self.frontend_url = f"http://localhost:{self.frontend_port}"
+        
+        # モード別URL設定
+        if self.mcp_mode == "python":
+            # Python MCPサーバー: 直接HTTP API
+            self.mcp_server_port = int(os.environ.get("MCP_PYTHON_PORT", "8001"))
+            self.mcp_server_url = f"http://localhost:{self.mcp_server_port}"
+            self.test_endpoints_mode = "python_mcp"
+            print(f"🐍 Python MCPサーバーモード: {self.mcp_server_url}")
+        else:
+            # Node.js MCPサーバー: バックエンドAPI経由でテスト
+            self.mcp_server_url = self.backend_api_url  # Node.js MCPはバックエンド経由
+            self.test_endpoints_mode = "nodejs_backend"
+            print(f"🟢 Node.js MCPサーバーモード（バックエンド経由）: {self.backend_api_url}")
         
         self.report = QualityReport()
         
@@ -147,14 +177,24 @@ class SystemQualityChecker:
     
     async def _measure_api_response_time(self):
         """API応答時間測定"""
-        print("  📊 API応答時間測定...")
+        print(f"  📊 API応答時間測定 ({self.mcp_mode}モード)...")
         
-        endpoints = [
-            f"{self.mcp_server_url}/mcp/system/health",
-            f"{self.mcp_server_url}/mcp/drones",
-            f"{self.backend_api_url}/api/drones",
-            f"{self.backend_api_url}/api/system/status",
-        ]
+        if self.test_endpoints_mode == "python_mcp":
+            # Python MCPサーバー: 直接MCPエンドポイント + バックエンドAPI
+            endpoints = [
+                f"{self.mcp_server_url}/mcp/system/health",
+                f"{self.mcp_server_url}/mcp/drones",
+                f"{self.backend_api_url}/api/drones",
+                f"{self.backend_api_url}/api/system/status",
+            ]
+        else:
+            # Node.js MCPサーバー: バックエンドAPIのみ（MCPサーバーは stdio 通信）
+            endpoints = [
+                f"{self.mcp_server_url}/api/system/health",
+                f"{self.mcp_server_url}/api/system/status", 
+                f"{self.mcp_server_url}/api/drones",
+                f"{self.mcp_server_url}/api/drones/scan",
+            ]
         
         all_response_times = []
         
@@ -208,7 +248,11 @@ class SystemQualityChecker:
         """スループット測定"""
         print("  🚀 スループット測定...")
         
-        endpoint = f"{self.mcp_server_url}/mcp/system/health"
+        if self.test_endpoints_mode == "python_mcp":
+            endpoint = f"{self.mcp_server_url}/mcp/system/health"
+        else:
+            endpoint = f"{self.mcp_server_url}/api/system/health"
+        
         duration = 10  # 10秒間測定
         request_count = 0
         
@@ -293,7 +337,11 @@ class SystemQualityChecker:
         """並行処理性能測定"""
         print("  🔄 並行処理性能測定...")
         
-        endpoint = f"{self.mcp_server_url}/mcp/system/health"
+        if self.test_endpoints_mode == "python_mcp":
+            endpoint = f"{self.mcp_server_url}/mcp/system/health"
+        else:
+            endpoint = f"{self.mcp_server_url}/api/system/health"
+            
         concurrent_users = [10, 25, 50, 100]
         
         for users in concurrent_users:
@@ -384,10 +432,16 @@ class SystemQualityChecker:
         print("  🔑 認証・認可セキュリティチェック...")
         
         # 認証なしアクセステスト
-        protected_endpoints = [
-            f"{self.mcp_server_url}/mcp/command",
-            f"{self.mcp_server_url}/mcp/drones",
-        ]
+        if self.test_endpoints_mode == "python_mcp":
+            protected_endpoints = [
+                f"{self.mcp_server_url}/mcp/command",
+                f"{self.mcp_server_url}/mcp/drones",
+            ]
+        else:
+            protected_endpoints = [
+                f"{self.mcp_server_url}/api/drones/scan",
+                f"{self.mcp_server_url}/api/vision/detection",
+            ]
         
         async with aiohttp.ClientSession() as session:
             for endpoint in protected_endpoints:
@@ -419,7 +473,10 @@ class SystemQualityChecker:
             "Content-Security-Policy"
         ]
         
-        endpoint = f"{self.mcp_server_url}/mcp/system/health"
+        if self.test_endpoints_mode == "python_mcp":
+            endpoint = f"{self.mcp_server_url}/mcp/system/health"
+        else:
+            endpoint = f"{self.mcp_server_url}/api/system/health"
         
         try:
             async with aiohttp.ClientSession() as session:
@@ -496,7 +553,11 @@ class SystemQualityChecker:
             "{{7*7}}"  # Template injection
         ]
         
-        endpoint = f"{self.mcp_server_url}/mcp/command"
+        if self.test_endpoints_mode == "python_mcp":
+            endpoint = f"{self.mcp_server_url}/mcp/command"
+        else:
+            # Node.js版の場合はバックエンドAPIの入力検証をテスト
+            endpoint = f"{self.mcp_server_url}/api/drones/scan"
         
         async with aiohttp.ClientSession() as session:
             for malicious_input in malicious_inputs:
@@ -528,10 +589,16 @@ class SystemQualityChecker:
         """可用性テスト"""
         print("  📈 可用性テスト...")
         
-        endpoints = [
-            f"{self.mcp_server_url}/mcp/system/health",
-            f"{self.backend_api_url}/api/system/status",
-        ]
+        if self.test_endpoints_mode == "python_mcp":
+            endpoints = [
+                f"{self.mcp_server_url}/mcp/system/health",
+                f"{self.backend_api_url}/api/system/status",
+            ]
+        else:
+            endpoints = [
+                f"{self.mcp_server_url}/api/system/health",
+                f"{self.mcp_server_url}/api/system/status",
+            ]
         
         total_requests = 0
         successful_requests = 0
@@ -634,7 +701,11 @@ class SystemQualityChecker:
         """負荷スケーラビリティテスト"""
         print("  ⚡ 負荷スケーラビリティテスト...")
         
-        endpoint = f"{self.mcp_server_url}/mcp/system/health"
+        if self.test_endpoints_mode == "python_mcp":
+            endpoint = f"{self.mcp_server_url}/mcp/system/health"
+        else:
+            endpoint = f"{self.mcp_server_url}/api/system/health"
+            
         base_load = 10
         max_load = 100
         
@@ -680,7 +751,11 @@ class SystemQualityChecker:
         initial_memory = psutil.virtual_memory().used
         
         # 簡易的な負荷をかける
-        endpoint = f"{self.mcp_server_url}/mcp/system/health"
+        if self.test_endpoints_mode == "python_mcp":
+            endpoint = f"{self.mcp_server_url}/mcp/system/health"
+        else:
+            endpoint = f"{self.mcp_server_url}/api/system/health"
+        
         async with aiohttp.ClientSession() as session:
             tasks = [self._make_concurrent_request(session, endpoint) for _ in range(200)]
             await asyncio.gather(*tasks)
@@ -798,7 +873,10 @@ class SystemQualityChecker:
         """APIレスポンス整合性チェック"""
         print("  🔍 APIレスポンス整合性チェック...")
         
-        endpoint = f"{self.mcp_server_url}/mcp/system/health"
+        if self.test_endpoints_mode == "python_mcp":
+            endpoint = f"{self.mcp_server_url}/mcp/system/health"
+        else:
+            endpoint = f"{self.mcp_server_url}/api/system/health"
         
         try:
             async with aiohttp.ClientSession() as session:
@@ -914,14 +992,58 @@ class SystemQualityChecker:
         print("\n" + "=" * 80)
 
 
+def print_usage():
+    """使用方法を表示"""
+    print("""
+🎯 システム品質保証チェックツール
+MCP Drone Control System - System Quality Assurance Checker
+
+使用方法:
+  python system_quality_checker.py [mode]
+
+モード:
+  python    Python MCPサーバー（HTTP API、ポート8001）をテスト
+  nodejs    Node.js MCPサーバー（バックエンドAPI経由、ポート8000）をテスト  
+  auto      環境変数 MCP_MODE から自動判定（デフォルト: nodejs）
+
+環境変数:
+  MCP_MODE           MCPサーバーモード (python/nodejs)
+  MCP_PYTHON_PORT    Python MCPサーバーポート (デフォルト: 8001)
+  BACKEND_PORT       バックエンドAPIポート (デフォルト: 8000)
+  FRONTEND_PORT      フロントエンドポート (デフォルト: 3000)
+
+使用例:
+  # Node.js MCPサーバーをテスト（デフォルト）
+  python system_quality_checker.py
+  python system_quality_checker.py nodejs
+  
+  # Python MCPサーバーをテスト
+  python system_quality_checker.py python
+  
+  # 環境変数で設定
+  export MCP_MODE=nodejs && python system_quality_checker.py
+  export BACKEND_PORT=8080 && python system_quality_checker.py nodejs
+    """)
+
+
 async def main():
     """メイン実行関数"""
+    # ヘルプ表示チェック
+    if len(sys.argv) > 1 and sys.argv[1] in ['-h', '--help', 'help']:
+        print_usage()
+        return
+    
     print("🎯 システム品質保証チェックツール")
     print("MCP Drone Control System - System Quality Assurance Checker")
     print("=" * 80)
     
+    # コマンドライン引数からモード取得
+    mcp_mode = "auto"
+    if len(sys.argv) > 1:
+        mcp_mode = sys.argv[1]
+    
     # 品質チェッカー初期化
-    checker = SystemQualityChecker()
+    checker = SystemQualityChecker(mcp_mode=mcp_mode)
     
     # 品質評価実行
     report = await checker.run_quality_assessment()
