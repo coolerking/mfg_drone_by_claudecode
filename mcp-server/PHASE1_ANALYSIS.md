@@ -32,7 +32,7 @@ MCPサーバーサブプロジェクトからFastAPIサーバー機能を除去�
   - ビジョン分析機能
 
 #### 起動スクリプト
-- **`start_mcp_server.py`** - FastAPI起動スクリプト（uvicorn使用）
+- **`start_mcp_server_unified.py`** - FastAPI起動スクリプト（uvicorn使用）
 - **`start_phase4_mcp_server.py`** - Phase 4 FastAPI起動
 - **`start_phase5_mcp_server.py`** - Phase 5 FastAPI起動
 
@@ -104,7 +104,7 @@ mecab-python3==1.0.6  # 日本語処理
 - [ ] `src/enhanced_main.py` (800行以上) - 拡張FastAPIアプリケーション
 - [ ] `src/api/` ディレクトリ全体
   - `src/api/phase4_vision.py` - Vision APIルーター
-- [ ] `start_mcp_server.py` - FastAPI起動スクリプト
+- [ ] `start_mcp_server_unified.py` - FastAPI起動スクリプト
 - [ ] `start_phase4_mcp_server.py` - Phase 4起動スクリプト
 - [ ] `start_phase5_mcp_server.py` - Phase 5起動スクリプト
 
@@ -125,7 +125,7 @@ mecab-python3==1.0.6  # 日本語処理
 - **MCPサーバー**: `src/mcp_main.py` (Model Context Protocol実装)
 - **バックエンド通信**: `src/core/backend_client.py` (HTTP APIクライアント)
 - **自然言語処理**: `src/core/nlp_engine.py` (日本語対応)
-- **起動スクリプト**: `start_mcp_server.py` (シンプルなMCP起動)
+- **起動スクリプト**: `start_mcp_server_unified.py` (シンプルなMCP起動)
 
 ### 保持される機能
 - ドローン制御コマンド（接続、離陸、着陸、移動、回転、撮影）
