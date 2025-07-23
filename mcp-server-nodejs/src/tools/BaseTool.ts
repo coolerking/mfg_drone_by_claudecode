@@ -34,7 +34,7 @@ export abstract class BaseTool {
    * エラーレスポンスを作成
    */
   protected createErrorResponse(error: unknown): MCPToolResponse {
-    const handledError = ErrorHandler.handleError(error, `${this.toolName}.execute`);
+    const handledError = ErrorHandler.handleError(error, { operation: `${this.toolName}.execute` });
     
     return {
       content: [
