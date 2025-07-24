@@ -93,12 +93,6 @@ npm run dev
 npx mcp-drone-server-nodejs
 ```
 
-**Python版（レガシー・保守のみ）**：
-```bash
-cd mcp-server
-pip install -r requirements.txt
-python start_mcp_server_unified.py
-```
 
 ## Docker環境
 ```bash
